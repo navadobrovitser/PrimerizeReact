@@ -27,8 +27,11 @@ export function CandidatesFeedPage() {
       {candidates.length === 0 ? (
         <p style={{ textAlign: 'center' }}>אין מועמדים להצגה מהשרת</p>
       ) : (
-        candidates.map((candidate) => (
-          <CandidatePost key={candidate.id} candidate={candidate} />
+        candidates.map((candidate, index) => (
+          <CandidatePost 
+            key={candidate.candidateId ?? candidate.id ?? index} 
+            candidate={candidate} 
+          />
         ))
       )}
     </div>

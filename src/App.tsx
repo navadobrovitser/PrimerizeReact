@@ -10,7 +10,7 @@ import PartyRegisterPage from "./Component/PartyRegisterPage";
 import HomePage from "./Component/HomePage";
 import LoginPage from "./Component/LoginPage";
 import PrimariesPage from "./Component/PrimariesPage";
-import CandidatesFeedPage from "./Component/CandidatesFeedPage";
+import { CandidatesFeedPage } from "./Component/CandidatesFeedPage";
 import VotingPage from "./Component/VotingPage";
 
 // עיצוב כללי
