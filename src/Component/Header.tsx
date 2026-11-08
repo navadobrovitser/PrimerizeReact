@@ -3,6 +3,7 @@ import { useState } from "react";
 import Logo from "./Logo";
 import "./Header.css";
 
+
 export type Page =
   | "home"
   | "about"
@@ -11,7 +12,9 @@ export type Page =
   | "news"
   | "primaries"
   | "candidates"
-  | "login";
+  | "login"
+  | "voting";
+
 
 interface HeaderProps {
   onNavigate: (page: Page) => void;
@@ -30,6 +33,7 @@ const navItems: NavItem[] = [
   { label: "חדשות", page: "news" },
   { label: "פריימריז", page: "primaries" },
   { label: "פוסטים", page: "candidates" },
+   { label: "הצבעה", page: "voting" },
 ];
 
 export default function Header({
