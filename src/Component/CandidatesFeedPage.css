@@ -1,0 +1,43 @@
+
+
+.candidates-feed-page {
+  direction: rtl;
+  background: #ffffff;
+  min-height: 80vh;
+  padding: 65px 25px 100px;
+  font-family: "Heebo", Arial, sans-serif;
+}
+
+.candidates-feed-heading {
+  max-width: 1100px;
+  margin: 0 auto 55px;
+  text-align: right;
+}
+
+.candidates-feed-heading span {
+  color: #078b83;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.candidates-feed-heading h1 {
+  color: #123b53;
+  font-size: 38px;
+  font-weight: 900;
+  margin: 10px 0;
+}
+
+.candidates-feed-heading p {
+  color: #8093a0;
+  font-size: 16px;
+}
+
+@media (max-width: 600px) {
+  .candidates-feed-page {
+    padding: 45px 18px 70px;
+  }
+
+  .candidates-feed-heading h1 {
+    font-size: 29px;
+  }
+}

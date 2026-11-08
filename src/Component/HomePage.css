@@ -1,0 +1,151 @@
+
+.tanufa-home {
+  direction: rtl;
+  position: relative;
+  width: 100%;
+  min-height: 570px;
+  overflow: hidden;
+  color: #ffffff;
+
+  background:
+    radial-gradient(
+      ellipse at 85% 0%,
+      rgba(0, 137, 145, 0.48) 0%,
+      rgba(0, 80, 105, 0.18) 35%,
+      transparent 65%
+    ),
+    linear-gradient(
+      115deg,
+      #062741 0%,
+      #072e4c 55%,
+      #073b54 100%
+    );
+
+  font-family: "Heebo", Arial, sans-serif;
+}
+
+.tanufa-home-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 35px 24px 85px;
+  display: flex;
+  justify-content: flex-start;
+}
+
+.tanufa-home-content {
+  width: 100%;
+  max-width: 790px;
+  text-align: right;
+}
+
+.tanufa-home-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 15px;
+  border-radius: 30px;
+  background: rgba(255, 255, 255, 0.09);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #b7e6e5;
+  font-size: 12px;
+  font-weight: 700;
+  margin-bottom: 26px;
+}
+
+.tanufa-home-title {
+  color: #ffffff;
+  font-size: clamp(44px, 5.1vw, 65px);
+  font-weight: 900;
+  line-height: 1.08;
+  letter-spacing: -1.5px;
+  margin: 0 0 18px;
+}
+
+.tanufa-home-description {
+  max-width: 760px;
+  color: #c4d3df;
+  font-size: 18px;
+  font-weight: 400;
+  line-height: 1.75;
+  margin: 0 0 34px;
+}
+
+.tanufa-home-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.tanufa-home-actions button {
+  height: 48px;
+  padding: 0 31px;
+  border-radius: 28px;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 800;
+  cursor: pointer;
+  transition:
+    background 0.2s ease,
+    transform 0.2s ease;
+}
+
+.tanufa-home-actions button:hover {
+  transform: translateY(-2px);
+}
+
+.tanufa-home-join {
+  background: #10b8b4;
+  color: #063747;
+  border: 1px solid #10b8b4;
+  min-width: 158px;
+}
+
+.tanufa-home-join:hover {
+  background: #25d0c8;
+}
+
+.tanufa-home-program {
+  background: rgba(255, 255, 255, 0.11);
+  color: #ffffff;
+  border: 1px solid rgba(196, 220, 233, 0.38);
+  min-width: 147px;
+}
+
+.tanufa-home-program:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+@media (max-width: 768px) {
+  .tanufa-home {
+    min-height: auto;
+  }
+
+  .tanufa-home-inner {
+    padding: 35px 22px 75px;
+  }
+
+  .tanufa-home-title {
+    font-size: clamp(35px, 7vw, 48px);
+    letter-spacing: -0.6px;
+  }
+
+  .tanufa-home-description {
+    font-size: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .tanufa-home-title {
+    font-size: 34px;
+  }
+
+  .tanufa-home-actions {
+    flex-wrap: wrap;
+  }
+
+  .tanufa-home-actions button {
+    flex: 1;
+    min-width: 145px;
+    padding: 0 15px;
+  }
+}

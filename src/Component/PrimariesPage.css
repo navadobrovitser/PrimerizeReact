@@ -1,0 +1,302 @@
+
+.primaries-page {
+  width: 100%;
+  direction: rtl;
+  font-family: "Heebo", Arial, sans-serif;
+}
+
+/* ===== HERO ===== */
+
+.primaries-hero {
+  position: relative;
+  min-height: 450px;
+  overflow: hidden;
+  color: white;
+  background:
+    radial-gradient(
+      ellipse at 90% 0%,
+      rgba(0, 112, 125, 0.32),
+      transparent 42%
+    ),
+    linear-gradient(
+      115deg,
+      #06253e 0%,
+      #052b48 52%,
+      #073653 100%
+    );
+}
+
+.primaries-container {
+  position: relative;
+  z-index: 2;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 28px 24px 72px;
+}
+
+.primaries-content {
+  max-width: 630px;
+  margin-right: 0;
+  margin-left: auto;
+}
+
+.primaries-decoration {
+  position: absolute;
+  top: -300px;
+  left: -190px;
+  width: 450px;
+  height: 450px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.primaries-eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #5dd0ca;
+  font-size: 13px;
+  font-weight: 700;
+  margin-bottom: 18px;
+}
+
+.eyebrow-line {
+  width: 33px;
+  height: 2px;
+  background: #27aeb0;
+}
+
+.primaries-title {
+  color: #ffffff;
+  font-size: 43px;
+  font-weight: 900;
+  line-height: 1.22;
+  letter-spacing: -0.7px;
+  margin: 0 0 12px;
+}
+
+.primaries-description {
+  color: #b9cbd9;
+  font-size: 16px;
+  line-height: 1.9;
+  margin: 0 0 28px;
+}
+
+.primaries-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 2px;
+}
+
+.primaries-actions button {
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  height: 46px;
+  padding: 0 30px;
+  border-radius: 28px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.primaries-primary-btn {
+  border: none;
+  background: #10b9b6;
+  color: #073b47;
+  min-width: 124px;
+}
+
+.primaries-primary-btn:hover {
+  background: #24d2ca;
+}
+
+.primaries-outline-btn {
+  color: white;
+  background: rgba(255, 255, 255, 0.09);
+  border: 1px solid rgba(192, 214, 227, 0.38);
+  min-width: 155px;
+}
+
+.primaries-outline-btn:hover {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.primaries-notice {
+  width: 100%;
+  min-height: 82px;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 16px 18px;
+  background: rgba(255, 255, 255, 0.105);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+}
+
+.notice-icon {
+  color: #9ce7e1;
+  font-size: 16px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.primaries-notice p {
+  color: #c5d5df;
+  font-size: 13px;
+  line-height: 1.9;
+  margin: 0;
+}
+
+/* ===== CANDIDATES ===== */
+
+.primaries-candidates-section {
+  background: #ffffff;
+  padding: 65px 24px 90px;
+  scroll-margin-top: 90px;
+}
+
+.primaries-list-container {
+  max-width: 1140px;
+  margin: 0 auto;
+}
+
+.primaries-section-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 35px;
+}
+
+.primaries-section-label {
+  color: #078b83;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.primaries-section-header h2 {
+  color: #123b53;
+  font-size: 32px;
+  font-weight: 800;
+  margin: 8px 0;
+}
+
+.primaries-section-header p {
+  color: #81929d;
+  font-size: 15px;
+  margin: 0;
+}
+
+.primaries-search {
+  width: 270px;
+  min-width: 220px;
+  height: 45px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 15px;
+  background: #f8fafb;
+  border: 1px solid #e1e8ec;
+  border-radius: 25px;
+  color: #7a929e;
+}
+
+.primaries-search:focus-within {
+  border-color: #0ab5ad;
+}
+
+.primaries-search input {
+  width: 100%;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-family: inherit;
+  font-size: 14px;
+  color: #123b53;
+}
+
+.primaries-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 24px;
+}
+
+.primaries-empty {
+  padding: 50px 20px;
+  text-align: center;
+  color: #81929d;
+  background: #f8fafb;
+  border-radius: 16px;
+}
+
+/* ===== RESPONSIVE ===== */
+
+@media (max-width: 850px) {
+  .primaries-cards-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .primaries-section-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .primaries-search {
+    width: 100%;
+  }
+}
+
+@media (max-width: 768px) {
+  .primaries-hero {
+    min-height: auto;
+  }
+
+  .primaries-container {
+    padding: 45px 22px 60px;
+  }
+
+  .primaries-content {
+    max-width: 100%;
+  }
+
+  .primaries-title {
+    font-size: 34px;
+  }
+
+  .primaries-description {
+    font-size: 15px;
+  }
+
+  .desktop-break {
+    display: none;
+  }
+}
+
+@media (max-width: 550px) {
+  .primaries-title {
+    font-size: 29px;
+  }
+
+  .primaries-actions {
+    flex-wrap: wrap;
+  }
+
+  .primaries-actions button {
+    flex: 1;
+    padding: 0 15px;
+  }
+
+  .primaries-cards-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .primaries-section-header h2 {
+    font-size: 27px;
+  }
+
+  .primaries-candidates-section {
+    padding: 50px 20px 70px;
+  }
+}
