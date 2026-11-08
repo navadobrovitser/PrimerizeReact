@@ -1,11 +1,11 @@
 
 import { useState } from "react";
 import type { Page } from "./Component/Header";
-
+import CandidateMatchPage from "./Component/CandidateMatchPage";
 // רכיבים קבועים בכל האתר
 import Header from "./Component/Header";
 import Footer from "./Component/Footer";
-
+import PartyRegisterPage from "./Component/PartyRegisterPage";
 // עמודי האתר
 import HomePage from "./Component/HomePage";
 import LoginPage from "./Component/LoginPage";
@@ -85,7 +85,9 @@ export default function App() {
         {page === "candidates" && (
           <CandidatesFeedPage />
         )}
-
+{page === "match" && (
+  <CandidateMatchPage />
+)}
         {/* עמוד הצבעה */}
        {page === "voting" && (
   <VotingPage />
@@ -122,7 +124,11 @@ export default function App() {
             onBack={() => navigate("home")}
           />
         )}
-
+    {page === "register" && (
+     <PartyRegisterPage
+      onSwitchToLogin={() => navigate("login")}
+     />
+     )}
       </main>
 
       {/* תחתית האתר */}

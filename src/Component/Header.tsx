@@ -13,9 +13,10 @@ export type Page =
   | "primaries"
   | "candidates"
   | "login"
-  | "voting";
-
-
+  | "voting"
+  | "results"
+  | "match"
+  | "register";
 interface HeaderProps {
   onNavigate: (page: Page) => void;
 }
@@ -34,6 +35,8 @@ const navItems: NavItem[] = [
   { label: "פריימריז", page: "primaries" },
   { label: "פוסטים", page: "candidates" },
    { label: "הצבעה", page: "voting" },
+   { label: "התאמה חכמה ✦", page: "match" },
+   { label: "הרשמה", page: "register" },
 ];
 
 export default function Header({
