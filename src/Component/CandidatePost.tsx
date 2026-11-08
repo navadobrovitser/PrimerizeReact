@@ -1,20 +1,22 @@
-
 import { useState } from "react";
 import "./CandidatePost.css";
 
 export interface CandidatePostData {
-  id: number;
-  name: string;
-  role: string;
-  city: string;
-  imageUrl: string;
-  description: string;
-  likes: number;
-  comments: CandidateComment[];
+  candidateId?: number;
+  id?: number | string;
+  name?: string;
+  role?: string;
+  slogan?: string;
+  city?: string;
+  imageUrl?: string;
+  profileImageUrl?: string;
+  description?: string;
+  likes?: number;
+  comments?: CandidateComment[];
 }
 
 export interface CandidateComment {
-  id: number;
+  id: number | string;
   author: string;
   text: string;
 }
@@ -23,12 +25,10 @@ interface CandidatePostProps {
   candidate: CandidatePostData;
 }
 
-export default function CandidatePost({
-  candidate,
-}: CandidatePostProps) {
+export default function CandidatePost({ candidate }: CandidatePostProps) {
   const [liked, setLiked] = useState(false);
-  const [likes, setLikes] = useState(candidate.likes);
-  const [comments, setComments] = useState(candidate.comments);
+  const [likes, setLikes] = useState(candidate.likes ?? 0);
+  const [comments, setComments] = useState<CandidateComment[]>(candidate.comments ?? []);
   const [commentText, setCommentText] = useState("");
 
   const handleLike = () => {
@@ -52,13 +52,20 @@ export default function CandidatePost({
     setCommentText("");
   };
 
+  // התאמת שדות מהשרת (Swagger) לשדות התצוגה
+  const displayName = candidate.name ?? "מועמד";
+  const displayRole = candidate.role ?? candidate.slogan ?? "";
+  const displayImage = candidate.imageUrl ?? candidate.profileImageUrl ?? "";
+  const displayCity = candidate.city ?? "";
+  const displayDescription = candidate.description ?? candidate.slogan ?? "";
+
   return (
     <article className="candidate-post">
       <div className="candidate-post-image">
-        {candidate.imageUrl ? (
+        {displayImage ? (
           <img
-            src={candidate.imageUrl}
-            alt={candidate.name}
+            src={displayImage.startsWith("http") ? displayImage : `http://localhost:5296/Images/${displayImage}`}
+            alt={displayName}
           />
         ) : (
           <div className="candidate-post-placeholder">
@@ -69,18 +76,14 @@ export default function CandidatePost({
 
       <div className="candidate-post-content">
         <div className="candidate-post-info">
-          <h2>{candidate.name}</h2>
-          <div className="candidate-post-role">
-            {candidate.role}
-          </div>
-          <div className="candidate-post-city">
-            📍 {candidate.city}
-          </div>
+          <h2>{displayName}</h2>
+          {displayRole && <div className="candidate-post-role">{displayRole}</div>}
+          {displayCity && <div className="candidate-post-city">📍 {displayCity}</div>}
         </div>
 
-        <p className="candidate-post-description">
-          {candidate.description}
-        </p>
+        {displayDescription && (
+          <p className="candidate-post-description">{displayDescription}</p>
+        )}
 
         <div className="candidate-post-divider" />
 
@@ -110,12 +113,9 @@ export default function CandidatePost({
               </p>
             ) : (
               comments.map((comment) => (
-                <div
-                  key={comment.id}
-                  className="candidate-comment"
-                >
+                <div key={comment.id} className="candidate-comment">
                   <div className="candidate-comment-avatar">
-                    {comment.author.charAt(0)}
+                    {comment.author ? comment.author.charAt(0) : "U"}
                   </div>
 
                   <div className="candidate-comment-body">
@@ -127,25 +127,17 @@ export default function CandidatePost({
             )}
           </div>
 
-          <form
-            className="candidate-comment-form"
-            onSubmit={handleAddComment}
-          >
+          <form className="candidate-comment-form" onSubmit={handleAddComment}>
             <input
               type="text"
               placeholder="כתבו תגובה..."
               aria-label="כתיבת תגובה"
               maxLength={500}
               value={commentText}
-              onChange={(e) =>
-                setCommentText(e.target.value)
-              }
+              onChange={(e) => setCommentText(e.target.value)}
             />
 
-            <button
-              type="submit"
-              disabled={!commentText.trim()}
-            >
+            <button type="submit" disabled={!commentText.trim()}>
               שליחה
             </button>
           </form>
