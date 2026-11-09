@@ -10,7 +10,11 @@ import PartyRegisterPage from "./Component/PartyRegisterPage";
 import HomePage from "./Component/HomePage";
 import LoginPage from "./Component/LoginPage";
 import PrimariesPage from "./Component/PrimariesPage";
+<<<<<<< HEAD
 
+=======
+import { CandidatesFeedPage } from "./Component/CandidatesFeedPage";
+>>>>>>> 50538298b27c97943c51c46e560e788a95a6df4d
 import VotingPage from "./Component/VotingPage";
 import { CandidatesFeedPage } from "./Component/CandidatesFeedPage";
 

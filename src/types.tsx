@@ -5,12 +5,18 @@ export interface Comment {
 }
 
 export interface Candidate {
-  id: string;
+  id?: string | number;
+  candidateId?: number;
   name: string;
-  role: string;
-  description: string;
-  videoTitle?: string; // 
-  likesCount: number;
-  comments: Comment[];
+  role?: string;
+  slogan?: string;
+  description?: string;
+  videoTitle?: string;
+  likesCount?: number;
+  likes?: number;
+  comments?: Comment[];
   avatarBg?: string;
+  imageUrl?: string;
+  profileImageUrl?: string;
+  city?: string;
 }
