@@ -17,7 +17,7 @@ interface PartyRegisterPageProps {
   onRegisterSuccess?: () => void;
 }
 
-const API_URL = "https://localhost:7001/api/Users";
+const API_URL = "https://localhost:7227/api/Users/register";
 
 const initialData: RegisterData = {
   id: "",

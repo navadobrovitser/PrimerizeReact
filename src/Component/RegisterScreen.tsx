@@ -1,128 +1,322 @@
-// ייבוא ספריית React וההוק useState לניהול מצבי שדות הטופס ברכיב
-import React, { useState } from 'react';
 
-// הגדרת מבנה הנתונים (Props) שהרכיב מקבל מבחוץ
+import React, { useState } from "react";
+import { useAppDispatch, useAppSelector } from "../store/hooks";
+import { registerUser } from "../store/users/usersThunks";
+import { clearRegisterStatus } from "../store/users/usersSlice";
+
 interface RegisterScreenProps {
-  onRegisterSuccess: () => void; // פונקציה המופעלת בעת הצלחה ברישום למערכת
-  onSwitchToLogin: () => void;   // פונקציה למעבר חזרה למסך ההתחברות
+  onRegisterSuccess: () => void;
+  onSwitchToLogin: () => void;
 }
 
-// הגדרת רכיב מסך ההרשמה למשתמשים חדשים במערכת
-export function RegisterScreen({ onRegisterSuccess, onSwitchToLogin }: RegisterScreenProps) {
-  // הגדרת משתנה State לשמירת השם המלא שהוקלד
-  const [fullName, setFullName] = useState<string>('');
-  
-  // הגדרת משתנה State לשמירת מספר תעודת הזהות או מספר החבר
-  const [idNumber, setIdNumber] = useState<string>('');
-  
-  // הגדרת משתנה State לשמירת מספר הטלפון הנייד
-  const [phone, setPhone] = useState<string>('');
-  
-  // הגדרת משתנה State לשמירת תחום העיסוק או התפקיד המבוקש
-  const [role, setRole] = useState<string>('');
+export function RegisterScreen({
+  onRegisterSuccess,
+  onSwitchToLogin,
+}: RegisterScreenProps) {
+  const dispatch = useAppDispatch();
 
-  // פונקציה לטיפול בשליחת טופס ההרשמה
-  const handleSubmit = (e: React.FormEvent) => {
-    // מניעת רענון ברירת המחדל של הדפדפן בשליחת טופס
-    e.preventDefault();
-    
-    // בדיקת תקינות מקומית: לוודא ששדות החובה (שם, תעודת זהות וטלפון) אינם ריקים
-    if (!fullName.trim() || !idNumber.trim() || !phone.trim()) {
-      alert('אנא מלא את כל שדות החובה');
-      return;
-    }
-    
-    // הצגת הודעת חיווי חיובית על הצלחת תהליך הרישום
-    alert('הרישום בוצע בהצלחה!');
-    
-    // הפעלת פונקציית ההצלחה החיצונית למעבר אוטומטי למסך הבא
-    onRegisterSuccess();
+  const { loading, error, successMessage } =
+    useAppSelector((state) => state.users);
+
+  const [fullName, setFullName] = useState("");
+  const [idNumber, setIdNumber] = useState("");
+  const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [gender, setGender] = useState("");
+  const [validationError, setValidationError] = useState("");
+
+  const inputStyle: React.CSSProperties = {
+    width: "100%",
+    padding: "10px 14px",
+    border: "1px solid #cbd5e1",
+    borderRadius: "6px",
+    fontSize: "0.95rem",
+    boxSizing: "border-box",
   };
 
-  // החזרת מבנה ה-JSX המעוצב של מסך ההרשמה
+  const fieldStyle: React.CSSProperties = {
+    marginBottom: "14px",
+  };
+
+  const labelStyle: React.CSSProperties = {
+    display: "block",
+    fontWeight: 600,
+    marginBottom: "6px",
+    fontSize: "0.95rem",
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setValidationError("");
+    dispatch(clearRegisterStatus());
+
+    if (!fullName.trim()) {
+      setValidationError("יש להזין שם מלא");
+      return;
+    }
+
+    if (!/^\d{9}$/.test(idNumber)) {
+      setValidationError("תעודת זהות חייבת להכיל 9 ספרות");
+      return;
+    }
+
+    if (!/^05\d{8}$/.test(phone)) {
+      setValidationError("יש להזין מספר טלפון תקין");
+      return;
+    }
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setValidationError("כתובת האימייל אינה תקינה");
+      return;
+    }
+
+    if (password.length < 8) {
+      setValidationError("הסיסמה חייבת להכיל לפחות 8 תווים");
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      setValidationError("הסיסמאות אינן תואמות");
+      return;
+    }
+
+    if (!gender) {
+      setValidationError("יש לבחור מגדר");
+      return;
+    }
+
+    const result = await dispatch(
+      registerUser({
+        id: idNumber,
+        name: fullName.trim(),
+        email: email.trim(),
+        password,
+        phone,
+        gender,
+      })
+    );
+
+    if (registerUser.fulfilled.match(result)) {
+      setPassword("");
+      setConfirmPassword("");
+    }
+  };
+
   return (
-    // מעטפת ראשית מעוצבת ככרטיס מרכזי נקי
-    <div style={{ maxWidth: '420px', margin: '40px auto', background: 'white', padding: '24px', borderRadius: '8px', border: '1px solid #cbd5e1', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)' }}>
-      
-      {/* כותרת ראשית למסך ההרשמה */}
-      <h3 style={{ marginTop: '0', textAlign: 'center', color: '#1e3a8a' }}>הרשמה למערכת הפריימריז</h3>
-      
-      {/* טופס ההרשמה המקושר לפונקציית handleSubmit */}
-      <form onSubmit={handleSubmit}>
-        
-        {/* שדה הזנת שם מלא */}
-        <div style={{ marginBottom: '14px' }}>
-          <label style={{ display: 'block', fontWeight: 600, marginBottom: '6px', fontSize: '0.95rem' }}>
-            שם מלא:
-          </label>
-          <input 
-            type="text" 
-            value={fullName}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFullName(e.target.value)} // עדכון סטייט השם בעת הקלדה
-            placeholder="הזן את שמך המלא"
-            style={{ width: '100%', padding: '10px 14px', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '0.95rem', boxSizing: 'border-box' }}
-          />
-        </div>
+    <div
+      dir="rtl"
+      style={{
+        maxWidth: "420px",
+        margin: "40px auto",
+        background: "white",
+        padding: "24px",
+        borderRadius: "8px",
+        border: "1px solid #cbd5e1",
+        boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05)",
+      }}
+    >
+      <h3
+        style={{
+          marginTop: 0,
+          textAlign: "center",
+          color: "#1e3a8a",
+        }}
+      >
+        הוספת חבר מפלגה
+      </h3>
 
-        {/* שדה הזנת תעודת זהות או מספר חבר */}
-        <div style={{ marginBottom: '14px' }}>
-          <label style={{ display: 'block', fontWeight: 600, marginBottom: '6px', fontSize: '0.95rem' }}>
-            תעודת זהות / מספר חבר:
-          </label>
-          <input 
-            type="text" 
-            value={idNumber}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setIdNumber(e.target.value)} // עדכון סטייט תעודת הזהות בעת הקלדה
-            placeholder="לדוגמה: 012345678"
-            style={{ width: '100%', padding: '10px 14px', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '0.95rem', boxSizing: 'border-box' }}
-          />
-        </div>
+      {successMessage ? (
+        <div style={{ textAlign: "center" }}>
+          <div
+            style={{
+              fontSize: "42px",
+              color: "#0d9488",
+              marginBottom: "15px",
+            }}
+          >
+            ✓
+          </div>
 
-        {/* שדה הזנת מספר טלפון נייד */}
-        <div style={{ marginBottom: '14px' }}>
-          <label style={{ display: 'block', fontWeight: 600, marginBottom: '6px', fontSize: '0.95rem' }}>
-            מספר טלפון נייד:
-          </label>
-          <input 
-            type="tel" 
-            value={phone}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPhone(e.target.value)} // עדכון סטייט מספר הטלפון בעת הקלדה
-            placeholder="לדוגמה: 050-1234567"
-            style={{ width: '100%', padding: '10px 14px', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '0.95rem', boxSizing: 'border-box' }}
-          />
-        </div>
+          <h3 style={{ color: "#0d9488" }}>
+            {successMessage}
+          </h3>
 
-        {/* שדה הזנת תחום עיסוק או תפקיד מבוקש */}
-        <div style={{ marginBottom: '20px' }}>
-          <label style={{ display: 'block', fontWeight: 600, marginBottom: '6px', fontSize: '0.95rem' }}>
-            תחום עיסוק / תפקיד מבוקש:
-          </label>
-          <input 
-            type="text" 
-            value={role}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setRole(e.target.value)} // עדכון סטייט תחום העיסוק בעת הקלדה
-            placeholder="לדוגמה: חינוך, כלכלה, חברה"
-            style={{ width: '100%', padding: '10px 14px', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '0.95rem', boxSizing: 'border-box' }}
-          />
-        </div>
+          <p>חבר המפלגה נוסף בהצלחה למערכת.</p>
 
-        {/* כפתור שליחת הטופס לביצוע הרישום */}
-        <button 
-          type="submit"
-          style={{ width: '100%', background: '#2563eb', color: 'white', border: 'none', padding: '10px 20px', borderRadius: '6px', fontWeight: 600, cursor: 'pointer', marginBottom: '12px' }}
+          <button
+            type="button"
+            onClick={() => {
+              dispatch(clearRegisterStatus());
+              onRegisterSuccess();
+            }}
+            style={{
+              width: "100%",
+              background: "#0d9488",
+              color: "white",
+              border: "none",
+              padding: "12px",
+              borderRadius: "6px",
+              cursor: "pointer",
+            }}
+          >
+            המשך
+          </button>
+        </div>
+      ) : (
+        <form onSubmit={handleSubmit}>
+          <div style={fieldStyle}>
+            <label style={labelStyle}>שם מלא:</label>
+            <input
+              style={inputStyle}
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+              placeholder="הזן שם מלא"
+              maxLength={50}
+              required
+            />
+          </div>
+
+          <div style={fieldStyle}>
+            <label style={labelStyle}>תעודת זהות:</label>
+            <input
+              style={inputStyle}
+              value={idNumber}
+              onChange={(e) =>
+                setIdNumber(
+                  e.target.value.replace(/\D/g, "").slice(0, 9)
+                )
+              }
+              placeholder="9 ספרות"
+              inputMode="numeric"
+              maxLength={9}
+              required
+            />
+          </div>
+
+          <div style={fieldStyle}>
+            <label style={labelStyle}>טלפון נייד:</label>
+            <input
+              style={inputStyle}
+              type="tel"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              placeholder="0526775666"
+              required
+            />
+          </div>
+
+          <div style={fieldStyle}>
+            <label style={labelStyle}>כתובת אימייל:</label>
+            <input
+              style={inputStyle}
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="example@gmail.com"
+              required
+            />
+          </div>
+
+          <div style={fieldStyle}>
+            <label style={labelStyle}>סיסמה:</label>
+            <input
+              style={inputStyle}
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="לפחות 8 תווים"
+              autoComplete="new-password"
+              required
+            />
+          </div>
+
+          <div style={fieldStyle}>
+            <label style={labelStyle}>אימות סיסמה:</label>
+            <input
+              style={inputStyle}
+              type="password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              placeholder="הקלידי שוב את הסיסמה"
+              autoComplete="new-password"
+              required
+            />
+          </div>
+
+          <div style={fieldStyle}>
+            <label style={labelStyle}>מגדר:</label>
+            <select
+              style={inputStyle}
+              value={gender}
+              onChange={(e) => setGender(e.target.value)}
+              required
+            >
+              <option value="">בחרי מגדר</option>
+              <option value="נקבה">נקבה</option>
+              <option value="זכר">זכר</option>
+            </select>
+          </div>
+
+          {(validationError || error) && (
+            <div
+              role="alert"
+              style={{
+                background: "#fef2f2",
+                color: "#b91c1c",
+                padding: "12px",
+                borderRadius: "6px",
+                marginBottom: "15px",
+                fontSize: "14px",
+              }}
+            >
+              {validationError || error}
+            </div>
+          )}
+
+          <button
+            type="submit"
+            disabled={loading}
+            style={{
+              width: "100%",
+              background: loading ? "#94a3b8" : "#2563eb",
+              color: "white",
+              border: "none",
+              padding: "12px",
+              borderRadius: "6px",
+              fontWeight: 600,
+              cursor: loading ? "not-allowed" : "pointer",
+            }}
+          >
+            {loading ? "שומר את החבר..." : "הוספת חבר מפלגה"}
+          </button>
+        </form>
+      )}
+
+      <div
+        style={{
+          textAlign: "center",
+          marginTop: "16px",
+          fontSize: "0.9rem",
+        }}
+      >
+        <button
+          type="button"
+          onClick={() => {
+            dispatch(clearRegisterStatus());
+            onSwitchToLogin();
+          }}
+          style={{
+            background: "none",
+            border: "none",
+            color: "#2563eb",
+            cursor: "pointer",
+            fontWeight: 600,
+            textDecoration: "underline",
+          }}
         >
-          הירשם למערכת
-        </button>
-      </form>
-
-      {/* אזור מעבר למשתמשים שכבר רשומים (חזרה למסך התחברות) */}
-      <div style={{ textAlign: 'center', marginTop: '12px', fontSize: '0.9rem' }}>
-        <span>כבר רשום במערכת? </span>
-        <button 
-          onClick={onSwitchToLogin} // הפעלת פונקציית המעבר חזרה למסך הכניסה
-          style={{ background: 'none', border: 'none', color: '#2563eb', cursor: 'pointer', fontWeight: 600, padding: 0, textDecoration: 'underline' }}
-        >
-          התחבר כאן
+          חזרה להתחברות
         </button>
       </div>
     </div>
