@@ -1,9 +1,12 @@
 
 import { useState } from "react";
+import type { FormEvent } from "react";
+import { useAppDispatch, useAppSelector } from "../store/hooks";
+import {
+  loginStep1,
+  verifyLoginCode,
+} from "../store/Auth/authThunks";
 import "./LoginPage.css";
-
-type LoginStep = 1 | 2 | 3;
-type VerificationMethod = "email" | "sms";
 
 interface LoginPageProps {
   onLoginSuccess: () => void;
@@ -12,33 +15,41 @@ interface LoginPageProps {
 export default function LoginPage({
   onLoginSuccess,
 }: LoginPageProps) {
-  const [step, setStep] = useState<LoginStep>(1);
+  const dispatch = useAppDispatch();
+
+  const { loading, error: authError } = useAppSelector(
+    (state) => state.auth
+  );
+
+  const [step, setStep] = useState<1 | 2>(1);
   const [identity, setIdentity] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [method, setMethod] =
-    useState<VerificationMethod>("email");
   const [code, setCode] = useState("");
   const [error, setError] = useState("");
 
-  // בדיקת ספרת ביקורת בתעודת זהות ישראלית
+  // כרגע בודקים רק 9 ספרות
   const isValidIsraeliId = (id: string) => {
-    if (!/^\d{9}$/.test(id)) return false;
+    return /^\d{9}$/.test(id);
 
+    /*
+    // בדיקת ספרת ביקורת - להחזיר בהמשך
     const sum = id.split("").reduce((total, digit, i) => {
       const value = Number(digit) * (i % 2 === 0 ? 1 : 2);
       return total + (value > 9 ? value - 9 : value);
     }, 0);
 
     return sum % 10 === 0;
+    */
   };
 
-  const handleCredentials = (e: React.FormEvent) => {
+  // שלב ראשון - בדיקת סיסמה ושליחת קוד למייל
+  const handleCredentials = async (e: FormEvent) => {
     e.preventDefault();
     setError("");
 
     if (!isValidIsraeliId(identity)) {
-      setError("יש להזין מספר תעודת זהות תקין בן 9 ספרות");
+      setError("יש להזין מספר תעודת זהות בן 9 ספרות");
       return;
     }
 
@@ -47,19 +58,23 @@ export default function LoginPage({
       return;
     }
 
-    // כאן נחבר בהמשך את בדיקת הפרטים מול השרת
-    setStep(2);
+    const result = await dispatch(
+      loginStep1({
+        idNumber: identity,
+        password,
+      })
+    );
+
+    if (loginStep1.fulfilled.match(result)) {
+      // רק אחרי שהשרת אישר את הבקשה
+      setPassword("");
+      setCode("");
+      setStep(2);
+    }
   };
 
-  const handleSendCode = () => {
-    setError("");
-    setCode("");
-
-    // כאן נחבר שליחת קוד אמיתי דרך השרת
-    setStep(3);
-  };
-
-  const handleVerifyCode = (e: React.FormEvent) => {
+  // שלב שני - אימות הקוד מול השרת
+  const handleVerifyCode = async (e: FormEvent) => {
     e.preventDefault();
     setError("");
 
@@ -68,9 +83,22 @@ export default function LoginPage({
       return;
     }
 
-    // כאן נבצע אימות קוד מול השרת.
-    // אין לאשר התחברות לפני תשובת אימות מוצלחת.
-    setError("אימות הקוד יפעל לאחר חיבור לשרת.");
+    const result = await dispatch(
+      verifyLoginCode({
+        idNumber: identity,
+        code,
+      })
+    );
+
+    if (verifyLoginCode.fulfilled.match(result)) {
+      const token = result.payload?.token;
+
+      if (typeof token === "string" && token.length > 0) {
+        onLoginSuccess();
+      } else {
+        setError("השרת לא החזיר טוקן תקין");
+      }
+    }
   };
 
   return (
@@ -101,7 +129,7 @@ export default function LoginPage({
 
           <div className="login-intro-feature">
             <span className="feature-icon">✓</span>
-            אימות נוסף באמצעות SMS או דוא"ל
+            אימות נוסף באמצעות דוא"ל
           </div>
         </div>
 
@@ -112,7 +140,7 @@ export default function LoginPage({
           </div>
 
           <div className="login-progress">
-            {[1, 2, 3].map((number) => (
+            {[1, 2].map((number) => (
               <div
                 key={number}
                 className={
@@ -124,12 +152,13 @@ export default function LoginPage({
           </div>
 
           <div className="login-step-label">
-            שלב {step} מתוך 3
+            שלב {step} מתוך 2
           </div>
 
           {step === 1 && (
             <form onSubmit={handleCredentials}>
               <h2>שמחים שחזרתם!</h2>
+
               <p className="login-subtitle">
                 הזינו את פרטי ההתחברות שלכם
               </p>
@@ -137,6 +166,7 @@ export default function LoginPage({
               <label htmlFor="login-id">
                 מספר תעודת זהות
               </label>
+
               <div className="login-field">
                 <input
                   id="login-id"
@@ -158,6 +188,7 @@ export default function LoginPage({
               <label htmlFor="login-password">
                 סיסמה
               </label>
+
               <div className="login-field">
                 <input
                   id="login-password"
@@ -169,114 +200,47 @@ export default function LoginPage({
                     setPassword(e.target.value)
                   }
                 />
+
                 <button
                   type="button"
                   className="login-eye"
                   onClick={() =>
                     setShowPassword(!showPassword)
                   }
-                  aria-label={
-                    showPassword
-                      ? "הסתר סיסמה"
-                      : "הצג סיסמה"
-                  }
                 >
                   {showPassword ? "הסתר" : "הצג"}
                 </button>
               </div>
 
-              {error && (
+              {(error || authError) && (
                 <div className="login-error" role="alert">
-                  {error}
+                  {error || authError}
                 </div>
               )}
 
-              <button className="login-main-btn" type="submit">
-                המשך לאימות זהות
+              <button
+                className="login-main-btn"
+                type="submit"
+                disabled={loading}
+              >
+                {loading
+                  ? "בודקים את הפרטים..."
+                  : "המשך לאימות זהות"}
                 <span>←</span>
               </button>
             </form>
           )}
 
           {step === 2 && (
-            <div>
-              <h2>איך תרצו לקבל קוד?</h2>
-              <p className="login-subtitle">
-                בחרו את הדרך הנוחה לכם לקבלת
-                קוד אימות חד־פעמי.
-              </p>
-
-              <div className="login-methods">
-                <button
-                  type="button"
-                  className={
-                    "login-method " +
-                    (method === "email" ? "selected" : "")
-                  }
-                  onClick={() => setMethod("email")}
-                >
-                  <span className="method-icon">✉</span>
-                  <span className="method-text">
-                    <strong>שליחה לדוא"ל</strong>
-                    <small>קבלת קוד לתיבת המייל</small>
-                  </span>
-                  <span className="method-radio" />
-                </button>
-
-                <button
-                  type="button"
-                  className={
-                    "login-method " +
-                    (method === "sms" ? "selected" : "")
-                  }
-                  onClick={() => setMethod("sms")}
-                >
-                  <span className="method-icon">▣</span>
-                  <span className="method-text">
-                    <strong>שליחה ב־SMS</strong>
-                    <small>קבלת קוד לטלפון הנייד</small>
-                  </span>
-                  <span className="method-radio" />
-                </button>
-              </div>
-
-              {error && (
-                <div className="login-error" role="alert">
-                  {error}
-                </div>
-              )}
-
-              <button
-                type="button"
-                className="login-main-btn"
-                onClick={handleSendCode}
-              >
-                שלחו לי קוד אימות
-                <span>←</span>
-              </button>
-
-              <button
-                type="button"
-                className="login-back"
-                onClick={() => {
-                  setError("");
-                  setStep(1);
-                }}
-              >
-                חזרה לפרטי ההתחברות
-              </button>
-            </div>
-          )}
-
-          {step === 3 && (
             <form onSubmit={handleVerifyCode}>
               <div className="login-code-symbol">✉</div>
 
               <h2>רק עוד שלב קטן</h2>
+
               <p className="login-subtitle">
-                הזינו את הקוד בן 6 הספרות
-                שנשלח אליכם ב־
-                {method === "email" ? "דוא״ל" : "SMS"}.
+                אם פרטי ההתחברות אושרו,
+                קוד אימות בן 6 ספרות נשלח
+                לכתובת המייל הרשומה שלכם.
               </p>
 
               <label htmlFor="verification-code">
@@ -294,34 +258,40 @@ export default function LoginPage({
                 dir="ltr"
                 value={code}
                 onChange={(e) =>
-                  setCode(e.target.value.replace(/\D/g, ""))
+                  setCode(
+                    e.target.value.replace(/\D/g, "")
+                  )
                 }
               />
 
-              {error && (
+              {(error || authError) && (
                 <div className="login-error" role="alert">
-                  {error}
+                  {error || authError}
                 </div>
               )}
 
               <button
                 type="submit"
                 className="login-main-btn"
+                disabled={loading}
               >
-                אימות וכניסה לאתר
+                {loading
+                  ? "מאמתים את הקוד..."
+                  : "אימות וכניסה לאתר"}
                 <span>←</span>
               </button>
 
               <button
                 type="button"
                 className="login-back"
+                disabled={loading}
                 onClick={() => {
                   setError("");
                   setCode("");
-                  setStep(2);
+                  setStep(1);
                 }}
               >
-                שינוי אופן קבלת הקוד
+                חזרה לפרטי ההתחברות
               </button>
             </form>
           )}
