@@ -1,25 +1,21 @@
 
 import { useState } from "react";
 import type { Page } from "./Component/Header";
-import CandidateMatchPage from "./Component/CandidateMatchPage";
-// רכיבים קבועים בכל האתר
+
 import Header from "./Component/Header";
 import Footer from "./Component/Footer";
-import PartyRegisterPage from "./Component/PartyRegisterPage";
-// עמודי האתר
 import HomePage from "./Component/HomePage";
 import LoginPage from "./Component/LoginPage";
 import PrimariesPage from "./Component/PrimariesPage";
-
+import PartyRegisterPage from "./Component/PartyRegisterPage";
+import CandidateRegistrationPage from "./Component/CandidateRegistrationPage";
 import { CandidatesFeedPage } from "./Component/CandidatesFeedPage";
-
+import CandidateMatchPage from "./Component/CandidateMatchPage";
 import VotingPage from "./Component/VotingPage";
+import CreatePostPage from "./Component/CreatePostPage";
 
-
-// עיצוב כללי
 import "./App.css";
 
-// עמוד זמני לעמודים שעדיין לא נבנו
 function PlaceholderPage({
   title,
   onBack,
@@ -31,21 +27,23 @@ function PlaceholderPage({
     <section className="placeholder-page">
       <h1>{title}</h1>
       <p>העמוד הזה נמצא כרגע בבנייה.</p>
-
-      <button type="button" onClick={onBack}>
+      <button onClick={onBack}>
         חזרה לעמוד הבית
       </button>
     </section>
   );
 }
 
-// הרכיב הראשי של האתר
 export default function App() {
   const [page, setPage] = useState<Page>("home");
 
-  // מעבר בין עמודים
-  const navigate = (newPage: Page) => {
-    setPage(newPage);
+  const [
+    candidateRefreshKey,
+    setCandidateRefreshKey,
+  ] = useState(0);
+
+  const navigate = (next: Page) => {
+    setPage(next);
 
     window.scrollTo({
       top: 0,
@@ -53,16 +51,18 @@ export default function App() {
     });
   };
 
+  const handleCandidateCreated = () => {
+    setCandidateRefreshKey((prev) => prev + 1);
+  };
+
   return (
     <div className="app-layout" dir="rtl">
+      <Header
+        onNavigate={navigate}
+        candidateRefreshKey={candidateRefreshKey}
+      />
 
-      {/* תפריט עליון קבוע */}
-      <Header onNavigate={navigate} />
-
-      {/* תוכן האתר */}
       <main className="app-main">
-
-        {/* עמוד הבית */}
         {page === "home" && (
           <HomePage
             onJoinClick={() => navigate("login")}
@@ -70,33 +70,48 @@ export default function App() {
           />
         )}
 
-        {/* עמוד התחברות */}
         {page === "login" && (
           <LoginPage
             onLoginSuccess={() => navigate("home")}
           />
         )}
 
-        {/* עמוד פריימריז */}
-        {page === "primaries" && (
-          <PrimariesPage
-            onApplyClick={() => navigate("login")}
+        {page === "candidate-registration" && (
+          <CandidateRegistrationPage
+            onCandidateCreated={handleCandidateCreated}
           />
         )}
 
-        {/* פוסטים של מועמדים */}
+        {page === "create-post" && (
+          <CreatePostPage />
+        )}
+
+        {page === "primaries" && (
+          <PrimariesPage
+            onApplyClick={() =>
+              navigate("candidate-registration")
+            }
+          />
+        )}
+
         {page === "candidates" && (
           <CandidatesFeedPage />
         )}
-{page === "match" && (
-  <CandidateMatchPage />
-)}
-        {/* עמוד הצבעה */}
-       {page === "voting" && (
-  <VotingPage />
-)}
 
-        {/* עמוד אודות */}
+        {page === "match" && (
+          <CandidateMatchPage />
+        )}
+
+        {page === "voting" && (
+          <VotingPage />
+        )}
+
+        {page === "register" && (
+          <PartyRegisterPage
+            onSwitchToLogin={() => navigate("login")}
+          />
+        )}
+
         {page === "about" && (
           <PlaceholderPage
             title="אודות תנופה"
@@ -104,7 +119,6 @@ export default function App() {
           />
         )}
 
-        {/* עמוד הנהגה */}
         {page === "leadership" && (
           <PlaceholderPage
             title="הנהגת תנופה"
@@ -112,7 +126,6 @@ export default function App() {
           />
         )}
 
-        {/* עמוד התוכנית */}
         {page === "program" && (
           <PlaceholderPage
             title="התוכנית שלנו"
@@ -120,23 +133,15 @@ export default function App() {
           />
         )}
 
-        {/* עמוד חדשות */}
         {page === "news" && (
           <PlaceholderPage
             title="חדשות ועדכונים"
             onBack={() => navigate("home")}
           />
         )}
-    {page === "register" && (
-     <PartyRegisterPage
-      onSwitchToLogin={() => navigate("login")}
-     />
-     )}
       </main>
 
-      {/* תחתית האתר */}
       <Footer />
-
     </div>
   );
 }

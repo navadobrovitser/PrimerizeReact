@@ -1,0 +1,86 @@
+/* Candidate registration — Tenufa design system */
+.candidate-registration-page {
+  min-height: calc(100vh - 76px);
+  padding: 64px 24px 100px;
+  direction: rtl;
+  background: radial-gradient(ellipse at 85% 0%, #e1f6f4 0, transparent 38%), #f2f8fa;
+  color: #123b53;
+  font-family: "Heebo", Arial, sans-serif;
+}
+.candidate-registration-page *,
+.candidate-registration-page *::before,
+.candidate-registration-page *::after { box-sizing: border-box; }
+.candidate-registration-container { width: min(100%, 860px); margin: 0 auto; }
+.candidate-registration-hero { text-align: center; margin: 0 auto 34px; }
+.candidate-registration-hero > span {
+  display: inline-block; color: #087f80; background: #dff5f2;
+  padding: 9px 18px; border-radius: 100px; font-size: 13px; font-weight: 800;
+  letter-spacing: .2px;
+}
+.candidate-registration-hero h1 {
+  margin: 20px 0 12px; color: #082c43; font-size: clamp(32px, 4vw, 48px);
+  font-weight: 900; line-height: 1.25;
+}
+.candidate-registration-hero p { color: #607987; font-size: 16px; line-height: 1.9; margin: 0; }
+.candidate-registration-form,
+.candidate-registration-message {
+  background: #fff; border: 1px solid #e2edf0; border-radius: 22px;
+  box-shadow: 0 16px 48px rgba(7, 44, 65, .07);
+}
+.candidate-registration-form { padding: clamp(24px, 5vw, 48px); display: flex; flex-direction: column; gap: 12px; }
+.candidate-registration-form h2 { margin: 0; font-size: 25px; font-weight: 900; color: #0b344b; }
+.candidate-registration-form > p:first-of-type {
+  margin: 0 0 18px; color: #087f80; background: #ebf9f6;
+  padding: 12px 16px; border-radius: 10px; font-size: 14px; font-weight: 700;
+}
+.candidate-registration-form label { display: block; font-size: 14px; font-weight: 800; color: #173e54; margin-top: 12px; }
+.candidate-registration-form input[type="text"],
+.candidate-registration-form textarea {
+  display: block; width: 100%; min-width: 0; border: 1px solid #d5e3e9;
+  border-radius: 12px; padding: 14px 16px; background: #fbfdfe;
+  color: #123b53; font: inherit; font-size: 15px; outline: none;
+  transition: border-color .2s, box-shadow .2s;
+}
+.candidate-registration-form textarea { min-height: 160px; resize: vertical; line-height: 1.8; }
+.candidate-registration-form input[type="text"]:focus,
+.candidate-registration-form textarea:focus {
+  border-color: #0b9b99; box-shadow: 0 0 0 4px rgba(11, 155, 153, .12); background: #fff;
+}
+.candidate-registration-form input::placeholder,
+.candidate-registration-form textarea::placeholder { color: #96aab3; }
+.candidate-registration-form input[type="file"] {
+  display: block; width: 100%; min-width: 0; padding: 18px;
+  background: #f6fafb; border: 2px dashed #b8d5dc; border-radius: 14px;
+  color: #486b7b; font: inherit; font-size: 14px; cursor: pointer;
+}
+.candidate-registration-form input[type="file"]::file-selector-button {
+  background: #e3f3f3; color: #086c70; border: 0; border-radius: 8px;
+  padding: 10px 17px; margin-left: 14px; font: inherit; font-weight: 800; cursor: pointer;
+}
+.candidate-registration-form input[type="file"]:focus-visible { outline: 3px solid #71d5d0; outline-offset: 2px; }
+.candidate-registration-form small { display: block; color: #78909d; font-size: 12px; margin-top: -5px; }
+.candidate-registration-form > p:not(:first-of-type) { margin: 2px 0; color: #287b78; font-size: 13px; overflow-wrap: anywhere; }
+.candidate-registration-form button[type="submit"] {
+  display: block; width: 100%; margin-top: 25px; padding: 16px 24px;
+  background: linear-gradient(110deg, #078e90, #0ab6ab); color: #fff;
+  border: 0; border-radius: 12px; font: inherit; font-size: 17px;
+  font-weight: 900; cursor: pointer; box-shadow: 0 8px 22px rgba(4, 139, 140, .19);
+  transition: transform .2s, box-shadow .2s;
+}
+.candidate-registration-form button[type="submit"]:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 12px 25px rgba(4, 139, 140, .24); }
+.candidate-registration-form button[type="submit"]:disabled { opacity: .6; cursor: not-allowed; }
+.candidate-registration-message { padding: 48px 35px; text-align: center; }
+.candidate-registration-message h2 { color: #0b344b; font-size: 25px; margin: 0 0 14px; }
+.candidate-registration-message p { color: #607987; line-height: 1.9; margin: 8px 0; }
+.candidate-form-error,
+.candidate-form-success { padding: 15px 18px; border-radius: 12px; margin: 20px 0 0; font-weight: 700; line-height: 1.7; }
+.candidate-form-error { background: #fff0f0; color: #a92c35; border: 1px solid #f2c7ca; }
+.candidate-form-success { background: #eaf9f3; color: #147b5e; border: 1px solid #b9e7d2; }
+@media (max-width: 600px) {
+  .candidate-registration-page { padding: 35px 14px 65px; }
+  .candidate-registration-hero { margin-bottom: 24px; }
+  .candidate-registration-hero p { font-size: 14px; }
+  .candidate-registration-form { padding: 24px 18px; border-radius: 16px; }
+  .candidate-registration-form h2 { font-size: 21px; }
+  .candidate-registration-message { padding: 34px 20px; }
+}

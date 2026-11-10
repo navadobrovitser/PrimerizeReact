@@ -1,0 +1,126 @@
+
+.create-post-page {
+  direction: rtl;
+  min-height: 75vh;
+  padding: 55px 20px 90px;
+  background: #f4f8fa;
+  color: #0b2b40;
+}
+
+.create-post-container {
+  max-width: 820px;
+  margin: auto;
+}
+
+.create-post-hero {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.create-post-hero span {
+  color: #008c98;
+  font-weight: 700;
+}
+
+.create-post-hero h1 {
+  font-size: clamp(28px, 4vw, 40px);
+  margin: 12px 0;
+}
+
+.create-post-hero p {
+  color: #64748b;
+  font-size: 17px;
+}
+
+.create-post-form,
+.my-post-card,
+.create-post-notice {
+  background: white;
+  padding: 32px;
+  border-radius: 18px;
+  box-shadow: 0 8px 30px rgba(0, 35, 55, 0.07);
+}
+
+.create-post-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.create-post-form h2 {
+  margin: 0 0 8px;
+}
+
+.create-post-form label {
+  font-weight: 700;
+}
+
+.create-post-form textarea,
+.create-post-form input[type="file"] {
+  box-sizing: border-box;
+  width: 100%;
+  border: 1px solid #d6e1e7;
+  border-radius: 12px;
+  padding: 14px;
+  font: inherit;
+  background: white;
+}
+
+.create-post-form textarea:focus {
+  outline: 2px solid #008c98;
+  outline-offset: 1px;
+}
+
+.create-post-form small,
+.my-post-card small {
+  color: #64748b;
+}
+
+.create-post-form button {
+  border: 0;
+  border-radius: 12px;
+  padding: 15px;
+  background: #008c98;
+  color: white;
+  font-size: 17px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.create-post-form button:hover {
+  background: #006f79;
+}
+
+.create-post-form button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.create-post-error {
+  color: #b91c1c;
+}
+
+.create-post-success {
+  color: #047857;
+}
+
+.my-posts-section {
+  margin-top: 38px;
+}
+
+.my-post-card {
+  margin-top: 14px;
+  white-space: pre-wrap;
+}
+
+@media (max-width: 600px) {
+  .create-post-page {
+    padding: 28px 12px 55px;
+  }
+
+  .create-post-form,
+  .my-post-card,
+  .create-post-notice {
+    padding: 20px;
+  }
+}
