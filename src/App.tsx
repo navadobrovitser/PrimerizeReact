@@ -9,6 +9,7 @@ import Footer from "./Component/Footer";
 import PartyRegisterPage from "./Component/PartyRegisterPage";
 
 // עמודי האתר
+import ElectionResultsPage from "./Component/ElectionResultsPage";
 import HomePage from "./Component/HomePage";
 import LoginPage from "./Component/LoginPage";
 import PrimariesPage from "./Component/PrimariesPage";
@@ -144,10 +145,15 @@ export default function App() {
         )}
 
         {/* עמוד הצבעה */}
-        {page === "voting" && (
-          <VotingPage />
-        )}
-
+       {page === "voting" && (
+  <VotingPage
+    onViewResults={() => navigate("results")}
+  />
+)}
+{/* עמוד תוצאות הבחירות */}
+{page === "results" && (
+  <ElectionResultsPage />
+)}
         {/* עמוד אודות */}
         {page === "about" && (
           <PlaceholderPage
