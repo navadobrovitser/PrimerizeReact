@@ -21,11 +21,22 @@ export interface CandidateComment {
   text: string;
 }
 
+import type { Post } from "../store/posts/postsThunks";
+
 interface CandidatePostProps {
-  candidate: CandidatePostData;
+  post: Post;
 }
 
-export default function CandidatePost({ candidate }: CandidatePostProps) {
+export default function CandidatePost({ post }: CandidatePostProps) {
+  const candidate: CandidatePostData = {
+    candidateId: post.candidateId,
+    name: post.candidate?.name ?? post.candidate?.user?.name ?? "מועמד",
+    slogan: post.candidate?.slogan,
+    profileImageUrl: post.candidate?.profileImageUrl,
+    description: post.content ?? post.title ?? "",
+    likes: post.likesCount ?? 0,
+    comments: [],
+  };
   const [liked, setLiked] = useState(false);
   const [likes, setLikes] = useState(candidate.likes ?? 0);
   const [comments, setComments] = useState<CandidateComment[]>(candidate.comments ?? []);

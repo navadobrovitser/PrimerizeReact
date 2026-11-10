@@ -2,19 +2,18 @@
 import { useState } from "react";
 import type { Page } from "./Component/Header";
 import CandidateMatchPage from "./Component/CandidateMatchPage";
+
 // רכיבים קבועים בכל האתר
 import Header from "./Component/Header";
 import Footer from "./Component/Footer";
 import PartyRegisterPage from "./Component/PartyRegisterPage";
+
 // עמודי האתר
 import HomePage from "./Component/HomePage";
 import LoginPage from "./Component/LoginPage";
 import PrimariesPage from "./Component/PrimariesPage";
-
 import { CandidatesFeedPage } from "./Component/CandidatesFeedPage";
-
 import VotingPage from "./Component/VotingPage";
-
 
 // עיצוב כללי
 import "./App.css";
@@ -42,6 +41,7 @@ function PlaceholderPage({
 // הרכיב הראשי של האתר
 export default function App() {
   const [page, setPage] = useState<Page>("home");
+  const [showLoginSuccess, setShowLoginSuccess] = useState(false);
 
   // מעבר בין עמודים
   const navigate = (newPage: Page) => {
@@ -53,6 +53,12 @@ export default function App() {
     });
   };
 
+  // לאחר התחברות מוצלחת
+  const handleLoginSuccess = () => {
+    setShowLoginSuccess(true);
+    navigate("home");
+  };
+
   return (
     <div className="app-layout" dir="rtl">
 
@@ -61,6 +67,49 @@ export default function App() {
 
       {/* תוכן האתר */}
       <main className="app-main">
+
+        {/* הודעת התחברות מוצלחת */}
+        {showLoginSuccess && (
+          <div
+            role="status"
+            style={{
+              backgroundColor: "#e7f7ed",
+              color: "#17653a",
+              padding: "16px 24px",
+              margin: "20px auto",
+              maxWidth: "600px",
+              borderRadius: "12px",
+              textAlign: "center",
+              fontWeight: "bold",
+              border: "1px solid #a8dfba",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: "16px",
+              direction: "rtl",
+            }}
+          >
+            <span>
+              ✓ התחברת בהצלחה! כעת אפשר להמשיך לאזור האישי ולהצבעה.
+            </span>
+
+            <button
+              type="button"
+              onClick={() => setShowLoginSuccess(false)}
+              aria-label="סגירת הודעת הצלחה"
+              style={{
+                background: "transparent",
+                border: "none",
+                color: "#17653a",
+                cursor: "pointer",
+                fontSize: "22px",
+                fontWeight: "bold",
+              }}
+            >
+              ×
+            </button>
+          </div>
+        )}
 
         {/* עמוד הבית */}
         {page === "home" && (
@@ -73,7 +122,7 @@ export default function App() {
         {/* עמוד התחברות */}
         {page === "login" && (
           <LoginPage
-            onLoginSuccess={() => navigate("home")}
+            onLoginSuccess={handleLoginSuccess}
           />
         )}
 
@@ -88,13 +137,16 @@ export default function App() {
         {page === "candidates" && (
           <CandidatesFeedPage />
         )}
-{page === "match" && (
-  <CandidateMatchPage />
-)}
+
+        {/* התאמת מועמדים */}
+        {page === "match" && (
+          <CandidateMatchPage />
+        )}
+
         {/* עמוד הצבעה */}
-       {page === "voting" && (
-  <VotingPage />
-)}
+        {page === "voting" && (
+          <VotingPage />
+        )}
 
         {/* עמוד אודות */}
         {page === "about" && (
@@ -127,11 +179,14 @@ export default function App() {
             onBack={() => navigate("home")}
           />
         )}
-    {page === "register" && (
-     <PartyRegisterPage
-      onSwitchToLogin={() => navigate("login")}
-     />
-     )}
+
+        {/* עמוד הרשמה */}
+        {page === "register" && (
+          <PartyRegisterPage
+            onSwitchToLogin={() => navigate("login")}
+          />
+        )}
+
       </main>
 
       {/* תחתית האתר */}

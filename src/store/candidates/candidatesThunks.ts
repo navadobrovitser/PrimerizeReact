@@ -1,7 +1,7 @@
 import { createAsyncThunk } from '@reduxjs/toolkit';
 import type { Candidate } from '../../types';
 
-const API_URL = 'http://localhost:5296/api/Candidates';
+const API_URL = 'https://localhost:7227/api/Candidates';
 
 export const fetchCandidates = createAsyncThunk(
   'candidates/fetchCandidates',
