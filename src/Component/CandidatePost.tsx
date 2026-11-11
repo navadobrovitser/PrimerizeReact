@@ -1,147 +1,130 @@
-import { useState } from "react";
+
+import type { Post } from "../store/posts/postsThunks";
+import PostLikes from "./PostLikes";
 import "./CandidatePost.css";
 
-export interface CandidatePostData {
-  candidateId?: number;
-  id?: number | string;
-  name?: string;
-  role?: string;
-  slogan?: string;
-  city?: string;
-  imageUrl?: string;
-  profileImageUrl?: string;
-  description?: string;
-  likes?: number;
-  comments?: CandidateComment[];
-}
-
-export interface CandidateComment {
-  id: number | string;
-  author: string;
-  text: string;
-}
-
 interface CandidatePostProps {
-  candidate: CandidatePostData;
+  post: Post;
 }
 
-export default function CandidatePost({ candidate }: CandidatePostProps) {
-  const [liked, setLiked] = useState(false);
-  const [likes, setLikes] = useState(candidate.likes ?? 0);
-  const [comments, setComments] = useState<CandidateComment[]>(candidate.comments ?? []);
-  const [commentText, setCommentText] = useState("");
+const API_ORIGIN = "https://localhost:7227";
 
-  const handleLike = () => {
-    setLikes((prev) => prev + (liked ? -1 : 1));
-    setLiked((prev) => !prev);
-  };
+function getMediaUrl(path?: string | null): string {
+  if (!path) return "";
 
-  const handleAddComment = (e: React.FormEvent) => {
-    e.preventDefault();
+  if (/^https?:\/\//i.test(path)) {
+    return path;
+  }
 
-    const text = commentText.trim();
-    if (!text) return;
+  if (path.startsWith("/")) {
+    return `${API_ORIGIN}${path}`;
+  }
 
-    const newComment: CandidateComment = {
-      id: Date.now(),
-      author: "משתמש מחובר",
-      text,
-    };
+  return `${API_ORIGIN}/Images/${path}`;
+}
 
-    setComments((prev) => [...prev, newComment]);
-    setCommentText("");
-  };
+function isVideoFile(url: string): boolean {
+  return /\.(mp4|avi|mov)(\?.*)?$/i.test(url);
+}
 
-  // התאמת שדות מהשרת (Swagger) לשדות התצוגה
-  const displayName = candidate.name ?? "מועמד";
-  const displayRole = candidate.role ?? candidate.slogan ?? "";
-  const displayImage = candidate.imageUrl ?? candidate.profileImageUrl ?? "";
-  const displayCity = candidate.city ?? "";
-  const displayDescription = candidate.description ?? candidate.slogan ?? "";
+export default function CandidatePost({
+  post,
+}: CandidatePostProps) {
+  if (!post) {
+    return null;
+  }
+
+  // שם המועמד מתוך השרת
+  const candidateName =
+    post.candidateName?.trim() ||
+    post.candidate?.user?.name ||
+    post.candidate?.name ||
+    "מועמד";
+
+  const content = post.content ?? "";
+
+  const mediaUrl = getMediaUrl(post.mediaUrl);
+
+  const date = post.createdAt
+    ? new Date(post.createdAt).toLocaleDateString("he-IL")
+    : "";
+
+  const showVideo = isVideoFile(mediaUrl);
 
   return (
-    <article className="candidate-post">
-      <div className="candidate-post-image">
-        {displayImage ? (
-          <img
-            src={displayImage.startsWith("http") ? displayImage : `http://localhost:5296/Images/${displayImage}`}
-            alt={displayName}
-          />
-        ) : (
-          <div className="candidate-post-placeholder">
-            <span>👤</span>
-          </div>
-        )}
-      </div>
-
+    <article className="candidate-post" dir="rtl">
       <div className="candidate-post-content">
+
+        {/* פרטי המועמד */}
         <div className="candidate-post-info">
-          <h2>{displayName}</h2>
-          {displayRole && <div className="candidate-post-role">{displayRole}</div>}
-          {displayCity && <div className="candidate-post-city">📍 {displayCity}</div>}
+          <h2>{candidateName}</h2>
+
+          {post.candidate?.slogan && (
+            <div className="candidate-post-role">
+              {post.candidate.slogan}
+            </div>
+          )}
+
+          {date && (
+            <div className="candidate-post-city">
+              פורסם בתאריך {date}
+            </div>
+          )}
         </div>
 
-        {displayDescription && (
-          <p className="candidate-post-description">{displayDescription}</p>
+        {/* כותרת הפוסט */}
+        {post.title && (
+          <h3 className="candidate-post-title">
+            {post.title}
+          </h3>
         )}
 
+        {/* תוכן הפוסט */}
+        <p className="candidate-post-description">
+          {content}
+        </p>
+
+        {/* תמונה או סרטון */}
+        {mediaUrl && (
+          <div className="candidate-post-image">
+            {showVideo ? (
+              <video
+                src={mediaUrl}
+                controls
+                preload="metadata"
+                playsInline
+                style={{
+                  width: "100%",
+                  maxHeight: "450px",
+                  borderRadius: "12px",
+                  background: "#000",
+                }}
+              >
+                הדפדפן שלך אינו תומך בהצגת סרטונים.
+              </video>
+            ) : (
+              <img
+                src={mediaUrl}
+                alt="תמונה שצורפה לפוסט"
+                loading="lazy"
+              />
+            )}
+          </div>
+        )}
+
+        {/* לייקים ודיסלייקים */}
+        <PostLikes postId={post.postId} />
+
+        {/* הפרדה */}
         <div className="candidate-post-divider" />
 
+        {/* פרטים נוספים */}
         <div className="candidate-post-stats">
-          <button
-            type="button"
-            className={`candidate-like ${liked ? "liked" : ""}`}
-            onClick={handleLike}
-            aria-pressed={liked}
-          >
-            <span>{liked ? "♥" : "♡"}</span>
-            {likes} לייקים
-          </button>
-
           <span className="candidate-comments-count">
-            {comments.length} תגובות
+            פוסט #{post.postId}
           </span>
         </div>
 
-        <div className="candidate-post-comments">
-          <h3>שיח עם המועמד</h3>
-
-          <div className="candidate-comments-list">
-            {comments.length === 0 ? (
-              <p className="candidate-no-comments">
-                עדיין אין תגובות. היו הראשונים להגיב!
-              </p>
-            ) : (
-              comments.map((comment) => (
-                <div key={comment.id} className="candidate-comment">
-                  <div className="candidate-comment-avatar">
-                    {comment.author ? comment.author.charAt(0) : "U"}
-                  </div>
-
-                  <div className="candidate-comment-body">
-                    <strong>{comment.author}</strong>
-                    <p>{comment.text}</p>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-
-          <form className="candidate-comment-form" onSubmit={handleAddComment}>
-            <input
-              type="text"
-              placeholder="כתבו תגובה..."
-              aria-label="כתיבת תגובה"
-              maxLength={500}
-              value={commentText}
-              onChange={(e) => setCommentText(e.target.value)}
-            />
-
-            <button type="submit" disabled={!commentText.trim()}>
-              שליחה
-            </button>
-          </form>
-        </div>
       </div>
     </article>
   );

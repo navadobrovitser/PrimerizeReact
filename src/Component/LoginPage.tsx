@@ -1,19 +1,27 @@
 
 import { useState } from "react";
 import type { FormEvent } from "react";
-import { useAppDispatch, useAppSelector } from "../store/hooks";
+
+import {
+  useAppDispatch,
+  useAppSelector,
+} from "../store/hooks";
+
 import {
   loginStep1,
   verifyLoginCode,
 } from "../store/Auth/authThunks";
+
 import "./LoginPage.css";
 
 interface LoginPageProps {
   onLoginSuccess: () => void;
+  onRegisterClick: () => void;
 }
 
 export default function LoginPage({
   onLoginSuccess,
+  onRegisterClick,
 }: LoginPageProps) {
   const dispatch = useAppDispatch();
 
@@ -28,12 +36,12 @@ export default function LoginPage({
   const [code, setCode] = useState("");
   const [error, setError] = useState("");
 
-  // כרגע בודקים רק 9 ספרות
+  // בדיקת 9 ספרות בתעודת זהות
   const isValidIsraeliId = (id: string) => {
     return /^\d{9}$/.test(id);
 
     /*
-    // בדיקת ספרת ביקורת - להחזיר בהמשך
+    // בדיקת ספרת ביקורת - אפשר להחזיר בהמשך
     const sum = id.split("").reduce((total, digit, i) => {
       const value = Number(digit) * (i % 2 === 0 ? 1 : 2);
       return total + (value > 9 ? value - 9 : value);
@@ -43,7 +51,7 @@ export default function LoginPage({
     */
   };
 
-  // שלב ראשון - בדיקת סיסמה ושליחת קוד למייל
+  // שלב ראשון: סיסמה ושליחת קוד אימות
   const handleCredentials = async (e: FormEvent) => {
     e.preventDefault();
     setError("");
@@ -66,14 +74,13 @@ export default function LoginPage({
     );
 
     if (loginStep1.fulfilled.match(result)) {
-      // רק אחרי שהשרת אישר את הבקשה
       setPassword("");
       setCode("");
       setStep(2);
     }
   };
 
-  // שלב שני - אימות הקוד מול השרת
+  // שלב שני: אימות הקוד מול השרת
   const handleVerifyCode = async (e: FormEvent) => {
     e.preventDefault();
     setError("");
@@ -106,6 +113,8 @@ export default function LoginPage({
       <div className="login-glow" />
 
       <div className="login-shell">
+
+        {/* צד ההסבר */}
         <div className="login-intro">
           <div className="login-intro-badge">
             <span>✦</span> האזור האישי של תנופה
@@ -118,8 +127,9 @@ export default function LoginPage({
           </h1>
 
           <p>
-            התחברו לאזור האישי שלכם, הכירו את
-            המועמדים וקחו חלק בעיצוב העתיד.
+            התחברו לאזור האישי שלכם,
+            הכירו את המועמדים
+            וקחו חלק בעיצוב העתיד.
           </p>
 
           <div className="login-intro-feature">
@@ -133,6 +143,7 @@ export default function LoginPage({
           </div>
         </div>
 
+        {/* כרטיס ההתחברות */}
         <div className="login-card">
           <div className="login-card-top">
             <div className="login-lock">♙</div>
@@ -155,6 +166,7 @@ export default function LoginPage({
             שלב {step} מתוך 2
           </div>
 
+          {/* שלב 1 - תעודת זהות וסיסמה */}
           {step === 1 && (
             <form onSubmit={handleCredentials}>
               <h2>שמחים שחזרתם!</h2>
@@ -231,6 +243,7 @@ export default function LoginPage({
             </form>
           )}
 
+          {/* שלב 2 - קוד אימות */}
           {step === 2 && (
             <form onSubmit={handleVerifyCode}>
               <div className="login-code-symbol">✉</div>
@@ -296,10 +309,25 @@ export default function LoginPage({
             </form>
           )}
 
+          {/* הודעת אבטחה */}
           <div className="login-card-footer">
             <span>♢</span>
             הפרטים שלכם נשמרים בסביבה מאובטחת
           </div>
+
+          {/* מעבר להרשמה - בתוך הכרטיס */}
+          {step === 1 && (
+            <div className="login-register-link">
+              <span>עדיין אין לך חשבון?</span>
+
+              <button
+                type="button"
+                onClick={onRegisterClick}
+              >
+                להרשמה
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>

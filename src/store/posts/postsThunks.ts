@@ -5,12 +5,16 @@ const API_URL = "https://localhost:7227/api/Posts";
 export interface Post {
   postId: number;
   candidateId: number;
+  candidateName?: string;
   content?: string;
   title?: string;
+  contentType?: string;
   mediaUrl?: string;
   createdAt?: string;
   likesCount?: number;
+  dislikesCount?: number;
   commentsCount?: number;
+
   candidate?: {
     name?: string;
     slogan?: string;

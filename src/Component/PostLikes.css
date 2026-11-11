@@ -1,0 +1,132 @@
+
+/* אזור הלייקים */
+.post-likes {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid #edf1f3;
+  direction: rtl;
+  font-family: "Heebo", Arial, sans-serif;
+}
+
+/* קפסולה בסגנון YouTube */
+.post-likes-pill {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  height: 40px;
+  padding: 0;
+  overflow: hidden;
+  background: #f2f4f5;
+  border: none;
+  border-radius: 100px;
+  box-shadow: none;
+}
+
+/* כפתורים ללא מסגרת */
+.post-likes .post-likes-action {
+  appearance: none;
+  -webkit-appearance: none;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+
+  height: 40px;
+  min-width: 76px;
+  margin: 0;
+  padding: 0 17px;
+
+  border: none !important;
+  border-radius: 0 !important;
+  outline: none;
+
+  background: transparent !important;
+  box-shadow: none !important;
+
+  color: #303a43;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1;
+
+  cursor: pointer;
+  transition:
+    background 0.2s ease,
+    color 0.2s ease;
+}
+
+/* מעבר עכבר */
+.post-likes .post-likes-action:hover:not(:disabled) {
+  background: #e4e9eb !important;
+  transform: none;
+}
+
+/* תגובה שנבחרה */
+.post-likes .post-likes-action.selected {
+  background: #d9f4f1 !important;
+  color: #078c89;
+}
+
+.post-likes .post-likes-action.selected:hover:not(:disabled) {
+  background: #c9ebe8 !important;
+}
+
+/* אייקונים */
+.post-likes .post-likes-action svg {
+  display: block;
+  width: 19px;
+  height: 19px;
+  flex-shrink: 0;
+  stroke: currentColor;
+}
+
+/* מספר הלייקים */
+.post-likes-number {
+  font-size: 13px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* קו מפריד */
+.post-likes-separator {
+  display: block;
+  width: 1px;
+  height: 22px;
+  flex-shrink: 0;
+  background: #d4dadd;
+}
+
+/* מצב טעינה */
+.post-likes .post-likes-action:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* נגישות מקלדת */
+.post-likes .post-likes-action:focus-visible {
+  outline: 2px solid #0bb8b5;
+  outline-offset: -3px;
+}
+
+/* הודעות שגיאה */
+.post-likes-error {
+  margin-top: 10px;
+  font-size: 12px;
+  color: #c03946;
+}
+
+@media (max-width: 480px) {
+  .post-likes-pill,
+  .post-likes .post-likes-action {
+    height: 38px;
+  }
+
+  .post-likes .post-likes-action {
+    min-width: 68px;
+    padding: 0 13px;
+  }
+}

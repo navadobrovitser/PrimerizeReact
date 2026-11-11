@@ -3,11 +3,14 @@ import { useState } from "react";
 import type { ChangeEvent, FormEvent } from "react";
 import "./PartyRegisterPage.css";
 
+// =============================================
+// Types
+// =============================================
+
 interface RegisterData {
   id: string;
   name: string;
   email: string;
-  password: string;
   phone: string;
   gender: string;
 }
@@ -17,30 +20,45 @@ interface PartyRegisterPageProps {
   onRegisterSuccess?: () => void;
 }
 
-const API_URL = "https://localhost:7227/api/Users/register";
+const API_URL =
+  "https://localhost:7227/api/Users/register";
 
 const initialData: RegisterData = {
   id: "",
   name: "",
   email: "",
-  password: "",
   phone: "",
   gender: "",
 };
+
+// =============================================
+// Component
+// =============================================
 
 export default function PartyRegisterPage({
   onSwitchToLogin,
   onRegisterSuccess,
 }: PartyRegisterPageProps) {
-  const [data, setData] = useState(initialData);
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
-  const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [data, setData] = useState<RegisterData>(
+    initialData
+  );
+
+  const [acceptedTerms, setAcceptedTerms] =
+    useState(false);
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
 
-  const update = (event: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  // =============================================
+  // Update fields
+  // =============================================
+
+  const update = (
+    event: ChangeEvent<
+      HTMLInputElement | HTMLSelectElement
+    >
+  ) => {
     const { name, value } = event.target;
 
     setData((previous) => ({
@@ -51,38 +69,59 @@ export default function PartyRegisterPage({
     setError("");
   };
 
+  // =============================================
+  // Validation
+  // =============================================
+
   const validate = (): string => {
-    if (!/^\d{9}$/.test(data.id))
+    const cleanId = data.id.trim();
+
+    if (!/^\d{9}$/.test(cleanId)) {
       return "תעודת זהות חייבת להכיל בדיוק 9 ספרות.";
+    }
 
-    if (!data.name.trim())
+    if (!data.name.trim()) {
       return "יש להזין שם מלא.";
+    }
 
-    if (data.name.length > 50)
+    if (data.name.trim().length > 50) {
       return "השם לא יכול להכיל יותר מ־50 תווים.";
+    }
 
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email))
+    const email = data.email.trim();
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       return "כתובת האימייל אינה תקינה.";
+    }
 
-    if (data.password.length < 8)
-      return "הסיסמה חייבת להכיל לפחות 8 תווים.";
+    // Remove spaces and hyphens from phone
+    const cleanPhone = data.phone.replace(
+      /[\s-]/g,
+      ""
+    );
 
-    if (data.password !== confirmPassword)
-      return "הסיסמאות אינן תואמות.";
+    if (!/^05\d{8}$/.test(cleanPhone)) {
+      return "יש להזין מספר טלפון נייד תקין בן 10 ספרות.";
+    }
 
-    if (!/^\+?[\d\s()-]{7,20}$/.test(data.phone))
-      return "מספר הטלפון אינו תקין.";
-
-    if (!data.gender)
+    if (!data.gender) {
       return "יש לבחור מגדר.";
+    }
 
-    if (!acceptedTerms)
+    if (!acceptedTerms) {
       return "יש לאשר את תנאי החברות.";
+    }
 
     return "";
   };
 
-  const handleSubmit = async (event: FormEvent) => {
+  // =============================================
+  // Submit registration
+  // =============================================
+
+  const handleSubmit = async (
+    event: FormEvent<HTMLFormElement>
+  ) => {
     event.preventDefault();
 
     const validationError = validate();
@@ -102,11 +141,10 @@ export default function PartyRegisterPage({
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          id: data.id,
+          id: data.id.trim(),
           name: data.name.trim(),
           email: data.email.trim(),
-          password: data.password,
-          phone: data.phone.trim(),
+          phone: data.phone.replace(/[\s-]/g, ""),
           gender: data.gender,
         }),
       });
@@ -129,7 +167,7 @@ export default function PartyRegisterPage({
             message = result.title;
           }
         } catch {
-          // השרת לא החזיר JSON
+          // Server did not return JSON
         }
 
         throw new Error(message);
@@ -147,14 +185,23 @@ export default function PartyRegisterPage({
     }
   };
 
+  // =============================================
+  // JSX
+  // =============================================
+
   return (
     <div className="party-register-page" dir="rtl">
       <div className="party-register-layout">
+        {/* =====================================
+            Side section
+        ===================================== */}
 
         <aside className="party-register-side">
           <div className="party-side-content">
             <div className="party-brand">
-              <span className="party-brand-symbol">✦</span>
+              <span className="party-brand-symbol">
+                ✦
+              </span>
               <span>תנופה</span>
             </div>
 
@@ -188,16 +235,20 @@ export default function PartyRegisterPage({
             <div className="party-side-feature">
               <span>02</span>
               <div>
-                <strong>חשבון אישי</strong>
-                <small>גישה למידע ולשירותי החברים</small>
+                <strong>אישור מנהל</strong>
+                <small>
+                  בדיקת הבקשה ואישור ההצטרפות
+                </small>
               </div>
             </div>
 
             <div className="party-side-feature">
               <span>03</span>
               <div>
-                <strong>ניהול מאובטח</strong>
-                <small>שמירה על פרטיות המשתמשים</small>
+                <strong>הפעלת החשבון</strong>
+                <small>
+                  קבלת קישור להגדרת סיסמה במייל
+                </small>
               </div>
             </div>
           </div>
@@ -205,32 +256,52 @@ export default function PartyRegisterPage({
           <div className="party-side-decoration" />
         </aside>
 
+        {/* =====================================
+            Main section
+        ===================================== */}
+
         <main className="party-register-main">
           <div className="party-register-card">
-
             {success ? (
-              <div className="party-success">
-                <div className="party-success-icon">✓</div>
+              // =================================
+              // Success
+              // =================================
 
-                <h2>ההרשמה בוצעה בהצלחה!</h2>
+              <div className="party-success">
+                <div className="party-success-icon">
+                  ✓
+                </div>
+
+                <h2>בקשת ההצטרפות התקבלה!</h2>
 
                 <p>
-                  החשבון נוצר במערכת.
-                  כעת אפשר לעבור להתחברות.
+                  הפרטים שלך נשמרו בהצלחה.
+                  <br />
+                  הבקשה ממתינה כעת לאישור
+                  מנהל המערכת.
+                  <br />
+                  לאחר האישור יישלח אליך מייל
+                  עם קישור להגדרת הסיסמה
+                  האישית שלך.
                 </p>
 
                 <button
+                  type="button"
                   className="party-primary-button"
                   onClick={
                     onSwitchToLogin ??
                     onRegisterSuccess
                   }
                 >
-                  מעבר להתחברות ←
+                  חזרה להתחברות ←
                 </button>
               </div>
             ) : (
               <>
+                {/* =============================
+                    Form heading
+                ============================= */}
+
                 <div className="party-form-heading">
                   <span className="party-form-eyebrow">
                     הצטרפות לתנופה
@@ -240,9 +311,13 @@ export default function PartyRegisterPage({
 
                   <p>
                     מלאו את הפרטים הבאים
-                    כדי ליצור חשבון חדש.
+                    כדי לשלוח בקשת הצטרפות.
                   </p>
                 </div>
+
+                {/* =============================
+                    Registration form
+                ============================= */}
 
                 <form
                   className="party-register-form"
@@ -250,6 +325,7 @@ export default function PartyRegisterPage({
                   noValidate
                 >
                   <div className="party-form-grid">
+                    {/* Full name */}
 
                     <div className="party-field">
                       <label htmlFor="register-name">
@@ -259,6 +335,7 @@ export default function PartyRegisterPage({
                       <input
                         id="register-name"
                         name="name"
+                        type="text"
                         value={data.name}
                         onChange={update}
                         placeholder="השם המלא שלך"
@@ -268,6 +345,8 @@ export default function PartyRegisterPage({
                       />
                     </div>
 
+                    {/* ID */}
+
                     <div className="party-field">
                       <label htmlFor="register-id">
                         תעודת זהות *
@@ -276,6 +355,7 @@ export default function PartyRegisterPage({
                       <input
                         id="register-id"
                         name="id"
+                        type="text"
                         value={data.id}
                         onChange={update}
                         placeholder="9 ספרות"
@@ -284,6 +364,8 @@ export default function PartyRegisterPage({
                         required
                       />
                     </div>
+
+                    {/* Email */}
 
                     <div className="party-field">
                       <label htmlFor="register-email">
@@ -302,6 +384,8 @@ export default function PartyRegisterPage({
                       />
                     </div>
 
+                    {/* Phone */}
+
                     <div className="party-field">
                       <label htmlFor="register-phone">
                         טלפון נייד *
@@ -315,9 +399,12 @@ export default function PartyRegisterPage({
                         onChange={update}
                         placeholder="0501234567"
                         autoComplete="tel"
+                        inputMode="tel"
                         required
                       />
                     </div>
+
+                    {/* Gender */}
 
                     <div className="party-field">
                       <label htmlFor="register-gender">
@@ -331,75 +418,33 @@ export default function PartyRegisterPage({
                         onChange={update}
                         required
                       >
-                        <option value="">בחירת מגדר</option>
-                        <option value="Female">נקבה</option>
-                        <option value="Male">זכר</option>
+                        <option value="">
+                          בחירת מגדר
+                        </option>
+
+                        <option value="Female">
+                          נקבה
+                        </option>
+
+                        <option value="Male">
+                          זכר
+                        </option>
                       </select>
-                    </div>
-
-                    <div className="party-field">
-                      <label htmlFor="register-password">
-                        סיסמה *
-                      </label>
-
-                      <input
-                        id="register-password"
-                        name="password"
-                        type={
-                          showPassword
-                            ? "text"
-                            : "password"
-                        }
-                        value={data.password}
-                        onChange={update}
-                        placeholder="לפחות 8 תווים"
-                        autoComplete="new-password"
-                        required
-                      />
-                    </div>
-
-                    <div className="party-field party-field-full">
-                      <label htmlFor="register-confirm">
-                        אימות סיסמה *
-                      </label>
-
-                      <input
-                        id="register-confirm"
-                        type={
-                          showPassword
-                            ? "text"
-                            : "password"
-                        }
-                        value={confirmPassword}
-                        onChange={(e) =>
-                          setConfirmPassword(e.target.value)
-                        }
-                        placeholder="הקלידו שוב את הסיסמה"
-                        autoComplete="new-password"
-                        required
-                      />
                     </div>
                   </div>
 
-                  <label className="party-check-row">
-                    <input
-                      type="checkbox"
-                      checked={showPassword}
-                      onChange={(e) =>
-                        setShowPassword(e.target.checked)
-                      }
-                    />
-                    הצגת סיסמאות
-                  </label>
-
-                  <div className="party-form-divider" />
+                  {/* =============================
+                      Terms
+                  ============================= */}
 
                   <label className="party-check-row party-terms">
                     <input
                       type="checkbox"
                       checked={acceptedTerms}
                       onChange={(e) =>
-                        setAcceptedTerms(e.target.checked)
+                        setAcceptedTerms(
+                          e.target.checked
+                        )
                       }
                     />
 
@@ -410,6 +455,10 @@ export default function PartyRegisterPage({
                     </span>
                   </label>
 
+                  {/* =============================
+                      Error message
+                  ============================= */}
+
                   {error && (
                     <div
                       className="party-error"
@@ -419,19 +468,28 @@ export default function PartyRegisterPage({
                     </div>
                   )}
 
+                  {/* =============================
+                      Submit button
+                  ============================= */}
+
                   <button
                     type="submit"
                     className="party-primary-button"
                     disabled={loading}
                   >
                     {loading
-                      ? "מבצע הרשמה..."
-                      : "יצירת חשבון ←"}
+                      ? "שולחים את הבקשה..."
+                      : "שליחת בקשת הצטרפות ←"}
                   </button>
                 </form>
 
+                {/* =============================
+                    Login link
+                ============================= */}
+
                 <div className="party-login-link">
                   כבר יש לך חשבון?{" "}
+
                   <button
                     type="button"
                     onClick={onSwitchToLogin}

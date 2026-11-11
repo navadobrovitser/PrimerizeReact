@@ -1,202 +1,78 @@
 
-import { useState } from "react";
+import { useEffect, useRef } from "react";
 import type { FormEvent } from "react";
+
+import { useAppDispatch, useAppSelector } from "../store/hooks";
+
+import {
+  searchCandidateMatches,
+} from "../store/candidateMatch/candidateMatchThunks";
+
+import {
+  setMatchQuery,
+  resetCandidateMatch,
+} from "../store/candidateMatch/candidateMatchSlice";
+
 import "./CandidateMatchPage.css";
 
-interface Candidate {
-  id: number;
-  name: string;
-  role: string;
-  city: string;
-  description: string;
-  imageUrl: string;
-  topics: string[];
-}
+const API_ORIGIN = "https://localhost:7227";
 
-interface MatchResult {
-  candidate: Candidate;
-  score: number;
-  matchedTopics: string[];
-}
+function getImageUrl(url: string | null): string | undefined {
+  if (!url) return undefined;
 
-const candidates: Candidate[] = [
-  {
-    id: 1,
-    name: "ד״ר אמיר כהן",
-    role: "כלכלה, תעסוקה ודיור",
-    city: "חיפה",
-    description:
-      "פועל לקידום דיור בר השגה, יצירת מקומות עבודה, תמיכה בעסקים קטנים ושיפור ההזדמנויות הכלכליות לצעירים.",
-    imageUrl: "/candidates/amir.jpg",
-    topics: ["דיור", "כלכלה", "תעסוקה", "צעירים"],
-  },
-  {
-    id: 2,
-    name: "מיכל אדרי",
-    role: "חינוך, משפחה וקהילה",
-    city: "ירושלים",
-    description:
-      "מקדמת חינוך איכותי, צמצום פערים, חיזוק השירותים החברתיים ותמיכה במשפחות ובקהילות.",
-    imageUrl: "/candidates/michal.jpg",
-    topics: ["חינוך", "משפחות", "קהילה", "רווחה"],
-  },
-  {
-    id: 3,
-    name: "יואב בן דוד",
-    role: "תחבורה ותשתיות",
-    city: "תל אביב",
-    description:
-      "מקדם תחבורה ציבורית נגישה, שיפור תשתיות, רכבות, פתרונות לפקקים ופיתוח ערים חכמות.",
-    imageUrl: "/candidates/yoav.jpg",
-    topics: ["תחבורה", "תשתיות", "רכבות", "סביבה"],
-  },
-  {
-    id: 4,
-    name: "עו״ד שרה לוי",
-    role: "משפט, שקיפות ומנהל ציבורי",
-    city: "פתח תקווה",
-    description:
-      "פועלת לקידום שקיפות ציבורית, שיפור השירות לאזרח, אחריות שלטונית ומאבק בשחיתות.",
-    imageUrl: "/candidates/sara.jpg",
-    topics: ["משפט", "שקיפות", "ממשל", "שחיתות"],
-  },
-  {
-    id: 5,
-    name: "ד״ר נועם שפירא",
-    role: "בריאות ומדע",
-    city: "באר שבע",
-    description:
-      "מקדם שיפור שירותי הבריאות, חדשנות רפואית, מחקר מדעי ונגישות לשירותים בפריפריה.",
-    imageUrl: "/candidates/noam.jpg",
-    topics: ["בריאות", "רפואה", "מדע", "פריפריה"],
-  },
-  {
-    id: 6,
-    name: "רון אשכנזי",
-    role: "ביטחון וחירום",
-    city: "אשדוד",
-    description:
-      "פועל לשיפור המוכנות לחירום, חיזוק הביטחון האישי, שירותי הצלה וחוסן קהילתי.",
-    imageUrl: "/candidates/ron.jpg",
-    topics: ["ביטחון", "חירום", "הצלה", "קהילה"],
-  },
-];
+  if (/^https?:\/\//i.test(url)) {
+    return url;
+  }
 
-// מיפוי ביטויים לנושאים
-const topicKeywords: Record<string, string[]> = {
-  דיור: [
-    "דיור", "דירה", "דירות", "משכנתא",
-    "שכירות", "נדלן", "נדל״ן", "לקנות בית",
-  ],
-  כלכלה: [
-    "כלכלה", "יוקר המחיה", "מחירים",
-    "כסף", "מיסים", "מסים", "עסקים",
-  ],
-  תעסוקה: [
-    "תעסוקה", "עבודה", "עובדים",
-    "משכורת", "שכר", "משרות",
-  ],
-  צעירים: ["צעירים", "צעירות", "סטודנטים"],
-  חינוך: [
-    "חינוך", "לימודים", "בתי ספר",
-    "מורים", "תלמידים", "השכלה",
-  ],
-  משפחות: [
-    "משפחות", "משפחה", "הורים", "ילדים",
-  ],
-  קהילה: ["קהילה", "קהילות", "חברה", "התנדבות"],
-  רווחה: ["רווחה", "סיוע", "שירותים חברתיים"],
-  תחבורה: [
-    "תחבורה", "אוטובוס", "אוטובוסים",
-    "פקקים", "כבישים", "נסיעות",
-  ],
-  תשתיות: ["תשתיות", "כבישים", "פיתוח עירוני"],
-  רכבות: ["רכבת", "רכבות", "מטרו"],
-  סביבה: ["סביבה", "זיהום", "אקלים", "ירוק"],
-  משפט: ["משפט", "חוקים", "חקיקה", "זכויות"],
-  שקיפות: ["שקיפות", "מידע ציבורי"],
-  ממשל: ["ממשל", "שלטון", "ממשלה"],
-  שחיתות: ["שחיתות", "שוחד"],
-  בריאות: ["בריאות", "בתי חולים", "קופות חולים"],
-  רפואה: ["רפואה", "רופאים", "טיפול רפואי"],
-  מדע: ["מדע", "מחקר", "טכנולוגיה", "חדשנות"],
-  פריפריה: ["פריפריה", "נגב", "גליל"],
-  ביטחון: ["ביטחון", "בטחון", "ביטחון אישי"],
-  חירום: ["חירום", "מוכנות", "אסונות"],
-  הצלה: ["הצלה", "חילוץ"],
-};
-
-function normalizeText(text: string): string {
-  return text
-    .toLowerCase()
-    .replace(/[״"'׳.,!?;:()[\]{}]/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
-function findTopics(text: string): string[] {
-  const normalized = normalizeText(text);
-
-  return Object.entries(topicKeywords)
-    .filter(([, keywords]) =>
-      keywords.some((keyword) =>
-        normalized.includes(normalizeText(keyword))
-      )
-    )
-    .map(([topic]) => topic);
-}
-
-function matchCandidates(text: string): MatchResult[] {
-  const requestedTopics = findTopics(text);
-
-  if (requestedTopics.length === 0) return [];
-
-  return candidates
-    .map((candidate) => {
-      const matchedTopics = candidate.topics.filter(
-        (topic) => requestedTopics.includes(topic)
-      );
-
-      // אחוז כיסוי של הנושאים שהמשתמש ביקש
-      const score = Math.round(
-        (matchedTopics.length / requestedTopics.length) * 100
-      );
-
-      return { candidate, score, matchedTopics };
-    })
-    .filter((result) => result.score > 0)
-    .sort((a, b) => b.score - a.score);
+  return `${API_ORIGIN}${url.startsWith("/") ? "" : "/"}${url}`;
 }
 
 export default function CandidateMatchPage() {
-  const [query, setQuery] = useState("");
-  const [results, setResults] = useState<MatchResult[]>([]);
-  const [searched, setSearched] = useState(false);
-  const [detectedTopics, setDetectedTopics] = useState<string[]>([]);
-  const [loading, setLoading] = useState(false);
+  const dispatch = useAppDispatch();
+
+  const {
+    query,
+    results,
+    detectedTopics,
+    loading,
+    searched,
+    error,
+  } = useAppSelector((state) => state.candidateMatch);
+
+  const activeRequest = useRef<{
+    abort: () => void;
+  } | null>(null);
+
+  useEffect(() => {
+    return () => {
+      activeRequest.current?.abort();
+    };
+  }, []);
+
+  const updateQuery = (value: string) => {
+    activeRequest.current?.abort();
+    activeRequest.current = null;
+    dispatch(setMatchQuery(value));
+  };
 
   const handleSearch = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
     if (!query.trim()) return;
 
-    setLoading(true);
+    activeRequest.current?.abort();
 
-    // חישוב מקומי. בעתיד יוחלף בקריאת API
-    const topics = findTopics(query);
-    const matches = matchCandidates(query);
+    const request = dispatch(
+      searchCandidateMatches(query.trim())
+    );
 
-    setDetectedTopics(topics);
-    setResults(matches);
-    setSearched(true);
-    setLoading(false);
+    activeRequest.current = request;
   };
 
   const handleReset = () => {
-    setQuery("");
-    setResults([]);
-    setDetectedTopics([]);
-    setSearched(false);
+    activeRequest.current?.abort();
+    activeRequest.current = null;
+    dispatch(resetCandidateMatch());
   };
 
   return (
@@ -235,13 +111,10 @@ export default function CandidateMatchPage() {
               <textarea
                 id="match-query"
                 value={query}
-                onChange={(event) => {
-                  setQuery(event.target.value);
-                  setSearched(false);
-                }}
-                placeholder={
-                  "לדוגמה: אני מחפשת מועמד שיקדם דיור לצעירים, ישפר את התחבורה הציבורית ויעזור למשפחות..."
+                onChange={(event) =>
+                  updateQuery(event.target.value)
                 }
+                placeholder="לדוגמה: אני מחפשת מועמד שעוסק בדיור לצעירים ובתחבורה ציבורית..."
                 rows={5}
                 maxLength={1000}
               />
@@ -273,10 +146,7 @@ export default function CandidateMatchPage() {
                 <button
                   key={suggestion}
                   type="button"
-                  onClick={() => {
-                    setQuery(suggestion);
-                    setSearched(false);
-                  }}
+                  onClick={() => updateQuery(suggestion)}
                 >
                   {suggestion}
                 </button>
@@ -285,10 +155,38 @@ export default function CandidateMatchPage() {
           </div>
         </section>
 
-        {!searched ? (
+        {error && (
+          <p
+            role="alert"
+            style={{
+              color: "#b42318",
+              marginTop: 20,
+            }}
+          >
+            {error}
+          </p>
+        )}
+
+        {loading && (
+          <section
+            className="match-intro"
+            aria-live="polite"
+          >
+            <div className="match-intro-icon">✦</div>
+            <h2>מנתחים את בקשת החיפוש...</h2>
+            <p>
+              המערכת בודקת את המידע הקיים
+              על המועמדים.
+            </p>
+          </section>
+        )}
+
+        {!loading && !searched && (
           <section className="match-intro">
             <div className="match-intro-icon">✦</div>
+
             <h2>התאמה שמתחילה במה שחשוב לך</h2>
+
             <p>
               כתבו את הדרישות שלכם,
               והמערכת תציג מועמדים עם תחומי
@@ -301,23 +199,29 @@ export default function CandidateMatchPage() {
               <div>▤ הסבר לכל תוצאה</div>
             </div>
           </section>
-        ) : (
+        )}
+
+        {!loading && searched && (
           <section className="match-results">
+
             <div className="match-results-header">
               <div>
                 <span className="match-section-label">
                   תוצאות החיפוש
                 </span>
+
                 <h2>המועמדים הרלוונטיים</h2>
+
                 <p>
                   נמצאו {results.length} מועמדים
-                  עם תחומי פעילות שתואמים
-                  לנושאים שזוהו בבקשה.
+                  עם תחומי פעילות הקשורים
+                  לנושאים שביקשת.
                 </p>
               </div>
 
               <button
                 className="match-reset-button"
+                type="button"
                 onClick={handleReset}
               >
                 חיפוש חדש ↻
@@ -329,7 +233,9 @@ export default function CandidateMatchPage() {
                 <strong>הנושאים שזוהו:</strong>
 
                 {detectedTopics.map((topic) => (
-                  <span key={topic}>{topic}</span>
+                  <span key={topic}>
+                    {topic}
+                  </span>
                 ))}
               </div>
             )}
@@ -337,46 +243,55 @@ export default function CandidateMatchPage() {
             {results.length === 0 ? (
               <div className="match-no-results">
                 <div>⌕</div>
+
                 <h3>לא נמצאה התאמה</h3>
+
                 <p>
                   נסו לנסח את הבקשה מחדש
-                  או להשתמש במונחים כמו
-                  חינוך, דיור, בריאות או תחבורה.
+                  או להשתמש במונחים אחרים.
                 </p>
               </div>
             ) : (
               <div className="match-results-grid">
+
                 {results.map((result, index) => (
                   <article
                     className="match-candidate-card"
-                    key={result.candidate.id}
+                    key={result.candidateId}
                   >
                     <div className="match-card-top">
+
                       <div className="match-avatar">
-                        {result.candidate.imageUrl ? (
+                        {result.profileImageUrl && (
                           <img
-                            src={result.candidate.imageUrl}
-                            alt={result.candidate.name}
+                            src={getImageUrl(
+                              result.profileImageUrl
+                            )}
+                            alt={result.name}
                             onError={(event) => {
                               event.currentTarget.style.display =
                                 "none";
                             }}
                           />
-                        ) : null}
+                        )}
+
                         <span>👤</span>
                       </div>
 
                       <div className="match-card-identity">
-                        <h3>{result.candidate.name}</h3>
-                        <span>{result.candidate.role}</span>
-                        <small>
-                          📍 {result.candidate.city}
-                        </small>
+                        <h3>{result.name}</h3>
+
+                        <span>{result.slogan}</span>
                       </div>
 
                       <div className="match-score">
-                        <strong>{result.score}%</strong>
-                        <span>כיסוי נושאים</span>
+                        <strong>
+                          {result.score}%
+                        </strong>
+
+                        <span>
+                          רלוונטיות משוערת
+                        </span>
                       </div>
                     </div>
 
@@ -389,15 +304,17 @@ export default function CandidateMatchPage() {
                     </div>
 
                     <p className="match-candidate-description">
-                      {result.candidate.description}
+                      {result.explanation}
                     </p>
 
                     <div className="match-explanation">
-                      <strong>✦ למה המועמד מופיע?</strong>
+                      <strong>
+                        ✦ למה המועמד מופיע?
+                      </strong>
+
                       <p>
-                        לפי נתוני הדוגמה, המועמד
-                        עוסק בנושאים הבאים
-                        שביקשת:
+                        לפי המידע הקיים במערכת,
+                        נמצאו הנושאים הבאים:
                       </p>
 
                       <div className="match-topic-tags">
@@ -413,6 +330,7 @@ export default function CandidateMatchPage() {
                       <span>
                         #{index + 1} בתוצאות החיפוש
                       </span>
+
                       <span>
                         {result.matchedTopics.length} נושאים תואמים
                       </span>
@@ -423,12 +341,15 @@ export default function CandidateMatchPage() {
             )}
 
             <div className="match-disclaimer">
-              ℹ ההתאמה מבוססת כרגע על מילות מפתח
-              ונתוני הדגמה. היא אינה הערכה
-              אובייקטיבית של המועמדים או המלצת הצבעה.
+              ℹ התוצאות מבוססות על ניתוח AI
+              של מידע המועמדים במערכת.
+              אחוזי הרלוונטיות הם אומדן,
+              ולא מדד מדויק או המלצת הצבעה.
             </div>
+
           </section>
         )}
+
       </div>
     </div>
   );

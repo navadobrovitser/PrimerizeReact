@@ -383,3 +383,31 @@
     font-size: 23px;
   }
 }
+
+/* קישור הרשמה בתוך כרטיס ההתחברות */
+
+.login-register-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 16px 10px 22px;
+  font-family: "Heebo", Arial, sans-serif;
+  font-size: 13px;
+  color: #8499a8;
+}
+
+.login-register-link button {
+  border: none;
+  background: transparent;
+  padding: 0;
+  font: inherit;
+  font-weight: 800;
+  color: #0bb8b5;
+  cursor: pointer;
+}
+
+.login-register-link button:hover {
+  text-decoration: underline;
+  color: #078b89;
+}

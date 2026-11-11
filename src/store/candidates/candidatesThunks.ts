@@ -1,15 +1,35 @@
-import { createAsyncThunk } from '@reduxjs/toolkit';
-import type { Candidate } from '../../types';
 
-const API_URL = 'http://localhost:5296/api/Candidates';
+import { createAsyncThunk } from "@reduxjs/toolkit";
+import type { Candidate } from "../../types";
 
-export const fetchCandidates = createAsyncThunk(
-  'candidates/fetchCandidates',
-  async () => {
-    const response = await fetch(API_URL);
-    if (!response.ok) {
-      throw new Error('נכשלה טעינת המועמדים מהשרת');
+const API_URL = "https://localhost:7227/api/Candidates";
+
+export const fetchCandidates = createAsyncThunk<
+  Candidate[],
+  void,
+  { rejectValue: string }
+>(
+  "candidates/fetchCandidates",
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await fetch(API_URL);
+
+      if (!response.ok) {
+        return rejectWithValue(
+          `שגיאה בטעינת המועמדים (${response.status})`
+        );
+      }
+
+      const candidates: Candidate[] =
+        await response.json();
+
+      return candidates;
+    } catch (error) {
+      return rejectWithValue(
+        error instanceof Error
+          ? error.message
+          : "לא ניתן להתחבר לשרת"
+      );
     }
-    return (await response.json()) as Candidate[];
   }
 );

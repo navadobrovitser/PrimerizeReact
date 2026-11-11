@@ -18,8 +18,8 @@ export type Page =
   | "match"
   | "register"
   | "candidate-registration"
-  | "create-post";
-
+  | "create-post"
+  | "admin";
 interface HeaderProps {
   onNavigate: (page: Page) => void;
   candidateRefreshKey?: number;
@@ -35,7 +35,7 @@ const links: { label: string; page: Page }[] = [
   { label: "פוסטים", page: "candidates" },
   { label: "הצבעה", page: "voting" },
   { label: "התאמה חכמה ✦", page: "match" },
-  { label: "הרשמה", page: "register" },
+
 ];
 
 export default function Header({
@@ -45,7 +45,7 @@ export default function Header({
   const token = useAppSelector(
     (state) => state.auth.token
   );
-
+ const role = useAppSelector((state) => state.auth.role);
   const [open, setOpen] = useState(false);
   const [candidate, setCandidate] = useState(false);
   const [checking, setChecking] = useState(true);
@@ -167,16 +167,17 @@ export default function Header({
             )
           )}
 
-          <a
-            href="#"
-            className="header-join-button"
-            onClick={(e) => {
-              e.preventDefault();
-              navigate("login");
-            }}
-          >
-            הצטרפו אלינו
-          </a>
+          {role === "Admin" && (
+  <a
+    href="#"
+    onClick={(e) => {
+      e.preventDefault();
+      navigate("admin");
+    }}
+  >
+    ניהול מערכת
+  </a>
+)}
         </nav>
       </div>
     </header>
