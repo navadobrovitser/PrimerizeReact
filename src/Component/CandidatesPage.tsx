@@ -8,7 +8,7 @@ interface CandidatesPageProps {
   onSelectCandidate: (candidateId: number) => void;
 }
 
-const API_ORIGIN = "https://localhost:7227";
+{/*const API_ORIGIN = "https://localhost:7227";*/}
 
 
 function getImageUrl(url?: string | null): string {

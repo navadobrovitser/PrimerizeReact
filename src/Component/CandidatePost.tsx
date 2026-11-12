@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import type { Post } from "../store/posts/postsThunks";
@@ -6,7 +5,9 @@ import { useAppSelector } from "../store/hooks";
 import PostLikes from "./PostLikes";
 import "./CandidatePost.css";
 
-const API_ORIGIN = "https://localhost:7227";
+const API_ORIGIN =
+  import.meta.env.VITE_API_ORIGIN ||
+  "https://localhost:7227";
 
 interface CommentDto {
   commentId: number;
@@ -44,22 +45,29 @@ interface CandidatePostProps {
 function getMediaUrl(path?: string | null): string {
   if (!path) return "";
 
-  if (/^https?:\/\//i.test(path)) {
-    return path;
+  const cleanUrl = path.trim();
+
+  if (/^https?:\/\//i.test(cleanUrl)) {
+    return cleanUrl;
   }
 
-  if (path.startsWith("/")) {
-    return `${API_ORIGIN}${path}`;
+  const cleanPath = cleanUrl.replace(/^\/+/, "");
+
+  if (/^Images\//i.test(cleanPath)) {
+    return `${API_ORIGIN}/${cleanPath}`;
   }
 
-  return `${API_ORIGIN}/Images/${path}`;
+  return `${API_ORIGIN}/Images/${cleanPath}`;
 }
 
 function isVideoFile(url: string): boolean {
   return /\.(mp4|webm|ogg|avi|mov)(\?.*)?$/i.test(url);
 }
 
-function formatDate(value?: string | null): string {
+function formatDate(
+  value?: string | null,
+  includeTime = false
+): string {
   if (!value) return "";
 
   const date = new Date(value);
@@ -68,7 +76,27 @@ function formatDate(value?: string | null): string {
     return "";
   }
 
+  if (includeTime) {
+    return date.toLocaleString("he-IL", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  }
+
   return date.toLocaleDateString("he-IL");
+}
+
+function sortComments(
+  comments: CommentDto[]
+): CommentDto[] {
+  return [...comments].sort(
+    (a, b) =>
+      new Date(a.createdAt).getTime() -
+      new Date(b.createdAt).getTime()
+  );
 }
 
 export default function CandidatePost({
@@ -100,7 +128,9 @@ export default function CandidatePost({
       try {
         const response = await fetch(
           `${API_ORIGIN}/api/Comments/post/${postId}`,
-          { signal: controller.signal }
+          {
+            signal: controller.signal,
+          }
         );
 
         if (!response.ok) {
@@ -109,16 +139,11 @@ export default function CandidatePost({
 
         const data: CommentDto[] = await response.json();
 
-        if (controller.signal.aborted) return;
+        if (controller.signal.aborted) {
+          return;
+        }
 
-        setComments(
-          data.sort(
-            (a, b) =>
-              new Date(a.createdAt).getTime() -
-              new Date(b.createdAt).getTime()
-          )
-        );
-
+        setComments(sortComments(data));
         setCommentsLoaded(true);
       } catch (error) {
         if (!controller.signal.aborted) {
@@ -137,7 +162,9 @@ export default function CandidatePost({
 
     void loadComments();
 
-    return () => controller.abort();
+    return () => {
+      controller.abort();
+    };
   }, [postId]);
 
   const handleAddComment = async (
@@ -183,20 +210,15 @@ export default function CandidatePost({
       );
 
       if (!refreshResponse.ok) {
-        throw new Error("התגובה נשמרה, אך רענון התגובות נכשל");
+        throw new Error(
+          "התגובה נשמרה, אך רענון התגובות נכשל"
+        );
       }
 
       const updatedComments: CommentDto[] =
         await refreshResponse.json();
 
-      setComments(
-        updatedComments.sort(
-          (a, b) =>
-            new Date(a.createdAt).getTime() -
-            new Date(b.createdAt).getTime()
-        )
-      );
-
+      setComments(sortComments(updatedComments));
       setCommentText("");
       setShowComments(true);
       setCommentsLoaded(true);
@@ -219,7 +241,7 @@ export default function CandidatePost({
 
   const content = post.content ?? "";
   const mediaUrl = getMediaUrl(post.mediaUrl);
-  const date = formatDate(post.createdAt);
+  const date = formatDate(post.createdAt, true);
   const showVideo = isVideoFile(mediaUrl);
 
   const commentsCount = commentsLoaded
@@ -251,7 +273,10 @@ export default function CandidatePost({
           </h3>
         )}
 
-        <p className="candidate-post-description">
+        <p
+          className="candidate-post-description"
+          style={{ whiteSpace: "pre-wrap" }}
+        >
           {content}
         </p>
 
@@ -282,16 +307,18 @@ export default function CandidatePost({
           </div>
         )}
 
+        {/* לייקים */}
         <PostLikes postId={postId} />
 
         <div className="candidate-post-divider" />
 
+        {/* ספירת תגובות וכפתור פתיחה */}
         <div className="candidate-post-stats">
           <button
             type="button"
             className="candidate-comments-toggle"
             onClick={() =>
-              setShowComments((prev) => !prev)
+              setShowComments((previous) => !previous)
             }
             aria-expanded={showComments}
           >
@@ -305,6 +332,7 @@ export default function CandidatePost({
           </span>
         </div>
 
+        {/* אזור התגובות */}
         {showComments && (
           <section className="candidate-comments-section">
             <h3>תגובות לפוסט</h3>
@@ -333,6 +361,7 @@ export default function CandidatePost({
                     <strong>
                       {comment.userName || "משתמש"}
                     </strong>
+
                     <time>
                       {formatDate(comment.createdAt)}
                     </time>
@@ -342,6 +371,7 @@ export default function CandidatePost({
                 </div>
               ))}
 
+            {/* הוספת תגובה למשתמש מחובר */}
             {token && (
               <form
                 className="candidate-comment-form"

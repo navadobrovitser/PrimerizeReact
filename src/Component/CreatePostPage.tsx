@@ -1,14 +1,16 @@
 
 import { useEffect, useState } from "react";
-import type {
-  FormEvent,
-  ChangeEvent,
-} from "react";
+import type { FormEvent, ChangeEvent } from "react";
 
 import { useAppSelector } from "../store/hooks";
 import "./CreatePostPage.css";
 
-const API = "https://localhost:7227/api/Posts";
+const API_ORIGIN =
+  import.meta.env.VITE_API_ORIGIN ||
+  "https://localhost:7227";
+
+const POSTS_API = `${API_ORIGIN}/api/Posts`;
+const CANDIDATE_API = `${API_ORIGIN}/api/Candidates/me`;
 
 interface Post {
   postId: number;
@@ -19,20 +21,32 @@ interface Post {
   createdAt?: string;
 }
 
+interface CandidateProfile {
+  candidateId: number;
+}
+
 async function readError(
   response: Response
 ): Promise<string> {
-  const data = await response
-    .json()
-    .catch(() => null);
+  const data = await response.json().catch(() => null);
 
-  return (
-    data?.message ||
-    data?.title ||
-    (response.status === 403
-      ? "אין הרשאה לפרסם פוסט"
-      : "הבקשה נכשלה")
-  );
+  if (typeof data?.message === "string") {
+    return data.message;
+  }
+
+  if (typeof data?.title === "string") {
+    return data.title;
+  }
+
+  if (response.status === 401) {
+    return "פג תוקף ההתחברות. יש להתחבר מחדש.";
+  }
+
+  if (response.status === 403) {
+    return "אין הרשאה לבצע פעולה זו.";
+  }
+
+  return `הבקשה נכשלה (${response.status})`;
 }
 
 export default function CreatePostPage() {
@@ -40,15 +54,11 @@ export default function CreatePostPage() {
     (state) => state.auth.token
   );
 
-  const [authorized, setAuthorized] =
-    useState(false);
-
-  const [checking, setChecking] =
-    useState(true);
+  const [authorized, setAuthorized] = useState(false);
+  const [checking, setChecking] = useState(true);
 
   const [content, setContent] = useState("");
-  const [video, setVideo] =
-    useState<File | null>(null);
+  const [video, setVideo] = useState<File | null>(null);
 
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(false);
@@ -61,7 +71,7 @@ export default function CreatePostPage() {
     signal?: AbortSignal
   ) => {
     const response = await fetch(
-      `${API}/my-posts`,
+      `${POSTS_API}/my-posts`,
       {
         headers: {
           Authorization: `Bearer ${currentToken}`,
@@ -71,9 +81,7 @@ export default function CreatePostPage() {
     );
 
     if (!response.ok) {
-      throw new Error(
-        await readError(response)
-      );
+      throw new Error(await readError(response));
     }
 
     const result: Post[] = await response.json();
@@ -90,6 +98,7 @@ export default function CreatePostPage() {
     setChecking(true);
     setPosts([]);
     setError("");
+    setSuccess("");
 
     if (!token) {
       setChecking(false);
@@ -98,9 +107,11 @@ export default function CreatePostPage() {
 
     const run = async () => {
       try {
+        // בדיקה אם המשתמש הוא מועמד רשום
         const response = await fetch(
-          "https://localhost:7227/api/Candidates/eligibility",
+          CANDIDATE_API,
           {
+            method: "GET",
             headers: {
               Authorization: `Bearer ${token}`,
             },
@@ -108,39 +119,38 @@ export default function CreatePostPage() {
           }
         );
 
-        if (!response.ok) {
-          throw new Error(
-            await readError(response)
-          );
-        }
+        if (controller.signal.aborted) return;
 
-        const data = await response.json();
-
-        if (!data.alreadyCandidate) {
-          if (!controller.signal.aborted) {
-            setError(
-              "רק מועמד רשום יכול לפרסם פוסטים."
-            );
-          }
+        if (response.status === 404) {
+          setAuthorized(false);
           return;
         }
 
-        if (!controller.signal.aborted) {
-          setAuthorized(true);
+        if (!response.ok) {
+          throw new Error(await readError(response));
         }
 
-        await loadPosts(
-          token,
-          controller.signal
-        );
-      } catch (err) {
-        if (!controller.signal.aborted) {
-          setError(
-            err instanceof Error
-              ? err.message
-              : "שגיאה בחיבור לשרת"
-          );
+        const candidate: CandidateProfile =
+          await response.json();
+
+        if (controller.signal.aborted) return;
+
+        if (!candidate || candidate.candidateId <= 0) {
+          setAuthorized(false);
+          return;
         }
+
+        setAuthorized(true);
+
+        await loadPosts(token, controller.signal);
+      } catch (err) {
+        if (controller.signal.aborted) return;
+
+        setError(
+          err instanceof Error
+            ? err.message
+            : "שגיאה בחיבור לשרת"
+        );
       } finally {
         if (!controller.signal.aborted) {
           setChecking(false);
@@ -184,16 +194,12 @@ export default function CreatePostPage() {
   ) => {
     e.preventDefault();
 
-    if (!token || !authorized || loading) {
-      return;
-    }
+    if (!token || !authorized || loading) return;
 
     const text = content.trim();
 
     if (!text || text.length > 4000) {
-      setError(
-        "יש להזין תוכן עד 4000 תווים."
-      );
+      setError("יש להזין תוכן עד 4000 תווים.");
       return;
     }
 
@@ -205,6 +211,7 @@ export default function CreatePostPage() {
       const form = new FormData();
 
       form.append("Content", text);
+
       form.append(
         "ContentType",
         video ? "Video" : "Text"
@@ -214,7 +221,7 @@ export default function CreatePostPage() {
         form.append("MediaFile", video);
       }
 
-      const response = await fetch(API, {
+      const response = await fetch(POSTS_API, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -223,20 +230,24 @@ export default function CreatePostPage() {
       });
 
       if (!response.ok) {
-        throw new Error(
-          await readError(response)
-        );
+        throw new Error(await readError(response));
       }
 
       setContent("");
       setVideo(null);
       setFileKey((prev) => prev + 1);
 
-      setSuccess(
-        "הפוסט פורסם בהצלחה!"
-      );
+      setSuccess("הפוסט פורסם בהצלחה!");
 
-      await loadPosts(token);
+      // רענון רשימת הפוסטים האישיים
+      try {
+        await loadPosts(token);
+      } catch (refreshError) {
+        console.error(
+          "Post published, but refresh failed:",
+          refreshError
+        );
+      }
     } catch (err) {
       setError(
         err instanceof Error
@@ -323,20 +334,16 @@ export default function CreatePostPage() {
 
             <button
               type="submit"
-              disabled={
-                loading || !content.trim()
-              }
+              disabled={loading || !content.trim()}
             >
-              {loading
-                ? "מפרסם..."
-                : "פרסום הפוסט"}
+              {loading ? "מפרסם..." : "פרסום הפוסט"}
             </button>
           </form>
-        ) : (
+        ) : !error ? (
           <div className="create-post-notice">
             רק מועמד רשום יכול להוסיף פוסטים.
           </div>
-        )}
+        ) : null}
 
         {error && (
           <p
@@ -361,9 +368,7 @@ export default function CreatePostPage() {
             <h2>הפוסטים שלי</h2>
 
             {posts.length === 0 ? (
-              <p>
-                עדיין לא פרסמת פוסטים.
-              </p>
+              <p>עדיין לא פרסמת פוסטים.</p>
             ) : (
               posts.map((post) => (
                 <article

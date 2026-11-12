@@ -327,3 +327,32 @@
     padding: 23px;
   }
 }
+
+/* קישור לתנאי החברות */
+
+.party-terms a {
+  color: #008e9b;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  transition: color 0.2s ease;
+}
+
+.party-terms a:hover {
+  color: #005b67;
+}
+
+.party-terms a:focus-visible {
+  outline: 2px solid #008e9b;
+  outline-offset: 3px;
+  border-radius: 3px;
+}
+
+.party-terms label {
+  cursor: pointer;
+}
+
+.party-terms input[type="checkbox"] {
+  cursor: pointer;
+  flex-shrink: 0;
+}
