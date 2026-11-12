@@ -4,12 +4,15 @@ import { useAppSelector } from "../store/hooks";
 import "./AdminDashboard.css";
 
 const API = "https://localhost:7227/api";
+const DAY_MS = 24 * 60 * 60 * 1000;
 
 type User = {
   userId: number;
   name: string;
   email: string;
   phone?: string | null;
+  role?: string | number | null;
+  isDeleted?: boolean;
   passwordSetupLinkSentAt?: string | null;
 };
 
@@ -37,8 +40,6 @@ type VoteStatus = {
 type Props = {
   onNavigateToVoting: () => void;
 };
-
-const DAY_MS = 24 * 60 * 60 * 1000;
 
 function getLinkStatus(sentAt?: string | null) {
   if (!sentAt) {
@@ -68,89 +69,69 @@ function getLinkStatus(sentAt?: string | null) {
 export default function AdminDashboard({
   onNavigateToVoting,
 }: Props) {
-  const token = useAppSelector(
-    (state) => state.auth.token
+  const token = useAppSelector((state) => state.auth.token);
+  const role = useAppSelector((state) => state.auth.role);
+  console.log("Current user role:", role);
+
+  const [allUsers, setAllUsers] = useState<User[]>([]);
+  const [pendingUsers, setPendingUsers] = useState<User[]>([]);
+  const [waitingUsers, setWaitingUsers] = useState<User[]>([]);
+
+  const [usersLoading, setUsersLoading] = useState(true);
+  const [pendingLoading, setPendingLoading] = useState(true);
+  const [waitingLoading, setWaitingLoading] = useState(true);
+
+  const [usersError, setUsersError] = useState("");
+  const [pendingError, setPendingError] = useState("");
+  const [waitingError, setWaitingError] = useState("");
+
+  const [activeAction, setActiveAction] = useState<string | null>(
+    null
   );
 
-  const role = useAppSelector(
-    (state) => state.auth.role
+  const [userMessage, setUserMessage] = useState("");
+
+  const [closed, setClosed] = useState<boolean | null>(null);
+  const [results, setResults] = useState<ElectionResults | null>(
+    null
+  );
+  const [voteStatus, setVoteStatus] = useState<VoteStatus | null>(
+    null
   );
 
-  const [pendingUsers, setPendingUsers] =
-    useState<User[]>([]);
+  const [electionLoading, setElectionLoading] = useState(true);
+  const [closing, setClosing] = useState(false);
+  const [electionError, setElectionError] = useState("");
+  const [electionMessage, setElectionMessage] = useState("");
 
-  const [waitingUsers, setWaitingUsers] =
-    useState<User[]>([]);
+  const [searchText, setSearchText] = useState("");
+  const [showDeleted, setShowDeleted] = useState(false);
 
-  const [pendingLoading, setPendingLoading] =
-    useState(true);
-
-  const [waitingLoading, setWaitingLoading] =
-    useState(true);
-
-  const [activeAction, setActiveAction] =
-    useState<string | null>(null);
-
-  const [pendingError, setPendingError] =
-    useState("");
-
-  const [waitingError, setWaitingError] =
-    useState("");
-
-  const [userMessage, setUserMessage] =
-    useState("");
-
-  const [closed, setClosed] =
-    useState<boolean | null>(null);
-
-  const [results, setResults] =
-    useState<ElectionResults | null>(null);
-
-  const [voteStatus, setVoteStatus] =
-    useState<VoteStatus | null>(null);
-
-  const [electionLoading, setElectionLoading] =
-    useState(true);
-
-  const [closing, setClosing] =
-    useState(false);
-
-  const [electionError, setElectionError] =
-    useState("");
-
-  const [electionMessage, setElectionMessage] =
-    useState("");
-
-  // =========================================
-  // בקשות API
-  // =========================================
+  // ==========================================
+  // בקשות לשרת
+  // ==========================================
 
   const request = useCallback(
     async <T,>(
       path: string,
       options: RequestInit = {}
     ): Promise<T> => {
-      const response = await fetch(
-        `${API}${path}`,
-        {
-          ...options,
-          headers: {
-            Authorization: `Bearer ${token}`,
-            ...(options.headers ?? {}),
-          },
-        }
-      );
+      const response = await fetch(`${API}${path}`, {
+        ...options,
+        headers: {
+          Authorization: `Bearer ${token}`,
+          ...(options.headers ?? {}),
+        },
+      });
 
       if (!response.ok) {
-        let message =
-          `שגיאת שרת (${response.status})`;
+        let message = `שגיאת שרת (${response.status})`;
 
         if (
           response.status === 401 ||
           response.status === 403
         ) {
-          message =
-            "אין הרשאה. יש להתחבר כמנהל.";
+          message = "אין הרשאה. יש להתחבר כמנהל.";
         } else {
           const data = await response
             .json()
@@ -170,80 +151,97 @@ export default function AdminDashboard({
 
       const text = await response.text();
 
-      return (
-        text ? JSON.parse(text) : undefined
-      ) as T;
+      return (text ? JSON.parse(text) : undefined) as T;
     },
     [token]
   );
 
-  // =========================================
-  // טעינת משתמשים
-  // =========================================
+  // ==========================================
+  // טעינת כל המשתמשים
+  // ==========================================
 
-  const loadPendingUsers = useCallback(
-    async () => {
-      setPendingLoading(true);
-      setPendingError("");
+  const loadAllUsers = useCallback(async () => {
+    setUsersLoading(true);
+    setUsersError("");
 
-      try {
-        const users = await request<User[]>(
-          "/Users/pending"
-        );
+    try {
+      const users = await request<User[]>("/Users");
 
-        if (!Array.isArray(users)) {
-          throw new Error(
-            "השרת לא החזיר רשימת משתמשים"
-          );
-        }
-
-        setPendingUsers(users);
-      } catch (error) {
-        setPendingError(
-          error instanceof Error
-            ? error.message
-            : "טעינת הבקשות נכשלה"
-        );
-      } finally {
-        setPendingLoading(false);
+      if (!Array.isArray(users)) {
+        throw new Error("השרת לא החזיר רשימת משתמשים תקינה.");
       }
-    },
-    [request]
-  );
 
-  const loadWaitingUsers = useCallback(
-    async () => {
-      setWaitingLoading(true);
-      setWaitingError("");
+      setAllUsers(users);
+    } catch (error) {
+      setUsersError(
+        error instanceof Error
+          ? error.message
+          : "טעינת המשתמשים נכשלה."
+      );
+    } finally {
+      setUsersLoading(false);
+    }
+  }, [request]);
 
-      try {
-        const users = await request<User[]>(
-          "/Users/waiting-for-password"
-        );
+  // ==========================================
+  // בקשות ממתינות
+  // ==========================================
 
-        if (!Array.isArray(users)) {
-          throw new Error(
-            "השרת לא החזיר רשימה תקינה"
-          );
-        }
+  const loadPendingUsers = useCallback(async () => {
+    setPendingLoading(true);
+    setPendingError("");
 
-        setWaitingUsers(users);
-      } catch (error) {
-        setWaitingError(
-          error instanceof Error
-            ? error.message
-            : "טעינת המשתמשים נכשלה"
-        );
-      } finally {
-        setWaitingLoading(false);
+    try {
+      const users = await request<User[]>("/Users/pending");
+
+      if (!Array.isArray(users)) {
+        throw new Error("השרת לא החזיר רשימה תקינה.");
       }
-    },
-    [request]
-  );
 
-  // =========================================
+      setPendingUsers(users);
+    } catch (error) {
+      setPendingError(
+        error instanceof Error
+          ? error.message
+          : "טעינת הבקשות נכשלה."
+      );
+    } finally {
+      setPendingLoading(false);
+    }
+  }, [request]);
+
+  // ==========================================
+  // ממתינים להגדרת סיסמה
+  // ==========================================
+
+  const loadWaitingUsers = useCallback(async () => {
+    setWaitingLoading(true);
+    setWaitingError("");
+
+    try {
+      const users = await request<User[]>(
+        "/Users/waiting-for-password"
+      );
+
+      if (!Array.isArray(users)) {
+        throw new Error("השרת לא החזיר רשימה תקינה.");
+      }
+
+      setWaitingUsers(users);
+    } catch (error) {
+      setWaitingError(
+        error instanceof Error
+          ? error.message
+          : "טעינת המשתמשים נכשלה."
+      );
+    } finally {
+      setWaitingLoading(false);
+    }
+  }, [request]);
+
+  // ==========================================
   // אישור משתמש
-  // =========================================
+  // ==========================================
 
   const approveUser = async (userId: number) => {
     if (activeAction) return;
@@ -253,16 +251,14 @@ export default function AdminDashboard({
     setPendingError("");
 
     try {
-      await request(
-        `/Users/${userId}/approve`,
-        { method: "PUT" }
-      );
+      await request(`/Users/${userId}/approve`, {
+        method: "PUT",
+      });
 
-      setUserMessage(
-        "המשתמש אושר והבקשה טופלה בהצלחה."
-      );
+      setUserMessage("המשתמש אושר בהצלחה.");
 
       await Promise.all([
+        loadAllUsers(),
         loadPendingUsers(),
         loadWaitingUsers(),
       ]);
@@ -270,20 +266,18 @@ export default function AdminDashboard({
       setPendingError(
         error instanceof Error
           ? error.message
-          : "אישור המשתמש נכשל"
+          : "אישור המשתמש נכשל."
       );
     } finally {
       setActiveAction(null);
     }
   };
 
-  // =========================================
+  // ==========================================
   // שליחת קישור מחדש
-  // =========================================
+  // ==========================================
 
-  const resendPasswordLink = async (
-    userId: number
-  ) => {
+  const resendPasswordLink = async (userId: number) => {
     if (activeAction) return;
 
     setActiveAction(`resend-${userId}`);
@@ -305,20 +299,18 @@ export default function AdminDashboard({
       setWaitingError(
         error instanceof Error
           ? error.message
-          : "שליחת הקישור נכשלה"
+          : "שליחת הקישור נכשלה."
       );
     } finally {
       setActiveAction(null);
     }
   };
 
-  // =========================================
+  // ==========================================
   // מחיקת בקשת הרשמה
-  // =========================================
+  // ==========================================
 
-  const deleteRegistration = async (
-    userId: number
-  ) => {
+  const deleteRegistration = async (userId: number) => {
     if (activeAction) return;
 
     const confirmed = window.confirm(
@@ -327,7 +319,7 @@ export default function AdminDashboard({
 
     if (!confirmed) return;
 
-    setActiveAction(`delete-${userId}`);
+    setActiveAction(`delete-request-${userId}`);
     setUserMessage("");
     setWaitingError("");
 
@@ -337,65 +329,151 @@ export default function AdminDashboard({
         { method: "DELETE" }
       );
 
-      setUserMessage(
-        "בקשת ההרשמה נמחקה בהצלחה."
-      );
+      setUserMessage("בקשת ההרשמה נמחקה בהצלחה.");
 
-      await loadWaitingUsers();
+      await Promise.all([
+        loadAllUsers(),
+        loadPendingUsers(),
+        loadWaitingUsers(),
+      ]);
     } catch (error) {
       setWaitingError(
         error instanceof Error
           ? error.message
-          : "מחיקת הבקשה נכשלה"
+          : "מחיקת הבקשה נכשלה."
       );
     } finally {
       setActiveAction(null);
     }
   };
 
-  // =========================================
+  // ==========================================
+  // מחיקה לוגית של משתמש
+  // ==========================================
+
+  const softDeleteUser = async (user: User) => {
+    if (activeAction) return;
+
+    if (user.role === "Admin" || user.role === 1) {
+      setUsersError("לא ניתן להסיר חשבון מנהל.");
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `האם את בטוחה שברצונך להסיר את המשתמש "${user.name}"?\n\n` +
+      "המשתמש לא יוכל להתחבר למערכת.\n" +
+      "הנתונים שלו יישמרו במסד הנתונים וניתן יהיה לשחזר אותו."
+    );
+
+    if (!confirmed) return;
+
+    setActiveAction(`remove-${user.userId}`);
+    setUsersError("");
+    setUserMessage("");
+
+    try {
+      await request(
+        `/Users/${user.userId}/soft-delete`,
+        { method: "DELETE" }
+      );
+
+      setUserMessage(
+        `המשתמש "${user.name}" הוסר בהצלחה.`
+      );
+
+      await Promise.all([
+        loadAllUsers(),
+        loadPendingUsers(),
+        loadWaitingUsers(),
+      ]);
+    } catch (error) {
+      setUsersError(
+        error instanceof Error
+          ? error.message
+          : "הסרת המשתמש נכשלה."
+      );
+    } finally {
+      setActiveAction(null);
+    }
+  };
+
+  // ==========================================
+  // שחזור משתמש
+  // ==========================================
+
+  const restoreUser = async (user: User) => {
+    if (activeAction) return;
+
+    const confirmed = window.confirm(
+      `האם לשחזר את המשתמש "${user.name}"?`
+    );
+
+    if (!confirmed) return;
+
+    setActiveAction(`restore-${user.userId}`);
+    setUsersError("");
+    setUserMessage("");
+
+    try {
+      await request(
+        `/Users/${user.userId}/restore`,
+        { method: "PUT" }
+      );
+
+      setUserMessage(
+        `המשתמש "${user.name}" שוחזר בהצלחה.`
+      );
+
+      await Promise.all([
+        loadAllUsers(),
+        loadPendingUsers(),
+        loadWaitingUsers(),
+      ]);
+    } catch (error) {
+      setUsersError(
+        error instanceof Error
+          ? error.message
+          : "שחזור המשתמש נכשל."
+      );
+    } finally {
+      setActiveAction(null);
+    }
+  };
+
+  // ==========================================
   // נתוני בחירות
-  // =========================================
+  // ==========================================
 
-  const refreshElection = useCallback(
-    async () => {
-      setElectionLoading(true);
-      setElectionError("");
+  const refreshElection = useCallback(async () => {
+    setElectionLoading(true);
+    setElectionError("");
 
-      try {
-        const status =
-          await request<ElectionStatus>(
-            "/Voting/election-status"
-          );
+    try {
+      const status = await request<ElectionStatus>(
+        "/Voting/election-status"
+      );
 
-        setClosed(status.isClosed);
+      setClosed(status.isClosed);
 
-        const [myVote, electionResults] =
-          await Promise.all([
-            request<VoteStatus>(
-              "/Voting/status"
-            ),
-            status.isClosed
-              ? request<ElectionResults>(
-                  "/Voting/results"
-                )
-              : Promise.resolve(null),
-          ]);
+      const [myVote, electionResults] = await Promise.all([
+        request<VoteStatus>("/Voting/status"),
+        status.isClosed
+          ? request<ElectionResults>("/Voting/results")
+          : Promise.resolve(null),
+      ]);
 
-        setVoteStatus(myVote);
-        setResults(electionResults);
-      } catch (error) {
-        setElectionError(
-          error instanceof Error
-            ? error.message
-            : "טעינת הבחירות נכשלה"
-        );
-      } finally {
-        setElectionLoading(false);
-      }
-    },
-    [request]
-  );
+      setVoteStatus(myVote);
+      setResults(electionResults);
+    } catch (error) {
+      setElectionError(
+        error instanceof Error
+          ? error.message
+          : "טעינת הבחירות נכשלה."
+      );
+    } finally {
+      setElectionLoading(false);
+    }
+  }, [request]);
 
   const closeElection = async () => {
     if (closed !== false || closing) return;
@@ -411,11 +489,10 @@ export default function AdminDashboard({
     setElectionMessage("");
 
     try {
-      const data =
-        await request<ElectionResults>(
-          "/Voting/close",
-          { method: "POST" }
-        );
+      const data = await request<ElectionResults>(
+        "/Voting/close",
+        { method: "POST" }
+      );
 
       setClosed(true);
       setResults(data);
@@ -427,7 +504,7 @@ export default function AdminDashboard({
       setElectionError(
         error instanceof Error
           ? error.message
-          : "סגירת הבחירות נכשלה"
+          : "סגירת הבחירות נכשלה."
       );
 
       await refreshElection();
@@ -436,53 +513,79 @@ export default function AdminDashboard({
     }
   };
 
-  // =========================================
+  // ==========================================
   // טעינה ראשונית
-  // =========================================
+  // ==========================================
 
   useEffect(() => {
     if (role !== "Admin" || !token) return;
 
-    void refreshElection();
+    void loadAllUsers();
     void loadPendingUsers();
     void loadWaitingUsers();
+    void refreshElection();
   }, [
     role,
     token,
-    refreshElection,
+    loadAllUsers,
     loadPendingUsers,
     loadWaitingUsers,
+    refreshElection,
   ]);
 
   const refreshAll = () => {
-    void refreshElection();
+    void loadAllUsers();
     void loadPendingUsers();
     void loadWaitingUsers();
+    void refreshElection();
   };
 
-  // =========================================
+  // ==========================================
+  // סינון משתמשים
+  // ==========================================
+
+  const filteredUsers = allUsers.filter((user) => {
+    const search = searchText.trim().toLowerCase();
+
+    const matchesSearch =
+      user.name?.toLowerCase().includes(search) ||
+      user.email?.toLowerCase().includes(search) ||
+      user.phone?.includes(search) ||
+      String(user.userId).includes(search);
+
+    const matchesStatus =
+      showDeleted || !user.isDeleted;
+
+    return matchesSearch && matchesStatus;
+  });
+
+  const activeUsersCount = allUsers.filter(
+    (user) => !user.isDeleted
+  ).length;
+
+  const deletedUsersCount = allUsers.filter(
+    (user) => user.isDeleted
+  ).length;
+
+  // ==========================================
   // הרשאות
-  // =========================================
+  // ==========================================
 
   if (role !== "Admin") {
     return (
-      <main className="admin-dashboard">
+      <main className="admin-dashboard" dir="rtl">
         <p>
-          הגישה ללוח הניהול מיועדת
-          למנהלי מערכת בלבד.
+          הגישה ללוח הניהול מיועדת למנהלי מערכת בלבד.
         </p>
       </main>
     );
   }
 
   return (
-    <section
-      className="admin-dashboard"
-      dir="rtl"
-    >
+    <section className="admin-dashboard" dir="rtl">
       <div className="admin-shell">
 
-        {/* כותרת */}
+        {/* כותרת ראשית */}
         <div className="admin-eyebrow">
           תנופה / אזור ניהול
         </div>
@@ -504,6 +607,7 @@ export default function AdminDashboard({
               electionLoading ||
               pendingLoading ||
               waitingLoading ||
+              usersLoading ||
               Boolean(activeAction)
             }
           >
@@ -513,28 +617,19 @@ export default function AdminDashboard({
 
         {/* הודעות */}
         {userMessage && (
-          <div
-            className="admin-alert success"
-            role="status"
-          >
+          <div className="admin-alert success" role="status">
             {userMessage}
           </div>
         )}
 
         {electionError && (
-          <div
-            className="admin-alert error"
-            role="alert"
-          >
+          <div className="admin-alert error" role="alert">
             {electionError}
           </div>
         )}
 
         {electionMessage && (
-          <div
-            className="admin-alert success"
-            role="status"
-          >
+          <div className="admin-alert success" role="status">
             {electionMessage}
           </div>
         )}
@@ -559,9 +654,7 @@ export default function AdminDashboard({
             <span>מצביעים</span>
             <strong>
               {results
-                ? results.totalVoters.toLocaleString(
-                    "he-IL"
-                  )
+                ? results.totalVoters.toLocaleString("he-IL")
                 : "—"}
             </strong>
             <small>
@@ -580,9 +673,7 @@ export default function AdminDashboard({
                 ? "כבר הצבעתי"
                 : "טרם הצבעתי"}
             </strong>
-            <small>
-              גם מנהל יכול להצביע פעם אחת
-            </small>
+            <small>גם מנהל יכול להצביע פעם אחת</small>
           </article>
         </div>
 
@@ -595,17 +686,14 @@ export default function AdminDashboard({
 
             <h2>שליטה בהצבעה</h2>
             <p>
-              סגירת הבחירות ופרסום
-              התוצאות הסופיות.
+              סגירת הבחירות ופרסום התוצאות הסופיות.
             </p>
 
             <div className="admin-actions">
               <button
                 type="button"
                 className="admin-primary"
-                onClick={() =>
-                  void closeElection()
-                }
+                onClick={() => void closeElection()}
                 disabled={
                   electionLoading ||
                   closing ||
@@ -630,17 +718,14 @@ export default function AdminDashboard({
             </div>
           </article>
 
-          <article
-            className="admin-panel admin-vote-panel"
-          >
+          <article className="admin-panel admin-vote-panel">
             <div className="admin-panel-number">
               02 / הצבעה אישית
             </div>
 
             <h2>גם למנהל יש קול</h2>
             <p>
-              מעבר לעמוד ההצבעה
-              והשתתפות בבחירות.
+              מעבר לעמוד ההצבעה והשתתפות בבחירות.
             </p>
 
             <button
@@ -653,35 +738,240 @@ export default function AdminDashboard({
           </article>
         </div>
 
-        {/* בקשות ממתינות לאישור */}
-        <article
-          className="admin-panel admin-pending-panel"
-        >
+        {/* =====================================
+            ניהול כל המשתמשים - חדש
+        ===================================== */}
+
+        <article className="admin-panel admin-pending-panel">
           <div className="admin-pending-head">
             <div>
               <div className="admin-panel-number">
-                03 / ניהול משתמשים
+                03 / ניהול חשבונות
               </div>
 
-              <h2>
-                בקשות הצטרפות ממתינות
-              </h2>
+              <h2>ניהול כל המשתמשים</h2>
 
               <p>
-                משתמשים שנרשמו
-                וממתינים לאישור מנהל.
+                צפייה במשתמשים, הסרת חשבונות
+                ושחזור חשבונות שהוסרו.
               </p>
             </div>
 
             <button
               type="button"
               className="admin-refresh"
-              onClick={() =>
-                void loadPendingUsers()
+              onClick={() => void loadAllUsers()}
+              disabled={usersLoading || Boolean(activeAction)}
+            >
+              רענון משתמשים
+            </button>
+          </div>
+
+          <div
+            className="admin-stats"
+            style={{ marginTop: "20px" }}
+          >
+            <article className="admin-stat">
+              <span>משתמשים פעילים</span>
+              <strong>{activeUsersCount}</strong>
+            </article>
+
+            <article className="admin-stat">
+              <span>משתמשים שהוסרו</span>
+              <strong>{deletedUsersCount}</strong>
+            </article>
+
+            <article className="admin-stat">
+              <span>סה"כ רשומות</span>
+              <strong>{allUsers.length}</strong>
+            </article>
+          </div>
+
+          {/* חיפוש וסינון */}
+          <div
+            style={{
+              display: "flex",
+              flexWrap: "wrap",
+              gap: "16px",
+              alignItems: "center",
+              margin: "20px 0",
+            }}
+          >
+            <input
+              type="search"
+              value={searchText}
+              onChange={(event) =>
+                setSearchText(event.target.value)
               }
+              placeholder="חיפוש לפי שם, מייל, טלפון או מזהה"
+              aria-label="חיפוש משתמש"
+              style={{
+                padding: "12px 16px",
+                borderRadius: "10px",
+                border: "1px solid #d1d5db",
+                minWidth: "250px",
+                flex: "1",
+                fontSize: "15px",
+                background: "#fff",
+                color: "#111827",
+              }}
+            />
+
+            <label
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
+                cursor: "pointer",
+              }}
+            >
+              <input
+                type="checkbox"
+                checked={showDeleted}
+                onChange={(event) =>
+                  setShowDeleted(event.target.checked)
+                }
+              />
+              הצגת משתמשים שהוסרו
+            </label>
+          </div>
+
+          {usersError && (
+            <div className="admin-alert error" role="alert">
+              {usersError}
+            </div>
+          )}
+
+          {usersLoading ? (
+            <div className="admin-pending-empty">
+              טוען משתמשים...
+            </div>
+          ) : filteredUsers.length === 0 ? (
+            <div className="admin-pending-empty">
+              לא נמצאו משתמשים להצגה.
+            </div>
+          ) : (
+            <div className="admin-pending-table-wrap">
+              <table className="admin-pending-table">
+                <thead>
+                  <tr>
+                    <th>מזהה</th>
+                    <th>שם מלא</th>
+                    <th>מייל</th>
+                    <th>טלפון</th>
+                    <th>תפקיד</th>
+                    <th>סטטוס</th>
+                    <th>פעולות</th>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  {filteredUsers.map((user) => {
+                    const isAdmin =
+                      user.role === "Admin" ||
+                      user.role === 1;
+
+                    return (
+                      <tr key={user.userId}>
+                        <td>{user.userId}</td>
+
+                        <td className="admin-pending-name">
+                          {user.name}
+                        </td>
+
+                        <td>{user.email}</td>
+                        <td>{user.phone || "—"}</td>
+
+                        <td>
+                          {isAdmin
+                            ? "מנהל"
+                            : user.role === undefined ||
+                              user.role === null
+                            ? "—"
+                            : String(user.role)}
+                        </td>
+
+                        <td>
+                          <span className="admin-pending-status">
+                            {user.isDeleted
+                              ? "הוסר"
+                              : "פעיל"}
+                          </span>
+                        </td>
+
+                        <td>
+                          {isAdmin ? (
+                            <span>חשבון מנהל מוגן</span>
+                          ) : user.isDeleted ? (
+                            <button
+                              type="button"
+                              className="admin-outline"
+                              disabled={Boolean(activeAction)}
+                              onClick={() =>
+                                void restoreUser(user)
+                              }
+                            >
+                              {activeAction ===
+                              `restore-${user.userId}`
+                                ? "משחזר..."
+                                : "שחזור משתמש"}
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              className="admin-outline"
+                              disabled={Boolean(activeAction)}
+                              onClick={() =>
+                                void softDeleteUser(user)
+                              }
+                              style={{
+                                color: "#b91c1c",
+                                borderColor: "#fca5a5",
+                              }}
+                            >
+                              {activeAction ===
+                              `remove-${user.userId}`
+                                ? "מסיר..."
+                                : "הסרת משתמש"}
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          <div className="admin-pending-count">
+            משתמשים מוצגים: {filteredUsers.length}
+          </div>
+        </article>
+
+        {/* =====================================
+            בקשות ממתינות לאישור
+        ===================================== */}
+
+        <article className="admin-panel admin-pending-panel">
+          <div className="admin-pending-head">
+            <div>
+              <div className="admin-panel-number">
+                04 / בקשות הצטרפות
+              </div>
+
+              <h2>בקשות הצטרפות ממתינות</h2>
+              <p>
+                משתמשים שנרשמו וממתינים לאישור מנהל.
+              </p>
+            </div>
+
+            <button
+              type="button"
+              className="admin-refresh"
+              onClick={() => void loadPendingUsers()}
               disabled={
-                pendingLoading ||
-                Boolean(activeAction)
+                pendingLoading || Boolean(activeAction)
               }
             >
               רענון בקשות
@@ -689,10 +979,7 @@ export default function AdminDashboard({
           </div>
 
           {pendingError && (
-            <div
-              className="admin-alert error"
-              role="alert"
-            >
+            <div className="admin-alert error" role="alert">
               {pendingError}
             </div>
           )}
@@ -761,35 +1048,31 @@ export default function AdminDashboard({
           </div>
         </article>
 
-        {/* ממתינים להגדרת סיסמה */}
-        <article
-          className="admin-panel admin-pending-panel"
-        >
+        {/* =====================================
+            ממתינים להגדרת סיסמה
+        ===================================== */}
+
+        <article className="admin-panel admin-pending-panel">
           <div className="admin-pending-head">
             <div>
               <div className="admin-panel-number">
-                04 / השלמת הרשמה
+                05 / השלמת הרשמה
               </div>
 
-              <h2>
-                ממתינים להגדרת סיסמה
-              </h2>
+              <h2>ממתינים להגדרת סיסמה</h2>
 
               <p>
-                משתמשים שאושרו אך עדיין
-                לא השלימו את פתיחת החשבון.
+                משתמשים שאושרו אך עדיין לא השלימו
+                את פתיחת החשבון.
               </p>
             </div>
 
             <button
               type="button"
               className="admin-refresh"
-              onClick={() =>
-                void loadWaitingUsers()
-              }
+              onClick={() => void loadWaitingUsers()}
               disabled={
-                waitingLoading ||
-                Boolean(activeAction)
+                waitingLoading || Boolean(activeAction)
               }
             >
               רענון רשימה
@@ -797,10 +1080,7 @@ export default function AdminDashboard({
           </div>
 
           {waitingError && (
-            <div
-              className="admin-alert error"
-              role="alert"
-            >
+            <div className="admin-alert error" role="alert">
               {waitingError}
             </div>
           )}
@@ -811,8 +1091,7 @@ export default function AdminDashboard({
             </div>
           ) : waitingUsers.length === 0 ? (
             <div className="admin-pending-empty">
-              אין משתמשים שממתינים
-              להגדרת סיסמה.
+              אין משתמשים שממתינים להגדרת סיסמה.
             </div>
           ) : (
             <div className="admin-pending-table-wrap">
@@ -899,7 +1178,7 @@ export default function AdminDashboard({
                               }
                             >
                               {activeAction ===
-                              `delete-${user.userId}`
+                              `delete-request-${user.userId}`
                                 ? "מוחק..."
                                 : "מחיקת בקשה"}
                             </button>
@@ -919,13 +1198,16 @@ export default function AdminDashboard({
           </div>
         </article>
 
-        {/* תוצאות הבחירות */}
+        {/* =====================================
+            תוצאות הבחירות
+        ===================================== */}
+
         <article
           id="election-results"
           className="admin-panel admin-results"
         >
           <div className="admin-panel-number">
-            05 / תוצאות הבחירות
+            06 / תוצאות הבחירות
           </div>
 
           <h2>התוצאות הסופיות</h2>
@@ -947,7 +1229,7 @@ export default function AdminDashboard({
             <>
               <div className="admin-results-summary">
                 <div>
-                  <span>סה״כ מצביעים</span>
+                  <span>סה"כ מצביעים</span>
                   <strong>
                     {results.totalVoters.toLocaleString(
                       "he-IL"
@@ -957,9 +1239,7 @@ export default function AdminDashboard({
 
                 <div>
                   <span>מספר מועמדים</span>
-                  <strong>
-                    {results.results.length}
-                  </strong>
+                  <strong>{results.results.length}</strong>
                 </div>
               </div>
 
@@ -973,9 +1253,10 @@ export default function AdminDashboard({
                       key={item.candidateId}
                     >
                       <span className="admin-rank">
-                        {String(
-                          item.position
-                        ).padStart(2, "0")}
+                        {String(item.position).padStart(
+                          2,
+                          "0"
+                        )}
                       </span>
 
                       <strong>{item.name}</strong>
@@ -993,6 +1274,7 @@ export default function AdminDashboard({
             </>
           )}
         </article>
+
       </div>
     </section>
   );
