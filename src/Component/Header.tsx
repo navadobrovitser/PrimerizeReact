@@ -28,11 +28,10 @@ interface HeaderProps {
   onCandidateStatusChange?: (isCandidate: boolean) => void;
 }
 
-interface CandidateEligibility {
-  eligible: boolean;
-  alreadyCandidate: boolean;
-  partyJoinDate?: string | null;
-  eligibleFrom?: string | null;
+interface CandidateProfile {
+  candidateId: number;
+  userId?: number;
+  name?: string;
 }
 
 const API_ORIGIN =
@@ -66,9 +65,11 @@ export default function Header({
 
   const [menuOpen, setMenuOpen] = useState(false);
 
-  const [isCandidate, setIsCandidate] = useState(false);
-  const [isEligible, setIsEligible] = useState(false);
-  const [checking, setChecking] = useState(true);
+  const [isCandidate, setIsCandidate] =
+    useState(false);
+
+  const [checking, setChecking] =
+    useState(true);
 
   const isAdmin =
     role?.toLowerCase() === "admin";
@@ -77,82 +78,68 @@ export default function Header({
     const controller = new AbortController();
 
     setIsCandidate(false);
-    setIsEligible(false);
     setChecking(true);
 
     if (!token) {
       setChecking(false);
       onCandidateStatusChange?.(false);
 
-      return () => controller.abort();
+      return () => {
+        controller.abort();
+      };
     }
 
-    async function checkCandidateStatus() {
+    const checkCandidateStatus = async () => {
       try {
-        const headers = {
-          Authorization: `Bearer ${token}`,
-        };
-
-        // שלב 1: בדיקה אם המשתמש המחובר כבר מועמד
-        const meResponse = await fetch(
+        const response = await fetch(
           `${API_ORIGIN}/api/Candidates/me`,
           {
             method: "GET",
-            headers,
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
             signal: controller.signal,
           }
         );
 
-        if (controller.signal.aborted) return;
-
-        if (meResponse.ok) {
-          // המשתמש נמצא בטבלת Candidates
-          setIsCandidate(true);
-          setIsEligible(false);
-          onCandidateStatusChange?.(true);
+        if (controller.signal.aborted) {
           return;
         }
 
-        // אם אין מועמד - ממשיכים לבדיקת זכאות
-        if (meResponse.status !== 404) {
+        // משתמש מחובר שאין לו רשומת מועמד
+        if (response.status === 404) {
+          setIsCandidate(false);
+          onCandidateStatusChange?.(false);
+          return;
+        }
+
+        // שגיאת הרשאה או שגיאת שרת
+        if (!response.ok) {
           throw new Error(
-            `Candidate check failed: ${meResponse.status}`
+            `Candidate check failed: ${response.status}`
           );
         }
 
-        // שלב 2: בדיקה אם המשתמש זכאי להגיש מועמדות
-        const eligibilityResponse = await fetch(
-          `${API_ORIGIN}/api/Candidates/eligibility`,
-          {
-            method: "GET",
-            headers,
-            signal: controller.signal,
-          }
-        );
+        const candidate: CandidateProfile | null =
+          await response.json();
 
-        if (!eligibilityResponse.ok) {
-          throw new Error(
-            `Eligibility check failed: ${eligibilityResponse.status}`
-          );
+        if (controller.signal.aborted) {
+          return;
         }
 
-        const data: CandidateEligibility =
-          await eligibilityResponse.json();
+        const candidateExists =
+          candidate !== null &&
+          Number(candidate.candidateId) > 0;
 
-        if (controller.signal.aborted) return;
+        setIsCandidate(candidateExists);
 
-        const candidate =
-          data.alreadyCandidate === true;
-
-        setIsCandidate(candidate);
-
-        setIsEligible(
-          !candidate && data.eligible === true
+        onCandidateStatusChange?.(
+          candidateExists
         );
-
-        onCandidateStatusChange?.(candidate);
       } catch (error) {
-        if (controller.signal.aborted) return;
+        if (controller.signal.aborted) {
+          return;
+        }
 
         console.error(
           "Candidate status error:",
@@ -160,14 +147,13 @@ export default function Header({
         );
 
         setIsCandidate(false);
-        setIsEligible(false);
         onCandidateStatusChange?.(false);
       } finally {
         if (!controller.signal.aborted) {
           setChecking(false);
         }
       }
-    }
+    };
 
     void checkCandidateStatus();
 
@@ -248,7 +234,7 @@ export default function Header({
             navLink(item.label, item.page)
           )}
 
-          {/* כפתורים למועמד מחובר */}
+          {/* כפתורים למועמד רשום */}
           {!checking && isCandidate && (
             <>
               {navLink(
@@ -265,17 +251,7 @@ export default function Header({
             </>
           )}
 
-          {/* כפתור למשתמש שזכאי להגיש מועמדות */}
-          {!checking &&
-            !isCandidate &&
-            isEligible &&
-            navLink(
-              "הגשת מועמדות",
-              "candidate-registration",
-              "candidate-nav-button"
-            )}
-
-          {/* כפתור למנהל */}
+          {/* ניהול מערכת */}
           {isAdmin &&
             navLink(
               "ניהול מערכת",

@@ -3,31 +3,13 @@ import type { Post } from "../store/posts/postsThunks";
 import PostLikes from "./PostLikes";
 import "./CandidatePost.css";
 
-export interface CandidateComment {
-  id: number | string;
-  author: string;
-  text: string;
-}
-
-export interface CandidatePostData {
-  candidateId?: number;
-  id?: number | string;
-  name?: string;
-  role?: string;
-  slogan?: string;
-  city?: string;
-  imageUrl?: string;
-  profileImageUrl?: string;
-  description?: string;
-  likes?: number;
-  comments?: CandidateComment[];
-}
-
 interface CandidatePostProps {
   post: Post;
 }
 
-const API_ORIGIN = "https://localhost:7227";
+const API_ORIGIN =
+  import.meta.env.VITE_API_ORIGIN ||
+  "https://localhost:7227";
 
 function getMediaUrl(path?: string | null): string {
   if (!path) return "";
@@ -36,11 +18,13 @@ function getMediaUrl(path?: string | null): string {
     return path;
   }
 
-  if (path.startsWith("/")) {
-    return `${API_ORIGIN}${path}`;
+  const cleanPath = path.replace(/^\/+/, "");
+
+  if (cleanPath.startsWith("Images/")) {
+    return `${API_ORIGIN}/${cleanPath}`;
   }
 
-  return `${API_ORIGIN}/Images/${path}`;
+  return `${API_ORIGIN}/Images/${cleanPath}`;
 }
 
 function isVideoFile(url: string): boolean {
@@ -50,9 +34,7 @@ function isVideoFile(url: string): boolean {
 export default function CandidatePost({
   post,
 }: CandidatePostProps) {
-  if (!post) {
-    return null;
-  }
+  if (!post) return null;
 
   const candidateName =
     post.candidateName?.trim() ||
@@ -64,7 +46,13 @@ export default function CandidatePost({
   const mediaUrl = getMediaUrl(post.mediaUrl);
 
   const date = post.createdAt
-    ? new Date(post.createdAt).toLocaleDateString("he-IL")
+    ? new Date(post.createdAt).toLocaleString("he-IL", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      })
     : "";
 
   const showVideo = isVideoFile(mediaUrl);
@@ -94,7 +82,10 @@ export default function CandidatePost({
           </h3>
         )}
 
-        <p className="candidate-post-description">
+        <p
+          className="candidate-post-description"
+          style={{ whiteSpace: "pre-wrap" }}
+        >
           {content}
         </p>
 
