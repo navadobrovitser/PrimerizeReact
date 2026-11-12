@@ -3,28 +3,23 @@ import { useEffect, useState } from "react";
 import type { Page } from "./Component/Header";
 import { useAppSelector } from "./store/hooks";
 
-import AboutPage from "./Component/AboutPage";
 import Header from "./Component/Header";
 import Footer from "./Component/Footer";
 import HomePage from "./Component/HomePage";
 import LoginPage from "./Component/LoginPage";
+import AboutPage from "./Component/AboutPage";
 import PrimariesPage from "./Component/PrimariesPage";
 import PartyRegisterPage from "./Component/PartyRegisterPage";
 import CandidateRegistrationPage from "./Component/CandidateRegistrationPage";
 import { CandidatesFeedPage } from "./Component/CandidatesFeedPage";
 import CandidateMatchPage from "./Component/CandidateMatchPage";
 import VotingPage from "./Component/VotingPage";
+import ElectionResultsPage from "./Component/ElectionResultsPage";
 import CreatePostPage from "./Component/CreatePostPage";
 import AdminDashboard from "./Component/AdminDashboard";
-
-// העמוד החדש להגדרת סיסמה
 import SetPasswordPage from "./Component/SetPasswordPage";
 
 import "./App.css";
-
-// =============================================
-// עמוד זמני לעמודים שעדיין בבנייה
-// =============================================
 
 function PlaceholderPage({
   title,
@@ -37,17 +32,12 @@ function PlaceholderPage({
     <section className="placeholder-page">
       <h1>{title}</h1>
       <p>העמוד הזה נמצא כרגע בבנייה.</p>
-
       <button type="button" onClick={onBack}>
         חזרה לעמוד הבית
       </button>
     </section>
   );
 }
-
-// =============================================
-// הקומפוננטה הראשית
-// =============================================
 
 export default function App() {
   const token = useAppSelector(
@@ -61,22 +51,19 @@ export default function App() {
   const isLoggedIn = Boolean(token);
   const isAdmin = role === "Admin";
 
-  // בדיקה האם המשתמש הגיע מקישור להגדרת סיסמה
   const [isPasswordSetupPage, setIsPasswordSetupPage] =
     useState(
       () => window.location.pathname === "/set-password"
     );
 
   const [page, setPage] = useState<Page>("home");
+  const [showLoginSuccess, setShowLoginSuccess] =
+    useState(false);
 
   const [
     candidateRefreshKey,
     setCandidateRefreshKey,
   ] = useState(0);
-
-  // =============================================
-  // לאחר התחברות / התנתקות
-  // =============================================
 
   useEffect(() => {
     if (!isPasswordSetupPage) {
@@ -84,10 +71,6 @@ export default function App() {
       window.scrollTo(0, 0);
     }
   }, [isLoggedIn, isPasswordSetupPage]);
-
-  // =============================================
-  // תמיכה בניווט חזרה / קדימה בדפדפן
-  // =============================================
 
   useEffect(() => {
     const handlePopState = () => {
@@ -106,25 +89,14 @@ export default function App() {
     };
   }, []);
 
-  // =============================================
-  // מעבר מעמוד הגדרת סיסמה להתחברות
-  // =============================================
-
   const goToLoginFromPasswordSetup = () => {
     window.history.replaceState({}, "", "/");
-
     setIsPasswordSetupPage(false);
     setPage("login");
-
     window.scrollTo(0, 0);
   };
 
-  // =============================================
-  // ניווט בין עמודים
-  // =============================================
-
   const navigate = (next: Page) => {
-    // משתמש לא מחובר לא יכול להיכנס לעמודים מוגנים
     if (
       !isLoggedIn &&
       next !== "login" &&
@@ -134,7 +106,6 @@ export default function App() {
       return;
     }
 
-    // רק מנהל רשאי להיכנס ללוח הבקרה
     if (next === "admin" && !isAdmin) {
       setPage("home");
       return;
@@ -148,17 +119,9 @@ export default function App() {
     });
   };
 
-  // =============================================
-  // רענון נתוני מועמדים
-  // =============================================
-
   const handleCandidateCreated = () => {
     setCandidateRefreshKey((prev) => prev + 1);
   };
-
-  // =============================================
-  // עמוד הגדרת סיסמה - ללא צורך בהתחברות
-  // =============================================
 
   if (isPasswordSetupPage) {
     return (
@@ -172,10 +135,6 @@ export default function App() {
     );
   }
 
-  // =============================================
-  // משתמש לא מחובר
-  // =============================================
-
   if (!isLoggedIn) {
     return (
       <div className="app-layout" dir="rtl">
@@ -188,9 +147,10 @@ export default function App() {
             />
           ) : (
             <LoginPage
-              onLoginSuccess={() =>
-                navigate("home")
-              }
+              onLoginSuccess={() => {
+                setShowLoginSuccess(true);
+                navigate("home");
+              }}
               onRegisterClick={() =>
                 navigate("register")
               }
@@ -201,18 +161,10 @@ export default function App() {
     );
   }
 
-  // =============================================
-  // מניעת מצב של עמוד התחברות לאחר כניסה
-  // =============================================
-
   const currentPage: Page =
     page === "login" || page === "register"
       ? "home"
       : page;
-
-  // =============================================
-  // משתמש מחובר
-  // =============================================
 
   return (
     <div className="app-layout" dir="rtl">
@@ -222,7 +174,50 @@ export default function App() {
       />
 
       <main className="app-main">
-        {/* דף הבית */}
+        {showLoginSuccess && (
+          <div
+            role="status"
+            style={{
+              backgroundColor: "#e7f7ed",
+              color: "#17653a",
+              padding: "16px 24px",
+              margin: "20px auto",
+              maxWidth: "600px",
+              borderRadius: "12px",
+              textAlign: "center",
+              fontWeight: "bold",
+              border: "1px solid #a8dfba",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: "16px",
+              direction: "rtl",
+            }}
+          >
+            <span>
+              ✓ התחברת בהצלחה! כעת אפשר להמשיך
+              לאזור האישי ולהצבעה.
+            </span>
+
+            <button
+              type="button"
+              onClick={() =>
+                setShowLoginSuccess(false)
+              }
+              aria-label="סגירת הודעת הצלחה"
+              style={{
+                background: "transparent",
+                border: "none",
+                color: "#17653a",
+                cursor: "pointer",
+                fontSize: "22px",
+                fontWeight: "bold",
+              }}
+            >
+              ×
+            </button>
+          </div>
+        )}
 
         {currentPage === "home" && (
           <HomePage
@@ -235,8 +230,6 @@ export default function App() {
           />
         )}
 
-        {/* אודות */}
-
         {currentPage === "about" && (
           <AboutPage
             onCandidatesClick={() =>
@@ -248,8 +241,6 @@ export default function App() {
           />
         )}
 
-        {/* פריימריז */}
-
         {currentPage === "primaries" && (
           <PrimariesPage
             onApplyClick={() =>
@@ -257,8 +248,6 @@ export default function App() {
             }
           />
         )}
-
-        {/* רישום מועמד */}
 
         {currentPage === "candidate-registration" && (
           <CandidateRegistrationPage
@@ -268,31 +257,29 @@ export default function App() {
           />
         )}
 
-        {/* פוסטים */}
-
         {currentPage === "candidates" && (
           <CandidatesFeedPage />
         )}
-
-        {/* יצירת פוסט */}
 
         {currentPage === "create-post" && (
           <CreatePostPage />
         )}
 
-        {/* התאמה חכמה */}
-
         {currentPage === "match" && (
           <CandidateMatchPage />
         )}
 
-        {/* הצבעה - גם מנהל יכול להצביע */}
-
         {currentPage === "voting" && (
-          <VotingPage />
+          <VotingPage
+            onViewResults={() =>
+              navigate("results")
+            }
+          />
         )}
 
-        {/* לוח בקרה - למנהל בלבד */}
+        {currentPage === "results" && (
+          <ElectionResultsPage />
+        )}
 
         {currentPage === "admin" && isAdmin && (
           <AdminDashboard
@@ -302,16 +289,12 @@ export default function App() {
           />
         )}
 
-        {/* הנהגה */}
-
         {currentPage === "leadership" && (
           <PlaceholderPage
             title="הנהגת תנופה"
             onBack={() => navigate("home")}
           />
         )}
-
-        {/* התוכנית */}
 
         {currentPage === "program" && (
           <PlaceholderPage
@@ -320,20 +303,9 @@ export default function App() {
           />
         )}
 
-        {/* חדשות */}
-
         {currentPage === "news" && (
           <PlaceholderPage
             title="חדשות ועדכונים"
-            onBack={() => navigate("home")}
-          />
-        )}
-
-        {/* תוצאות - עמוד זמני */}
-
-        {currentPage === "results" && (
-          <PlaceholderPage
-            title="תוצאות הבחירות"
             onBack={() => navigate("home")}
           />
         )}

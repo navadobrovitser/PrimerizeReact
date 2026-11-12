@@ -3,44 +3,29 @@ import { useEffect, useState } from "react";
 import type { DragEvent } from "react";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
 import { fetchCandidates } from "../store/candidates/candidatesThunks";
+import { castVote, fetchVoteStatus } from "../store/voting/votingThunks";
 import "./VotingPage.css";
 
 const API = "https://localhost:7227/api/Voting";
 
-async function apiRequest<T>(
-  url: string,
-  token: string,
-  init?: RequestInit
-): Promise<T> {
-  const response = await fetch(url, {
-    ...init,
-    headers: {
-      Authorization: `Bearer ${token}`,
-      ...(init?.body
-        ? { "Content-Type": "application/json" }
-        : {}),
-      ...init?.headers,
-    },
-  });
-
-  const data = await response.json().catch(() => null);
-
-  if (!response.ok) {
-    throw new Error(
-      data?.message ||
-      data?.title ||
-      `שגיאת שרת (${response.status})`
-    );
-  }
-
-  return data as T;
+interface VotingPageProps {
+  onViewResults: () => void;
 }
 
-export default function VotingPage() {
+interface ElectionStatus {
+  isClosed: boolean;
+}
+
+interface ExtendedVoteStatus {
+  hasVoted: boolean;
+  voteDate?: string | null;
+}
+
+export default function VotingPage({ onViewResults }: VotingPageProps) {
   const dispatch = useAppDispatch();
 
-  const token = useAppSelector(
-    (state) => state.auth.token
+  const { token, isAuthenticated } = useAppSelector(
+    (state) => state.auth
   );
 
   const {
@@ -49,111 +34,123 @@ export default function VotingPage() {
     error: candidatesError,
   } = useAppSelector((state) => state.candidates);
 
+  const {
+    hasVoted,
+    checkingStatus,
+    statusChecked,
+    submitting,
+    error: votingError,
+  } = useAppSelector((state) => state.voting);
+
   const [ranking, setRanking] = useState<number[]>([]);
-  const [draggedIndex, setDraggedIndex] =
-    useState<number | null>(null);
-
-  const [showConfirmation, setShowConfirmation] =
-    useState(false);
-
-  const [submitting, setSubmitting] = useState(false);
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+  const [showConfirmation, setShowConfirmation] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState("");
+  const [electionClosed, setElectionClosed] = useState(false);
+  const [electionStatusChecked, setElectionStatusChecked] = useState(false);
+  const [electionStatusError, setElectionStatusError] = useState("");
+  const [voteDate, setVoteDate] = useState<string | null>(null);
 
-  const [checkingStatus, setCheckingStatus] =
-    useState(true);
-
-  const [statusFailed, setStatusFailed] =
-    useState(false);
-
-  const [electionClosed, setElectionClosed] =
-    useState(false);
-
-  const [voteDate, setVoteDate] =
-    useState<string | null>(null);
-
-  // טעינת המועמדים
   useEffect(() => {
-    dispatch(fetchCandidates());
+    void dispatch(fetchCandidates());
   }, [dispatch]);
 
-  // בדיקת מצב ההצבעה מול השרת
+  useEffect(() => {
+    if (!isAuthenticated || !token) return;
+
+    void dispatch(fetchVoteStatus());
+  }, [dispatch, isAuthenticated, token]);
+
   useEffect(() => {
     let active = true;
 
-    async function checkStatus() {
-      setCheckingStatus(true);
-      setError("");
-      setStatusFailed(false);
+    setElectionStatusChecked(false);
+    setElectionStatusError("");
 
-      if (!token) {
-        setError("יש להתחבר כדי להצביע.");
-        setCheckingStatus(false);
-        return;
-      }
+    if (!isAuthenticated || !token) {
+      setElectionStatusChecked(true);
+      return;
+    }
 
+    async function checkElectionStatus() {
       try {
-        const [vote, election] = await Promise.all([
-          apiRequest<{
-            hasVoted: boolean;
-            voteDate: string | null;
-          }>(`${API}/status`, token),
+        const [electionResponse, voteResponse] =
+          await Promise.all([
+            fetch(`${API}/election-status`, {
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+            }),
+            fetch(`${API}/status`, {
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+            }),
+          ]);
 
-          apiRequest<{
-            isClosed: boolean;
-          }>(`${API}/election-status`, token),
-        ]);
+        if (!electionResponse.ok || !voteResponse.ok) {
+          throw new Error(
+            "לא ניתן לבדוק את מצב הבחירות מול השרת."
+          );
+        }
+
+        const election =
+          (await electionResponse.json()) as ElectionStatus;
+
+        const vote =
+          (await voteResponse.json()) as ExtendedVoteStatus;
 
         if (!active) return;
 
-        setSubmitted(vote.hasVoted);
-        setVoteDate(vote.voteDate);
         setElectionClosed(election.isClosed);
-      } catch (e) {
+        setVoteDate(vote.voteDate ?? null);
+      } catch (err) {
         if (active) {
-          setStatusFailed(true);
-          setError(
-            e instanceof Error
-              ? e.message
-              : "שגיאה בבדיקת מצב ההצבעה."
+          setElectionStatusError(
+            err instanceof Error
+              ? err.message
+              : "שגיאה בבדיקת מצב הבחירות."
           );
         }
       } finally {
         if (active) {
-          setCheckingStatus(false);
+          setElectionStatusChecked(true);
         }
       }
     }
 
-    void checkStatus();
+    void checkElectionStatus();
 
     return () => {
       active = false;
     };
-  }, [token]);
+  }, [isAuthenticated, token]);
 
-  const cannotEdit =
-    submitted ||
-    electionClosed ||
-    checkingStatus ||
-    submitting ||
-    statusFailed;
+  const canEdit =
+    isAuthenticated &&
+    Boolean(token) &&
+    statusChecked &&
+    !checkingStatus &&
+    !hasVoted &&
+    !submitted &&
+    !submitting &&
+    electionStatusChecked &&
+    !electionStatusError &&
+    !electionClosed;
 
-  // מועמדים עם מזהה מספרי תקין
   const validCandidates = candidates.filter(
     (candidate) =>
       typeof candidate.candidateId === "number"
   );
 
-  // מועמדים שעדיין לא נבחרו
   const available = validCandidates.filter(
     (candidate) =>
       !ranking.includes(candidate.candidateId!)
   );
 
-  // הוספת מועמד לדירוג
   const addCandidate = (id: number) => {
-    if (cannotEdit) return;
+    if (!canEdit) return;
 
     setRanking((previous) =>
       previous.includes(id) || previous.length >= 5
@@ -162,22 +159,17 @@ export default function VotingPage() {
     );
   };
 
-  // הסרת מועמד
   const removeCandidate = (id: number) => {
-    if (cannotEdit) return;
+    if (!canEdit) return;
 
     setRanking((previous) =>
       previous.filter((item) => item !== id)
     );
   };
 
-  // שינוי סדר המועמדים
-  const moveCandidate = (
-    from: number,
-    to: number
-  ) => {
+  const moveCandidate = (from: number, to: number) => {
     if (
-      cannotEdit ||
+      !canEdit ||
       to < 0 ||
       to >= ranking.length ||
       from === to
@@ -188,21 +180,26 @@ export default function VotingPage() {
     setRanking((previous) => {
       const updated = [...previous];
       const [moved] = updated.splice(from, 1);
+
       updated.splice(to, 0, moved);
+
       return updated;
     });
   };
 
-  // התחלת גרירה
   const handleDragStart = (
     event: DragEvent<HTMLDivElement>,
     index: number
   ) => {
+    if (!canEdit) {
+      event.preventDefault();
+      return;
+    }
+
     setDraggedIndex(index);
     event.dataTransfer.effectAllowed = "move";
   };
 
-  // שחרור מועמד במקום החדש
   const handleDrop = (
     event: DragEvent<HTMLDivElement>,
     targetIndex: number
@@ -216,65 +213,46 @@ export default function VotingPage() {
     setDraggedIndex(null);
   };
 
-  // שליחת ההצבעה לשרת
   const handleSubmit = async () => {
     if (
-      !token ||
-      checkingStatus ||
-      statusFailed ||
-      submitted ||
-      electionClosed ||
+      !canEdit ||
       ranking.length < 1 ||
       ranking.length > 5
     ) {
       setError(
-        "לא ניתן לשלוח הצבעה במצב הנוכחי. יש לבחור בין מועמד אחד לחמישה."
+        "לא ניתן לשלוח הצבעה כרגע. יש לבחור בין מועמד אחד לחמישה."
       );
-
       setShowConfirmation(false);
       return;
     }
 
-    setSubmitting(true);
     setError("");
 
     try {
-      const rankings = ranking.map(
-        (candidateId, index) => ({
-          candidateId,
-          priority: index + 1,
-        })
-      );
-
-      await apiRequest<{ message: string }>(
-        `${API}/cast`,
-        token,
-        {
-          method: "POST",
-          body: JSON.stringify({ rankings }),
-        }
-      );
+      await dispatch(castVote(ranking)).unwrap();
 
       setSubmitted(true);
       setShowConfirmation(false);
-    } catch (e) {
+
+      void dispatch(fetchVoteStatus());
+    } catch (err) {
+      setShowConfirmation(false);
+
       setError(
-        e instanceof Error
-          ? e.message
-          : "שליחת ההצבעה נכשלה. נסו שוב."
+        typeof err === "string"
+          ? err
+          : "לא ניתן לאשר את ההצבעה."
       );
 
-      setShowConfirmation(false);
-    } finally {
-      setSubmitting(false);
+      // בדיקה חוזרת למקרה שהשרת שמר את ההצבעה
+      // אך התקשורת נקטעה.
+      void dispatch(fetchVoteStatus());
     }
   };
 
   return (
     <section className="voting-page" dir="rtl">
       <div className="voting-container">
-
-        {/* כותרת העמוד */}
         <div className="voting-heading">
           <span className="voting-eyebrow">
             פריימריז תנופה
@@ -289,35 +267,94 @@ export default function VotingPage() {
           </p>
 
           <div className="voting-deadline">
-            {checkingStatus
+            {!statusChecked ||
+            checkingStatus ||
+            !electionStatusChecked
               ? "בודק את מצב ההצבעה..."
+              : electionStatusError || !statusChecked
+              ? "לא ניתן לאמת את מצב ההצבעה"
               : electionClosed
               ? "הבחירות הסתיימו"
-              : submitted
+              : hasVoted || submitted
               ? "כבר הצבעתם בבחירות אלו"
               : "ההצבעה פתוחה"}
           </div>
 
-          {submitted && voteDate && (
+          {voteDate && (hasVoted || submitted) && (
             <p>
               הצבעתכם נקלטה בתאריך{" "}
-              {new Date(voteDate).toLocaleDateString(
-                "he-IL"
-              )}
+              {new Date(voteDate).toLocaleDateString("he-IL")}
             </p>
           )}
 
-          {electionClosed && (
-            <p className="voting-error">
-              לא ניתן להצביע לאחר סגירת הבחירות.
-            </p>
-          )}
+          <div
+            style={{
+              textAlign: "center",
+              marginTop: "24px",
+            }}
+          >
+            <button
+              type="button"
+              onClick={onViewResults}
+              style={{
+                padding: "14px 30px",
+                borderRadius: "14px",
+                border: "none",
+                background:
+                  "linear-gradient(135deg, #7c3aed, #2563eb)",
+                color: "white",
+                fontSize: "17px",
+                fontWeight: "bold",
+                cursor: "pointer",
+                boxShadow:
+                  "0 6px 18px rgba(124, 58, 237, 0.25)",
+              }}
+            >
+              צפייה בתוצאות הבחירות
+            </button>
+          </div>
         </div>
 
-        {/* אזור בחירת המועמדים */}
-        <div className="voting-columns">
+        {!isAuthenticated && (
+          <p className="voting-error" role="alert">
+            יש להתחבר לאתר לפני ההצבעה.
+          </p>
+        )}
 
-          {/* הדירוג האישי */}
+        {isAuthenticated && checkingStatus && (
+          <p className="posts-status">
+            בודק אם כבר הצבעת...
+          </p>
+        )}
+
+        {isAuthenticated &&
+          !checkingStatus &&
+          !statusChecked && (
+            <p className="voting-error" role="alert">
+              לא ניתן לאמת את סטטוס ההצבעה.{" "}
+              {votingError ?? ""}
+            </p>
+          )}
+
+        {electionStatusError && (
+          <p className="voting-error" role="alert">
+            {electionStatusError}
+          </p>
+        )}
+
+        {electionClosed && (
+          <p className="voting-error">
+            לא ניתן להצביע לאחר סגירת הבחירות.
+          </p>
+        )}
+
+        {(hasVoted || submitted) && (
+          <div className="voting-success" role="status">
+            ✓ ההצבעה שלך כבר נקלטה במערכת.
+          </div>
+        )}
+
+        <div className="voting-columns">
           <div className="voting-panel">
             <div className="voting-panel-header">
               <h2>הדירוג שלי</h2>
@@ -355,7 +392,7 @@ export default function VotingPage() {
                     <div
                       key={id}
                       className="voting-ranked-item"
-                      draggable={!cannotEdit}
+                      draggable={canEdit}
                       onDragStart={(event) =>
                         handleDragStart(event, index)
                       }
@@ -382,7 +419,7 @@ export default function VotingPage() {
                           type="button"
                           aria-label="העלה בדירוג"
                           disabled={
-                            index === 0 || cannotEdit
+                            index === 0 || !canEdit
                           }
                           onClick={() =>
                             moveCandidate(
@@ -400,7 +437,7 @@ export default function VotingPage() {
                           disabled={
                             index ===
                               ranking.length - 1 ||
-                            cannotEdit
+                            !canEdit
                           }
                           onClick={() =>
                             moveCandidate(
@@ -416,7 +453,7 @@ export default function VotingPage() {
                           type="button"
                           className="voting-remove"
                           aria-label="הסר מועמד"
-                          disabled={cannotEdit}
+                          disabled={!canEdit}
                           onClick={() =>
                             removeCandidate(id)
                           }
@@ -431,7 +468,6 @@ export default function VotingPage() {
             )}
           </div>
 
-          {/* מועמדים זמינים */}
           <div className="voting-panel">
             <div className="voting-panel-header">
               <h2>מועמדים זמינים</h2>
@@ -442,7 +478,6 @@ export default function VotingPage() {
             </div>
 
             <div className="voting-available-list">
-
               {loading && (
                 <p>טוען מועמדים מהשרת...</p>
               )}
@@ -472,14 +507,19 @@ export default function VotingPage() {
                     key={candidate.candidateId}
                     type="button"
                     className="voting-available-item"
-                    disabled={cannotEdit}
+                    disabled={
+                      !canEdit ||
+                      ranking.length >= 5
+                    }
                     onClick={() =>
                       addCandidate(
                         candidate.candidateId!
                       )
                     }
                   >
-                    <span>{candidate.name}</span>
+                    <span>
+                      {candidate.name}
+                    </span>
 
                     <span className="voting-plus">
                       +
@@ -495,11 +535,17 @@ export default function VotingPage() {
                     כל המועמדים נוספו לדירוג שלכם.
                   </p>
                 )}
+
+              {ranking.length === 5 &&
+                available.length > 0 && (
+                  <p className="voting-all-selected">
+                    הגעתם למקסימום של חמישה מועמדים.
+                  </p>
+                )}
             </div>
           </div>
         </div>
 
-        {/* סיכום ההצבעה */}
         <div className="voting-summary">
           <div>
             <h2>סיכום ההצבעה</h2>
@@ -514,22 +560,17 @@ export default function VotingPage() {
             type="button"
             className="voting-submit-button"
             disabled={
+              !canEdit ||
               ranking.length === 0 ||
               ranking.length > 5 ||
-              checkingStatus ||
-              statusFailed ||
-              electionClosed ||
-              !token ||
               loading ||
-              Boolean(candidatesError) ||
-              cannotEdit ||
-              submitting
+              Boolean(candidatesError)
             }
             onClick={() =>
               setShowConfirmation(true)
             }
           >
-            {submitted
+            {hasVoted || submitted
               ? "ההצבעה נשלחה"
               : electionClosed
               ? "הבחירות הסתיימו"
@@ -538,85 +579,76 @@ export default function VotingPage() {
         </div>
 
         {error && (
-          <p
-            className="voting-error"
-            role="alert"
-          >
+          <p className="voting-error" role="alert">
             {error}
           </p>
         )}
 
-        {submitted && (
-          <div
-            className="voting-success"
-            role="status"
-          >
-            ✓ ההצבעה התקבלה בהצלחה.
-          </div>
+        {votingError && !error && (
+          <p className="voting-error" role="alert">
+            {votingError}
+          </p>
         )}
       </div>
 
-      {/* חלון אישור ההצבעה */}
-      {showConfirmation &&
-        !submitted &&
-        !electionClosed && (
-          <div className="voting-modal-overlay">
-            <div
-              className="voting-modal"
-              role="dialog"
-              aria-modal="true"
-              aria-labelledby="vote-confirm-title"
-            >
-              <div className="voting-modal-icon">
-                ✓
-              </div>
+      {showConfirmation && canEdit && (
+        <div className="voting-modal-overlay">
+          <div
+            className="voting-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="vote-confirm-title"
+          >
+            <div className="voting-modal-icon">
+              ✓
+            </div>
 
-              <h2 id="vote-confirm-title">
-                אישור ההצבעה
-              </h2>
+            <h2 id="vote-confirm-title">
+              אישור ההצבעה
+            </h2>
 
-              <p>
-                בדקו את סדר המועמדים לפני
-                שליחת ההצבעה.
-              </p>
+            <p>
+              בדקו את סדר המועמדים לפני
+              שליחת ההצבעה.
+            </p>
 
-              <ol>
-                {ranking.map((id) => (
-                  <li key={id}>
-                    {validCandidates.find(
-                      (candidate) =>
-                        candidate.candidateId === id
-                    )?.name}
-                  </li>
-                ))}
-              </ol>
+            <ol>
+              {ranking.map((id) => (
+                <li key={id}>
+                  {validCandidates.find(
+                    (candidate) =>
+                      candidate.candidateId === id
+                  )?.name}
+                </li>
+              ))}
+            </ol>
 
-              <div className="voting-modal-actions">
-                <button
-                  type="button"
-                  className="voting-confirm"
-                  disabled={submitting}
-                  onClick={handleSubmit}
-                >
-                  {submitting
-                    ? "שולח..."
-                    : "אישור ושליחת ההצבעה"}
-                </button>
+            <div className="voting-modal-actions">
+              <button
+                type="button"
+                className="voting-confirm"
+                disabled={submitting}
+                onClick={handleSubmit}
+              >
+                {submitting
+                  ? "שולח..."
+                  : "אישור ושליחת ההצבעה"}
+              </button>
 
-                <button
-                  type="button"
-                  className="voting-cancel"
-                  disabled={submitting}
-                  onClick={() =>
-                    setShowConfirmation(false)
-                  }
-                >
-                  חזרה לעריכה
-                </button>
-              </div>
+              <button
+                type="button"
+                className="voting-cancel"
+                disabled={submitting}
+                onClick={() =>
+                  setShowConfirmation(false)
+                }
+              >
+                חזרה לעריכה
+              </button>
             </div>
           </div>
-        )}
+        </div>
+      )}
     </section>
   );
 }

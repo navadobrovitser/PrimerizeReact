@@ -3,6 +3,26 @@ import type { Post } from "../store/posts/postsThunks";
 import PostLikes from "./PostLikes";
 import "./CandidatePost.css";
 
+export interface CandidateComment {
+  id: number | string;
+  author: string;
+  text: string;
+}
+
+export interface CandidatePostData {
+  candidateId?: number;
+  id?: number | string;
+  name?: string;
+  role?: string;
+  slogan?: string;
+  city?: string;
+  imageUrl?: string;
+  profileImageUrl?: string;
+  description?: string;
+  likes?: number;
+  comments?: CandidateComment[];
+}
+
 interface CandidatePostProps {
   post: Post;
 }
@@ -34,7 +54,6 @@ export default function CandidatePost({
     return null;
   }
 
-  // שם המועמד מתוך השרת
   const candidateName =
     post.candidateName?.trim() ||
     post.candidate?.user?.name ||
@@ -42,7 +61,6 @@ export default function CandidatePost({
     "מועמד";
 
   const content = post.content ?? "";
-
   const mediaUrl = getMediaUrl(post.mediaUrl);
 
   const date = post.createdAt
@@ -54,8 +72,6 @@ export default function CandidatePost({
   return (
     <article className="candidate-post" dir="rtl">
       <div className="candidate-post-content">
-
-        {/* פרטי המועמד */}
         <div className="candidate-post-info">
           <h2>{candidateName}</h2>
 
@@ -72,19 +88,16 @@ export default function CandidatePost({
           )}
         </div>
 
-        {/* כותרת הפוסט */}
         {post.title && (
           <h3 className="candidate-post-title">
             {post.title}
           </h3>
         )}
 
-        {/* תוכן הפוסט */}
         <p className="candidate-post-description">
           {content}
         </p>
 
-        {/* תמונה או סרטון */}
         {mediaUrl && (
           <div className="candidate-post-image">
             {showVideo ? (
@@ -112,19 +125,15 @@ export default function CandidatePost({
           </div>
         )}
 
-        {/* לייקים ודיסלייקים */}
         <PostLikes postId={post.postId} />
 
-        {/* הפרדה */}
         <div className="candidate-post-divider" />
 
-        {/* פרטים נוספים */}
         <div className="candidate-post-stats">
           <span className="candidate-comments-count">
             פוסט #{post.postId}
           </span>
         </div>
-
       </div>
     </article>
   );
