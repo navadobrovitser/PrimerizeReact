@@ -1,86 +1,125 @@
-.candidate-post {
-  direction: rtl;
-  max-width: 1100px;
-  margin: 0 auto 35px;
-  font-family: "Heebo", Arial, sans-serif;
-}
 
-.candidate-post-content {
-  background: #ffffff;
-  border: 1px solid #e7ecef;
-  border-radius: 28px;
-  padding: 32px 34px;
-  box-shadow: 0 10px 40px rgba(10, 48, 69, 0.045);
-}
+/* Comments */
 
-.candidate-post-info h2 {
-  margin: 0;
-  color: #123b53;
-  font-size: 27px;
-  font-weight: 900;
-}
-
-.candidate-post-role {
-  color: #078b83;
+.candidate-comments-toggle {
+  border: none;
+  background: #eaf6f5;
+  color: #087f83;
+  padding: 10px 19px;
+  border-radius: 25px;
+  font-family: inherit;
   font-size: 14px;
-  font-weight: 700;
-  margin-top: 5px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: background 0.2s ease;
 }
 
-.candidate-post-city {
-  color: #8596a0;
-  font-size: 12px;
-  margin-top: 8px;
+.candidate-comments-toggle:hover {
+  background: #d6eeec;
 }
 
-.candidate-post-title {
+.candidate-comments-section {
+  margin-top: 26px;
+  padding-top: 20px;
+  border-top: 1px solid #e9eef1;
+}
+
+.candidate-comments-section h3 {
+  margin: 0 0 20px;
   color: #123b53;
-  font-size: 21px;
-  margin-top: 25px;
+  font-size: 19px;
 }
 
-.candidate-post-description {
-  margin: 25px 0;
-  color: #63798a;
-  font-size: 15px;
-  line-height: 2;
+.candidate-comment {
+  padding: 18px 20px;
+  background: #f7fafb;
+  border: 1px solid #e8eef0;
+  border-radius: 16px;
+  margin-bottom: 12px;
+}
+
+.candidate-comment-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.candidate-comment-header strong {
+  color: #123b53;
+  font-size: 14px;
+}
+
+.candidate-comment-header time {
+  color: #8b9ca5;
+  font-size: 12px;
+}
+
+.candidate-comment p {
+  margin: 10px 0 0;
+  color: #526f80;
+  line-height: 1.8;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
 
-.candidate-post-image {
-  border-radius: 20px;
-  overflow: hidden;
-  background: #e7eff2;
-  margin: 20px 0;
-}
-
-.candidate-post-image img {
-  display: block;
-  width: 100%;
-  max-height: 550px;
-  object-fit: contain;
-}
-
-.candidate-post-divider {
-  height: 1px;
-  background: #e9eef1;
-  margin: 23px 0 18px;
-}
-
-.candidate-post-stats {
+.candidate-comment-form {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 25px;
 }
 
-.candidate-comments-count {
-  color: #8798a3;
-  font-size: 13px;
+.candidate-comment-form label {
+  color: #123b53;
+  font-weight: 800;
+  font-size: 14px;
 }
 
-@media (max-width: 800px) {
-  .candidate-post-content {
-    padding: 25px 22px;
-  }
+.candidate-comment-form textarea {
+  border: 1px solid #d8e7eb;
+  border-radius: 14px;
+  padding: 15px;
+  font: inherit;
+  color: #123b53;
+  background: white;
+  resize: vertical;
+}
+
+.candidate-comment-form textarea:focus {
+  outline: 2px solid #a9d9d7;
+  border-color: #078b83;
+}
+
+.candidate-comment-form button {
+  align-self: flex-start;
+  border: none;
+  border-radius: 25px;
+  background: #078b83;
+  color: white;
+  padding: 11px 24px;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.candidate-comment-form button:hover {
+  background: #066e69;
+}
+
+.candidate-comment-form button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.candidate-comments-message {
+  color: #8296a1;
+  font-size: 14px;
+  line-height: 1.8;
+}
+
+.candidate-comments-error {
+  color: #b42318;
+  font-size: 14px;
+  margin-top: 12px;
 }

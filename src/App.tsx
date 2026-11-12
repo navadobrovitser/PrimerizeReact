@@ -12,6 +12,8 @@ import PrimariesPage from "./Component/PrimariesPage";
 import PartyRegisterPage from "./Component/PartyRegisterPage";
 import CandidateRegistrationPage from "./Component/CandidateRegistrationPage";
 import { CandidatesFeedPage } from "./Component/CandidatesFeedPage";
+import CandidatesPage from "./Component/CandidatesPage";
+import CandidateProfilePage from "./Component/CandidateProfilePage";
 import CandidateMatchPage from "./Component/CandidateMatchPage";
 import VotingPage from "./Component/VotingPage";
 import ElectionResultsPage from "./Component/ElectionResultsPage";
@@ -40,13 +42,8 @@ function PlaceholderPage({
 }
 
 export default function App() {
-  const token = useAppSelector(
-    (state) => state.auth.token
-  );
-
-  const role = useAppSelector(
-    (state) => state.auth.role
-  );
+  const token = useAppSelector((state) => state.auth.token);
+  const role = useAppSelector((state) => state.auth.role);
 
   const isLoggedIn = Boolean(token);
   const isAdmin = role === "Admin";
@@ -57,13 +54,14 @@ export default function App() {
     );
 
   const [page, setPage] = useState<Page>("home");
+  const [selectedCandidateId, setSelectedCandidateId] =
+    useState<number | null>(null);
+
   const [showLoginSuccess, setShowLoginSuccess] =
     useState(false);
 
-  const [
-    candidateRefreshKey,
-    setCandidateRefreshKey,
-  ] = useState(0);
+  const [candidateRefreshKey, setCandidateRefreshKey] =
+    useState(0);
 
   useEffect(() => {
     if (!isPasswordSetupPage) {
@@ -119,6 +117,11 @@ export default function App() {
     });
   };
 
+  const openCandidateProfile = (candidateId: number) => {
+    setSelectedCandidateId(candidateId);
+    navigate("candidate-profile");
+  };
+
   const handleCandidateCreated = () => {
     setCandidateRefreshKey((prev) => prev + 1);
   };
@@ -141,9 +144,7 @@ export default function App() {
         <main className="app-main">
           {page === "register" ? (
             <PartyRegisterPage
-              onSwitchToLogin={() =>
-                navigate("login")
-              }
+              onSwitchToLogin={() => navigate("login")}
             />
           ) : (
             <LoginPage
@@ -151,9 +152,7 @@ export default function App() {
                 setShowLoginSuccess(true);
                 navigate("home");
               }}
-              onRegisterClick={() =>
-                navigate("register")
-              }
+              onRegisterClick={() => navigate("register")}
             />
           )}
         </main>
@@ -201,9 +200,7 @@ export default function App() {
 
             <button
               type="button"
-              onClick={() =>
-                setShowLoginSuccess(false)
-              }
+              onClick={() => setShowLoginSuccess(false)}
               aria-label="סגירת הודעת הצלחה"
               style={{
                 background: "transparent",
@@ -221,23 +218,15 @@ export default function App() {
 
         {currentPage === "home" && (
           <HomePage
-            onJoinClick={() =>
-              navigate("candidates")
-            }
-            onProgramClick={() =>
-              navigate("program")
-            }
+            onJoinClick={() => navigate("candidates")}
+            onProgramClick={() => navigate("program")}
           />
         )}
 
         {currentPage === "about" && (
           <AboutPage
-            onCandidatesClick={() =>
-              navigate("candidates")
-            }
-            onProgramClick={() =>
-              navigate("program")
-            }
+            onCandidatesClick={() => navigate("candidates")}
+            onProgramClick={() => navigate("program")}
           />
         )}
 
@@ -251,15 +240,27 @@ export default function App() {
 
         {currentPage === "candidate-registration" && (
           <CandidateRegistrationPage
-            onCandidateCreated={
-              handleCandidateCreated
-            }
+            onCandidateCreated={handleCandidateCreated}
           />
         )}
 
-        {currentPage === "candidates" && (
+        {currentPage === "posts" && (
           <CandidatesFeedPage />
         )}
+
+        {currentPage === "candidates" && (
+          <CandidatesPage
+            onSelectCandidate={openCandidateProfile}
+          />
+        )}
+
+        {currentPage === "candidate-profile" &&
+          selectedCandidateId !== null && (
+            <CandidateProfilePage
+              candidateId={selectedCandidateId}
+              onBack={() => navigate("candidates")}
+            />
+          )}
 
         {currentPage === "create-post" && (
           <CreatePostPage />
@@ -271,9 +272,7 @@ export default function App() {
 
         {currentPage === "voting" && (
           <VotingPage
-            onViewResults={() =>
-              navigate("results")
-            }
+            onViewResults={() => navigate("results")}
           />
         )}
 
@@ -283,9 +282,7 @@ export default function App() {
 
         {currentPage === "admin" && isAdmin && (
           <AdminDashboard
-            onNavigateToVoting={() =>
-              navigate("voting")
-            }
+            onNavigateToVoting={() => navigate("voting")}
           />
         )}
 

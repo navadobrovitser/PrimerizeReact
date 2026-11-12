@@ -6,19 +6,24 @@
   position: sticky;
   top: 0;
   z-index: 1000;
+  width: 100%;
 }
 
 .header-inner {
-  max-width: 1200px;
+  width: 100%;
+  max-width: 1600px;
   height: 100%;
   margin: auto;
   padding: 0 24px;
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 20px;
+  box-sizing: border-box;
 }
 
 /* Logo */
+
 .brand-logo {
   display: inline-flex;
   align-items: center;
@@ -56,38 +61,47 @@
 }
 
 /* Navigation */
+
 .site-nav {
   display: flex;
   align-items: center;
-  gap: 27px;
+  justify-content: flex-start;
+  gap: clamp(8px, 1.3vw, 20px);
+  min-width: 0;
 }
 
 .site-nav a {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
   text-decoration: none;
   color: #253f52;
   transition: color 0.2s ease;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .site-nav a:hover {
   color: #078b8c;
 }
 
-.site-nav .header-join-button {
+.site-nav .header-join-button,
+.site-nav .candidate-nav-button {
   background: #087f83;
   color: white;
-  padding: 11px 23px;
+  padding: 10px 16px;
   border-radius: 25px;
-  margin-right: 8px;
   font-weight: 700;
   transition: background 0.2s ease;
+  white-space: nowrap;
 }
 
-.site-nav .header-join-button:hover {
+.site-nav .header-join-button:hover,
+.site-nav .candidate-nav-button:hover {
   background: #076c70;
   color: white;
 }
+
+/* Mobile menu button */
 
 .mobile-menu-button {
   display: none;
@@ -96,10 +110,12 @@
   color: #123c56;
   font-size: 27px;
   cursor: pointer;
+  flex-shrink: 0;
 }
 
-/* Mobile */
-@media (max-width: 850px) {
+/* Responsive navigation */
+
+@media (max-width: 1350px) {
   .mobile-menu-button {
     display: block;
   }
@@ -115,15 +131,39 @@
     flex-direction: column;
     align-items: stretch;
     gap: 20px;
-    box-shadow: 0 12px 20px rgba(0,0,0,0.08);
+    box-shadow: 0 12px 20px rgba(0, 0, 0, 0.08);
+    max-height: calc(100vh - 76px);
+    overflow-y: auto;
   }
 
   .site-nav.open {
     display: flex;
   }
 
-  .site-nav .header-join-button {
+  .site-nav a {
+    font-size: 15px;
+    padding: 8px 4px;
+  }
+
+  .site-nav .header-join-button,
+  .site-nav .candidate-nav-button {
     margin-right: 0;
     text-align: center;
+    padding: 12px 20px;
+  }
+}
+
+@media (max-width: 600px) {
+  .header-inner {
+    padding: 0 16px;
+  }
+
+  .brand-text strong {
+    font-size: 20px;
+  }
+
+  .brand-symbol {
+    width: 39px;
+    height: 39px;
   }
 }

@@ -58,6 +58,14 @@ export function CandidatesFeedPage() {
     }
   };
 
+
+const sortedPosts = [...posts].sort((a, b) => {
+  const dateA = new Date(a.createdAt ?? 0).getTime();
+  const dateB = new Date(b.createdAt ?? 0).getTime();
+
+  return dateB - dateA || b.postId - a.postId;
+});
+
   return (
     <div className="candidates-feed-page" dir="rtl">
       <div className="candidates-feed-heading">
@@ -138,7 +146,7 @@ export function CandidatesFeedPage() {
         </p>
       ) : (
         <div className="candidates-posts-list">
-          {posts.map((post) => (
+          {sortedPosts.map((post) => (
             <CandidatePost
               key={post.postId}
               post={post}

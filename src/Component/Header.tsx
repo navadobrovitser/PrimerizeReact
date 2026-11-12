@@ -19,11 +19,16 @@ export type Page =
   | "register"
   | "candidate-registration"
   | "create-post"
+
+  | "posts"
+  | "candidate-profile"
+
   | "admin";
 interface HeaderProps {
   onNavigate: (page: Page) => void;
   candidateRefreshKey?: number;
 }
+
 
 const links: { label: string; page: Page }[] = [
   { label: "בית", page: "home" },
@@ -32,11 +37,17 @@ const links: { label: string; page: Page }[] = [
   { label: "התוכנית", page: "program" },
   { label: "חדשות", page: "news" },
   { label: "פריימריז", page: "primaries" },
-  { label: "פוסטים", page: "candidates" },
+
+  // כל הפוסטים של כל המועמדים
+  { label: "פוסטים", page: "posts" },
+
+  // כרטיסי המועמדים והפרופילים שלהם
+  { label: "מועמדים", page: "candidates" },
+
   { label: "הצבעה", page: "voting" },
   { label: "התאמה חכמה ✦", page: "match" },
-
 ];
+
 
 export default function Header({
   onNavigate,
