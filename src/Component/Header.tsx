@@ -104,7 +104,8 @@ export default function Header({
     setOpen(false);
     onNavigate(page);
   };
-
+console.log("Current role:", role);
+console.log("Is candidate:", candidate);
   return (
     <header className="site-header" dir="rtl">
       <div className="header-inner">
