@@ -4,7 +4,7 @@ import Logo from "./Logo";
 import type { Page } from "./Header";
 
 interface FooterProps {
-  onNavigate?: (page: Page) => void;
+  onNavigate: (page: Page) => void;
 }
 
 export default function Footer({
@@ -13,11 +13,7 @@ export default function Footer({
   const year = new Date().getFullYear();
 
   const navigate = (page: Page) => {
-    if (onNavigate) {
-      onNavigate(page);
-    } else {
-      window.location.href = "/";
-    }
+    onNavigate(page);
   };
 
   return (
@@ -36,27 +32,27 @@ export default function Footer({
         <div className="footer-column">
           <h3>ניווט מהיר</h3>
 
-          <button onClick={() => navigate("home")}>
+          <button type="button" onClick={() => navigate("home")}>
             בית
           </button>
 
-          <button onClick={() => navigate("about")}>
+          <button type="button" onClick={() => navigate("about")}>
             אודות
           </button>
 
-          <button onClick={() => navigate("leadership")}>
+          <button type="button" onClick={() => navigate("leadership")}>
             הנהגה
           </button>
 
-          <button onClick={() => navigate("program")}>
+          <button type="button" onClick={() => navigate("program")}>
             התוכנית
           </button>
 
-          <button onClick={() => navigate("news")}>
+          <button type="button" onClick={() => navigate("news")}>
             חדשות
           </button>
 
-          <button onClick={() => navigate("primaries")}>
+          <button type="button" onClick={() => navigate("primaries")}>
             פריימריז
           </button>
         </div>
@@ -64,16 +60,15 @@ export default function Footer({
         <div className="footer-column">
           <h3>מידע נוסף</h3>
 
-          <button onClick={() => navigate("register")}>
-            הצטרפות למפלגה
+          <button
+            type="button"
+            onClick={() => navigate("candidates")}
+          >
+            פוסטים ועדכונים
           </button>
 
-          <a href="mailto:contact@example.com">
-            יצירת קשר
-          </a>
-
           <a
-            href="/terms.html"
+            href="/privacy.html"
             target="_blank"
             rel="noopener noreferrer"
           >
@@ -93,15 +88,17 @@ export default function Footer({
           <h3>בואו להיות חלק</h3>
 
           <p>
-            הצטרפו אלינו וקחו חלק בעיצוב העתיד.
+            הכירו את המועמדים,
+            התעדכנו בפעילותם וקחו חלק
+            בעיצוב העתיד.
           </p>
 
           <button
             type="button"
             className="footer-join"
-            onClick={() => navigate("register")}
+            onClick={() => navigate("primaries")}
           >
-            הצטרפו עכשיו
+            הכירו את המועמדים
           </button>
         </div>
       </div>
