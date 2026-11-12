@@ -1,9 +1,11 @@
-
 import { useCallback, useEffect, useState } from "react";
 import { useAppSelector } from "../store/hooks";
 import "./AdminDashboard.css";
 
-const API = "https://localhost:7227/api";
+const API =
+  (import.meta.env.VITE_API_ORIGIN || "https://localhost:7227")
+    .replace(/\/$/, "") + "/api";
+
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 type User = {
@@ -71,7 +73,6 @@ export default function AdminDashboard({
 }: Props) {
   const token = useAppSelector((state) => state.auth.token);
   const role = useAppSelector((state) => state.auth.role);
-  console.log("Current user role:", role);
 
   const [allUsers, setAllUsers] = useState<User[]>([]);
   const [pendingUsers, setPendingUsers] = useState<User[]>([]);
@@ -92,15 +93,19 @@ export default function AdminDashboard({
   const [userMessage, setUserMessage] = useState("");
 
   const [closed, setClosed] = useState<boolean | null>(null);
+
   const [results, setResults] = useState<ElectionResults | null>(
     null
   );
+
   const [voteStatus, setVoteStatus] = useState<VoteStatus | null>(
     null
   );
 
   const [electionLoading, setElectionLoading] = useState(true);
   const [closing, setClosing] = useState(false);
+  const [opening, setOpening] = useState(false);
+
   const [electionError, setElectionError] = useState("");
   const [electionMessage, setElectionMessage] = useState("");
 
@@ -168,7 +173,9 @@ export default function AdminDashboard({
       const users = await request<User[]>("/Users");
 
       if (!Array.isArray(users)) {
-        throw new Error("השרת לא החזיר רשימת משתמשים תקינה.");
+        throw new Error(
+          "השרת לא החזיר רשימת משתמשים תקינה."
+        );
       }
 
       setAllUsers(users);
@@ -361,8 +368,8 @@ export default function AdminDashboard({
 
     const confirmed = window.confirm(
       `האם את בטוחה שברצונך להסיר את המשתמש "${user.name}"?\n\n` +
-      "המשתמש לא יוכל להתחבר למערכת.\n" +
-      "הנתונים שלו יישמרו במסד הנתונים וניתן יהיה לשחזר אותו."
+        "המשתמש לא יוכל להתחבר למערכת.\n" +
+        "הנתונים שלו יישמרו במסד הנתונים וניתן יהיה לשחזר אותו."
     );
 
     if (!confirmed) return;
@@ -475,11 +482,24 @@ export default function AdminDashboard({
     }
   }, [request]);
 
+  // ==========================================
+  // סגירת הבחירות
+  // ==========================================
+
   const closeElection = async () => {
-    if (closed !== false || closing) return;
+    if (
+      closed !== false ||
+      closing ||
+      opening ||
+      electionLoading
+    ) {
+      return;
+    }
 
     const confirmed = window.confirm(
-      "האם לסגור את הבחירות ולפרסם תוצאות סופיות?"
+      "האם לסגור את הבחירות ולפרסם את התוצאות?\n\n" +
+        "ניתן יהיה לפתוח את הבחירות מחדש בהמשך.\n" +
+        "כל ההצבעות יישמרו."
     );
 
     if (!confirmed) return;
@@ -498,7 +518,7 @@ export default function AdminDashboard({
       setResults(data);
 
       setElectionMessage(
-        "הבחירות נסגרו והתוצאות פורסמו."
+        "הבחירות נסגרו והתוצאות פורסמו בהצלחה."
       );
     } catch (error) {
       setElectionError(
@@ -510,6 +530,62 @@ export default function AdminDashboard({
       await refreshElection();
     } finally {
       setClosing(false);
+    }
+  };
+
+  // ==========================================
+  // פתיחת הבחירות מחדש - חדש
+  // ==========================================
+
+  const openElection = async () => {
+    if (
+      closed !== true ||
+      opening ||
+      closing ||
+      electionLoading
+    ) {
+      return;
+    }
+
+    const confirmed = window.confirm(
+      "האם לפתוח מחדש את הבחירות?\n\n" +
+        "כל ההצבעות הקודמות יישמרו.\n" +
+        "משתמשים שעדיין לא הצביעו יוכלו להצביע.\n" +
+        "משתמש שכבר הצביע לא יוכל להצביע שוב.\n" +
+        "התוצאות יחושבו מחדש בסגירה הבאה."
+    );
+
+    if (!confirmed) return;
+
+    setOpening(true);
+    setElectionError("");
+    setElectionMessage("");
+
+    try {
+      await request<{
+        message: string;
+        isClosed: boolean;
+      }>("/Voting/open", {
+        method: "POST",
+      });
+
+      setClosed(false);
+      setResults(null);
+
+      setElectionMessage(
+        "הבחירות נפתחו מחדש בהצלחה! " +
+          "כל ההצבעות הקודמות נשמרו."
+      );
+    } catch (error) {
+      setElectionError(
+        error instanceof Error
+          ? error.message
+          : "פתיחת הבחירות נכשלה."
+      );
+
+      await refreshElection();
+    } finally {
+      setOpening(false);
     }
   };
 
@@ -605,6 +681,8 @@ export default function AdminDashboard({
             onClick={refreshAll}
             disabled={
               electionLoading ||
+              closing ||
+              opening ||
               pendingLoading ||
               waitingLoading ||
               usersLoading ||
@@ -659,7 +737,7 @@ export default function AdminDashboard({
             </strong>
             <small>
               {closed
-                ? "מספר מצביעים סופי"
+                ? "מספר מצביעים בסגירה האחרונה"
                 : "זמין לאחר סגירת הבחירות"}
             </small>
           </article>
@@ -677,7 +755,10 @@ export default function AdminDashboard({
           </article>
         </div>
 
-        {/* ניהול בחירות */}
+        {/* =====================================
+            ניהול בחירות
+        ===================================== */}
+
         <div className="admin-columns">
           <article className="admin-panel">
             <div className="admin-panel-number">
@@ -685,8 +766,11 @@ export default function AdminDashboard({
             </div>
 
             <h2>שליטה בהצבעה</h2>
+
             <p>
-              סגירת הבחירות ופרסום התוצאות הסופיות.
+              ניתן לסגור את הבחירות ולפרסם תוצאות,
+              או לפתוח אותן מחדש להמשך הצבעה.
+              כל ההצבעות הקודמות נשמרות.
             </p>
 
             <div className="admin-actions">
@@ -697,33 +781,45 @@ export default function AdminDashboard({
                 disabled={
                   electionLoading ||
                   closing ||
+                  opening ||
                   closed !== false
                 }
               >
                 {closing
                   ? "סוגר בחירות..."
                   : closed
-                  ? "הבחירות הסתיימו"
+                  ? "הבחירות סגורות"
                   : "סגירת הבחירות ופרסום תוצאות"}
               </button>
 
               <button
                 type="button"
                 className="admin-secondary"
-                disabled
-                title="הפעולה עדיין אינה קיימת בשרת"
+                onClick={() => void openElection()}
+                disabled={
+                  electionLoading ||
+                  opening ||
+                  closing ||
+                  closed !== true
+                }
               >
-                פתיחת בחירות חדשות — בקרוב
+                {opening
+                  ? "פותח בחירות..."
+                  : closed
+                  ? "פתיחת הבחירות מחדש"
+                  : "הבחירות כבר פתוחות"}
               </button>
             </div>
           </article>
 
+          {/* הצבעה אישית */}
           <article className="admin-panel admin-vote-panel">
             <div className="admin-panel-number">
               02 / הצבעה אישית
             </div>
 
             <h2>גם למנהל יש קול</h2>
+
             <p>
               מעבר לעמוד ההצבעה והשתתפות בבחירות.
             </p>
@@ -739,7 +835,7 @@ export default function AdminDashboard({
         </div>
 
         {/* =====================================
-            ניהול כל המשתמשים - חדש
+            ניהול כל המשתמשים
         ===================================== */}
 
         <article className="admin-panel admin-pending-panel">
@@ -761,7 +857,9 @@ export default function AdminDashboard({
               type="button"
               className="admin-refresh"
               onClick={() => void loadAllUsers()}
-              disabled={usersLoading || Boolean(activeAction)}
+              disabled={
+                usersLoading || Boolean(activeAction)
+              }
             >
               רענון משתמשים
             </button>
@@ -961,6 +1059,7 @@ export default function AdminDashboard({
               </div>
 
               <h2>בקשות הצטרפות ממתינות</h2>
+
               <p>
                 משתמשים שנרשמו וממתינים לאישור מנהל.
               </p>
@@ -1216,8 +1315,9 @@ export default function AdminDashboard({
             <p>טוען מצב בחירות...</p>
           ) : !closed ? (
             <p>
-              הבחירות עדיין פתוחות.
-              התוצאות יוצגו לאחר סגירתן.
+              הבחירות פתוחות כעת.
+              התוצאות המעודכנות יוצגו לאחר הסגירה הבאה.
+              כל ההצבעות הקודמות נשמרות.
             </p>
           ) : results === null ? (
             <p>
@@ -1274,7 +1374,6 @@ export default function AdminDashboard({
             </>
           )}
         </article>
-
       </div>
     </section>
   );
