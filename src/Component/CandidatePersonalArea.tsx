@@ -4,7 +4,7 @@ import type { ChangeEvent, FormEvent } from "react";
 import { useAppSelector } from "../store/hooks";
 import { getMediaUrl } from "../utils/mediaUrl";
 import "./CandidatePersonalArea.css";
-
+import MyPostsManager from "./MyPostsManager";
 const API =
   import.meta.env.VITE_API_ORIGIN ||
   "https://localhost:7227";
@@ -593,7 +593,9 @@ export default function CandidatePersonalArea({
             </div>
 
           </section>
-        </form>
+              </form>
+
+        <MyPostsManager />
       </div>
     </main>
   );
