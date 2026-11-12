@@ -1,4 +1,3 @@
-
 import { useEffect, useMemo, useState } from "react";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
 import { fetchCandidates } from "../store/candidates/candidatesThunks";
@@ -13,14 +12,23 @@ const API_ORIGIN =
   import.meta.env.VITE_API_ORIGIN ||
   "https://localhost:7227";
 
+// תיקון כתובות התמונות שמגיעות מהשרת
 function mediaUrl(value?: string | null): string {
   if (!value) return "";
 
-  if (/^https?:\/\//i.test(value)) {
-    return value;
+  const cleanUrl = value.trim();
+
+  if (/^https?:\/\//i.test(cleanUrl)) {
+    return cleanUrl;
   }
 
-  return `${API_ORIGIN.replace(/\/$/, "")}/${value.replace(/^\/+/, "")}`;
+  const cleanPath = cleanUrl.replace(/^\/+/, "");
+
+  if (/^Images\//i.test(cleanPath)) {
+    return `${API_ORIGIN.replace(/\/$/, "")}/${cleanPath}`;
+  }
+
+  return `${API_ORIGIN.replace(/\/$/, "")}/Images/${cleanPath}`;
 }
 
 export default function PrimariesPage({
