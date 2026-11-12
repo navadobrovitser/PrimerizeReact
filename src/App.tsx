@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import type { Page } from "./Component/Header";
 import { useAppSelector } from "./store/hooks";
-
+import ProgramPage from "./Component/ProgramPage";
 import Header from "./Component/Header";
 import Footer from "./Component/Footer";
 import HomePage from "./Component/HomePage";
@@ -21,7 +21,7 @@ import CreatePostPage from "./Component/CreatePostPage";
 import AdminDashboard from "./Component/AdminDashboard";
 import SetPasswordPage from "./Component/SetPasswordPage";
 import NewsPage from "./Component/NewsPage";
-
+import LeadershipPage from "./Component/LeadershipPage";
 import "./App.css";
 
 function PlaceholderPage({
@@ -434,7 +434,13 @@ export default function App() {
               onBack={() => navigate("home")}
             />
           ))}
+{page === "leadership" && (
+  <LeadershipPage
+    onCandidatesClick={() => navigate("primaries")}
+  />
+)}
 
+<<<<<<< HEAD
         {/* הנהגה */}
         {page === "leadership" && (
           <PlaceholderPage
@@ -450,6 +456,13 @@ export default function App() {
             onBack={() => navigate("home")}
           />
         )}
+=======
+      {page === "program" && (
+  <ProgramPage
+    onCandidatesClick={() => navigate("primaries")}
+  />
+)}
+>>>>>>> 2ad1515 (hanaga)
 
         {/* חדשות */}
         {page === "news" && (
