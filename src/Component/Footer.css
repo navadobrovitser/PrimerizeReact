@@ -83,3 +83,18 @@
     grid-template-columns: 1fr;
   }
 }
+.footer-column button:not(.footer-join) {
+  display: block;
+  background: transparent;
+  border: none;
+  padding: 0;
+  margin: 0;
+  color: inherit;
+  font: inherit;
+  text-align: right;
+  cursor: pointer;
+}
+
+.footer-column button:not(.footer-join):hover {
+  text-decoration: underline;
+}
