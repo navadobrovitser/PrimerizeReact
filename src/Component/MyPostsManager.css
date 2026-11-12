@@ -26,7 +26,6 @@
   font-size: 13px;
   font-weight: 700;
   color: #71819a;
-  letter-spacing: 0.3px;
 }
 
 .posts-manager-heading h2 {
@@ -168,6 +167,11 @@
   border: 1px solid #e4eaf2;
   border-radius: 14px;
   padding: 24px;
+  transition: box-shadow 0.2s ease;
+}
+
+.posts-manager-card:hover {
+  box-shadow: 0 6px 22px rgba(23, 38, 61, 0.05);
 }
 
 .posts-manager-card-top {
@@ -183,13 +187,79 @@
   font-weight: 600;
 }
 
-.posts-manager-content {
-  font-size: 15px;
-  line-height: 1.9;
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
+/* ================================= */
+/* קיצור והרחבת תוכן הפוסט */
+/* ================================= */
+
+.posts-manager-text-wrapper {
+  width: 100%;
+  min-width: 0;
   margin: 20px 0;
 }
+
+.posts-manager-post-text {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 1.8;
+
+  color: #17263d;
+  text-align: right;
+  direction: rtl;
+
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+
+  margin: 0;
+  padding: 0;
+}
+
+/* פוסט סגור: ארבע שורות */
+.posts-manager-post-text.is-collapsed {
+  max-height: 7.2em !important;
+  overflow: hidden !important;
+}
+
+/* פוסט פתוח: כל הטקסט */
+.posts-manager-post-text.is-expanded {
+  max-height: none !important;
+  overflow: visible !important;
+}
+
+/* כפתור הצג עוד / פחות */
+.posts-manager-expand {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+
+  margin-top: 12px;
+  padding: 5px 0;
+
+  border: none;
+  background: transparent;
+
+  color: #214a7b;
+  font-size: 14px;
+  font-weight: 700;
+
+  cursor: pointer;
+}
+
+.posts-manager-expand:hover {
+  color: #102c56;
+}
+
+.posts-manager-expand span {
+  font-size: 18px;
+  line-height: 1;
+}
+
+/* ================================= */
+/* מדיה */
+/* ================================= */
 
 .posts-manager-media {
   display: block;
@@ -198,6 +268,10 @@
   border-radius: 10px;
   margin: 15px 0;
 }
+
+/* ================================= */
+/* תחתית כרטיס */
+/* ================================= */
 
 .posts-manager-card-footer {
   border-top: 1px solid #edf1f6;
@@ -244,6 +318,10 @@
   background: #fff0f0;
 }
 
+/* ================================= */
+/* הודעות */
+/* ================================= */
+
 .posts-manager-error,
 .posts-manager-success {
   padding: 14px 18px;
@@ -271,6 +349,10 @@
   color: #718096;
 }
 
+/* ================================= */
+/* התאמה למסכים קטנים */
+/* ================================= */
+
 @media (max-width: 700px) {
   .posts-manager-heading,
   .posts-manager-card-footer {
@@ -292,5 +374,10 @@
 
   .posts-manager-card-footer {
     gap: 20px;
+  }
+
+  .posts-manager-stats,
+  .posts-manager-card-actions {
+    flex-wrap: wrap;
   }
 }

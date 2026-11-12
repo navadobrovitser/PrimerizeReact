@@ -27,20 +27,16 @@ interface Post {
 type PostType = "Text" | "Image" | "Video";
 
 function normalizeType(value?: string | number): PostType {
-  if (value === 2 || value === "2" || value === "Image") {
-    return "Image";
-  }
+  const type = String(value ?? "").toLowerCase();
 
-  if (value === 3 || value === "3" || value === "Video") {
-    return "Video";
-  }
+  if (type === "2" || type === "image") return "Image";
+  if (type === "3" || type === "video") return "Video";
 
   return "Text";
 }
 
-function mediaUrl(path?: string | null): string {
+function getMediaUrl(path?: string | null): string {
   if (!path) return "";
-
   if (/^https?:\/\//i.test(path)) return path;
 
   return `${API}/${path.replace(/^\/+/, "")}`;
@@ -50,21 +46,27 @@ async function getError(response: Response): Promise<string> {
   const data = await response.json().catch(() => null);
 
   if (typeof data?.message === "string") return data.message;
-  if (typeof data?.title === "string") return data.title;
 
-  if (response.status === 401) {
+  if (data?.errors) {
+    const messages = Object.values(data.errors)
+      .flat()
+      .filter((item): item is string => typeof item === "string");
+
+    if (messages.length) return messages.join(" ");
+  }
+
+  if (response.status === 401)
     return "פג תוקף ההתחברות. יש להתחבר מחדש.";
-  }
 
-  if (response.status === 403) {
+  if (response.status === 403)
     return "אין הרשאה לבצע פעולה זו.";
-  }
 
-  if (response.status === 404) {
-    return "הפוסט לא נמצא או שאין לך הרשאה לערוך אותו.";
-  }
+  if (response.status === 404)
+    return "הפוסט לא נמצא או שאינו שייך לך.";
 
-  return `הפעולה נכשלה (${response.status})`;
+  return typeof data?.title === "string"
+    ? data.title
+    : `הפעולה נכשלה (${response.status})`;
 }
 
 export default function MyPostsManager() {
@@ -81,6 +83,9 @@ export default function MyPostsManager() {
 
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+
+  // כל פוסט נפתח ונסגר בנפרד
+  const [expandedPosts, setExpandedPosts] = useState<number[]>([]);
 
   const formRef = useRef<HTMLFormElement>(null);
 
@@ -136,6 +141,14 @@ export default function MyPostsManager() {
     return () => controller.abort();
   }, [loadPosts]);
 
+  function togglePost(postId: number) {
+    setExpandedPosts((prev) =>
+      prev.includes(postId)
+        ? prev.filter((id) => id !== postId)
+        : [...prev, postId]
+    );
+  }
+
   function resetForm() {
     setEditingPost(null);
     setContent("");
@@ -143,15 +156,18 @@ export default function MyPostsManager() {
     setFileKey((value) => value + 1);
   }
 
-  function createNewPost() {
-    resetForm();
-    setError("");
-    setSuccess("");
-
+  function scrollToForm() {
     formRef.current?.scrollIntoView({
       behavior: "smooth",
       block: "center",
     });
+  }
+
+  function createNewPost() {
+    resetForm();
+    setError("");
+    setSuccess("");
+    scrollToForm();
   }
 
   function editPost(post: Post) {
@@ -161,11 +177,7 @@ export default function MyPostsManager() {
     setFileKey((value) => value + 1);
     setError("");
     setSuccess("");
-
-    formRef.current?.scrollIntoView({
-      behavior: "smooth",
-      block: "center",
-    });
+    scrollToForm();
   }
 
   function chooseVideo(event: ChangeEvent<HTMLInputElement>) {
@@ -204,7 +216,6 @@ export default function MyPostsManager() {
 
     try {
       const form = new FormData();
-
       form.append("Content", trimmed);
 
       const contentType: PostType = video
@@ -294,6 +305,10 @@ export default function MyPostsManager() {
         current.filter((item) => item.postId !== post.postId)
       );
 
+      setExpandedPosts((current) =>
+        current.filter((id) => id !== post.postId)
+      );
+
       setSuccess("הפוסט נמחק בהצלחה.");
 
       try {
@@ -362,9 +377,7 @@ export default function MyPostsManager() {
             </span>
 
             <h3>
-              {editingPost
-                ? "עריכת הפוסט"
-                : "מה תרצו לשתף?"}
+              {editingPost ? "עריכת הפוסט" : "מה תרצו לשתף?"}
             </h3>
           </div>
 
@@ -461,7 +474,9 @@ export default function MyPostsManager() {
         <div className="posts-manager-list">
           {posts.map((post) => {
             const type = normalizeType(post.contentType);
-            const url = mediaUrl(post.mediaUrl);
+            const url = getMediaUrl(post.mediaUrl);
+
+            const isExpanded = expandedPosts.includes(post.postId);
 
             return (
               <article
@@ -486,9 +501,35 @@ export default function MyPostsManager() {
                   )}
                 </div>
 
-                <p className="posts-manager-content">
-                  {post.content}
-                </p>
+                {/* טקסט הפוסט: סגור כברירת מחדל */}
+                <div className="posts-manager-text-wrapper">
+                  <div
+                    className={`posts-manager-post-text ${
+                      isExpanded
+                        ? "is-expanded"
+                        : "is-collapsed"
+                    }`}
+                    id={`post-content-${post.postId}`}
+                  >
+                    {post.content}
+                  </div>
+
+                  {post.content.length > 180 && (
+                    <button
+                      type="button"
+                      className="posts-manager-expand"
+                      onClick={() => togglePost(post.postId)}
+                      aria-expanded={isExpanded}
+                      aria-controls={`post-content-${post.postId}`}
+                    >
+                      {isExpanded ? "הצג פחות" : "הצג עוד"}
+
+                      <span aria-hidden="true">
+                        {isExpanded ? "↑" : "↓"}
+                      </span>
+                    </button>
+                  )}
+                </div>
 
                 {url && type === "Image" && (
                   <img
