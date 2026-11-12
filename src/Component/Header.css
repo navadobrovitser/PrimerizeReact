@@ -127,3 +127,27 @@
     text-align: center;
   }
 }
+
+.site-nav .header-nav-link {
+  border: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  padding: 8px 12px;
+}
+
+.site-nav .header-nav-link:hover {
+  opacity: 0.75;
+}
+
+.header-logo-button {
+  display: inline-flex;
+  align-items: center;
+}
+
+.site-nav button:focus-visible,
+.header-logo-button:focus-visible {
+  outline: 2px solid #b48b4e;
+  outline-offset: 3px;
+}

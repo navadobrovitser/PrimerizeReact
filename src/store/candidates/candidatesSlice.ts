@@ -1,9 +1,10 @@
-import { createSlice } from '@reduxjs/toolkit';
-import { initialState } from './candidatesState';
-import { fetchCandidates } from './candidatesThunks';
+
+import { createSlice } from "@reduxjs/toolkit";
+import { initialState } from "./candidatesState";
+import { fetchCandidates } from "./candidatesThunks";
 
 const candidatesSlice = createSlice({
-  name: 'candidates',
+  name: "candidates",
   initialState,
   reducers: {},
   extraReducers: (builder) => {
@@ -12,14 +13,23 @@ const candidatesSlice = createSlice({
         state.loading = true;
         state.error = null;
       })
-      .addCase(fetchCandidates.fulfilled, (state, action) => {
-        state.loading = false;
-        state.items = action.payload;
-      })
-      .addCase(fetchCandidates.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.error.message ?? 'אירעה שגיאה בטעינת הנתונים';
-      });
+      .addCase(
+        fetchCandidates.fulfilled,
+        (state, action) => {
+          state.loading = false;
+          state.items = action.payload;
+        }
+      )
+      .addCase(
+        fetchCandidates.rejected,
+        (state, action) => {
+          state.loading = false;
+          state.error =
+            action.payload ??
+            action.error.message ??
+            "אירעה שגיאה בטעינת הנתונים";
+        }
+      );
   },
 });
 

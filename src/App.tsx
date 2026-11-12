@@ -1,5 +1,5 @@
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import type { Page } from "./Component/Header";
 import { useAppSelector } from "./store/hooks";
 
@@ -11,6 +11,7 @@ import AboutPage from "./Component/AboutPage";
 import PrimariesPage from "./Component/PrimariesPage";
 import PartyRegisterPage from "./Component/PartyRegisterPage";
 import CandidateRegistrationPage from "./Component/CandidateRegistrationPage";
+import CandidatePersonalArea from "./Component/CandidatePersonalArea";
 import { CandidatesFeedPage } from "./Component/CandidatesFeedPage";
 import CandidateMatchPage from "./Component/CandidateMatchPage";
 import VotingPage from "./Component/VotingPage";
@@ -29,9 +30,32 @@ function PlaceholderPage({
   onBack: () => void;
 }) {
   return (
-    <section className="placeholder-page">
+    <section className="placeholder-page" dir="rtl">
       <h1>{title}</h1>
       <p>העמוד הזה נמצא כרגע בבנייה.</p>
+      <button type="button" onClick={onBack}>
+        חזרה לעמוד הבית
+      </button>
+    </section>
+  );
+}
+
+function AccessDenied({
+  message,
+  onBack,
+}: {
+  message: string;
+  onBack: () => void;
+}) {
+  return (
+    <section
+      className="placeholder-page"
+      dir="rtl"
+      role="alert"
+    >
+      <h1>אין הרשאה</h1>
+      <p>{message}</p>
+
       <button type="button" onClick={onBack}>
         חזרה לעמוד הבית
       </button>
@@ -49,14 +73,19 @@ export default function App() {
   );
 
   const isLoggedIn = Boolean(token);
-  const isAdmin = role === "Admin";
+
+  const isAdmin =
+    role?.toLowerCase() === "admin";
 
   const [isPasswordSetupPage, setIsPasswordSetupPage] =
     useState(
-      () => window.location.pathname === "/set-password"
+      () =>
+        window.location.pathname ===
+        "/set-password"
     );
 
   const [page, setPage] = useState<Page>("home");
+
   const [showLoginSuccess, setShowLoginSuccess] =
     useState(false);
 
@@ -64,6 +93,17 @@ export default function App() {
     candidateRefreshKey,
     setCandidateRefreshKey,
   ] = useState(0);
+
+  // null = עדיין לא הסתיימה בדיקת הזכאות
+  const [candidateStatus, setCandidateStatus] =
+    useState<boolean | null>(null);
+
+  const handleCandidateStatusChange = useCallback(
+    (isCandidate: boolean) => {
+      setCandidateStatus(isCandidate);
+    },
+    []
+  );
 
   useEffect(() => {
     if (!isPasswordSetupPage) {
@@ -75,11 +115,15 @@ export default function App() {
   useEffect(() => {
     const handlePopState = () => {
       setIsPasswordSetupPage(
-        window.location.pathname === "/set-password"
+        window.location.pathname ===
+          "/set-password"
       );
     };
 
-    window.addEventListener("popstate", handlePopState);
+    window.addEventListener(
+      "popstate",
+      handlePopState
+    );
 
     return () => {
       window.removeEventListener(
@@ -89,8 +133,17 @@ export default function App() {
     };
   }, []);
 
+  useEffect(() => {
+    setCandidateStatus(null);
+  }, [token, candidateRefreshKey]);
+
   const goToLoginFromPasswordSetup = () => {
-    window.history.replaceState({}, "", "/");
+    window.history.replaceState(
+      {},
+      "",
+      "/"
+    );
+
     setIsPasswordSetupPage(false);
     setPage("login");
     window.scrollTo(0, 0);
@@ -111,6 +164,15 @@ export default function App() {
       return;
     }
 
+    if (
+      (next === "candidate-personal-area" ||
+        next === "create-post") &&
+      candidateStatus !== true
+    ) {
+      setPage("home");
+      return;
+    }
+
     setPage(next);
 
     window.scrollTo({
@@ -120,7 +182,21 @@ export default function App() {
   };
 
   const handleCandidateCreated = () => {
-    setCandidateRefreshKey((prev) => prev + 1);
+    setCandidateRefreshKey(
+      (previous) => previous + 1
+    );
+
+    // לאחר יצירת מועמד, נבדוק שוב
+    // את הסטטוס מול השרת
+    setCandidateStatus(null);
+
+    setPage("primaries");
+  };
+
+  const handleCandidateSaved = () => {
+    setCandidateRefreshKey(
+      (previous) => previous + 1
+    );
   };
 
   if (isPasswordSetupPage) {
@@ -128,7 +204,9 @@ export default function App() {
       <div className="app-layout" dir="rtl">
         <main className="app-main">
           <SetPasswordPage
-            onGoToLogin={goToLoginFromPasswordSetup}
+            onGoToLogin={
+              goToLoginFromPasswordSetup
+            }
           />
         </main>
       </div>
@@ -170,7 +248,12 @@ export default function App() {
     <div className="app-layout" dir="rtl">
       <Header
         onNavigate={navigate}
-        candidateRefreshKey={candidateRefreshKey}
+        candidateRefreshKey={
+          candidateRefreshKey
+        }
+        onCandidateStatusChange={
+          handleCandidateStatusChange
+        }
       />
 
       <main className="app-main">
@@ -195,8 +278,8 @@ export default function App() {
             }}
           >
             <span>
-              ✓ התחברת בהצלחה! כעת אפשר להמשיך
-              לאזור האישי ולהצבעה.
+              ✓ התחברת בהצלחה! כעת אפשר
+              להמשיך לאזור האישי ולהצבעה.
             </span>
 
             <button
@@ -244,12 +327,15 @@ export default function App() {
         {currentPage === "primaries" && (
           <PrimariesPage
             onApplyClick={() =>
-              navigate("candidate-registration")
+              navigate(
+                "candidate-registration"
+              )
             }
           />
         )}
 
-        {currentPage === "candidate-registration" && (
+        {currentPage ===
+          "candidate-registration" && (
           <CandidateRegistrationPage
             onCandidateCreated={
               handleCandidateCreated
@@ -257,13 +343,48 @@ export default function App() {
           />
         )}
 
+        {currentPage ===
+          "candidate-personal-area" &&
+          (candidateStatus === true ? (
+            <CandidatePersonalArea
+              onBack={() =>
+                navigate("primaries")
+              }
+              onSaved={
+                handleCandidateSaved
+              }
+            />
+          ) : candidateStatus === null ? (
+            <div
+              className="placeholder-page"
+              role="status"
+            >
+              בודק הרשאות מועמד...
+            </div>
+          ) : (
+            <AccessDenied
+              message="עמוד זה מיועד למועמדים בלבד."
+              onBack={() =>
+                navigate("home")
+              }
+            />
+          ))}
+
         {currentPage === "candidates" && (
           <CandidatesFeedPage />
         )}
 
-        {currentPage === "create-post" && (
-          <CreatePostPage />
-        )}
+        {currentPage === "create-post" &&
+          (candidateStatus === true ? (
+            <CreatePostPage />
+          ) : (
+            <AccessDenied
+              message="רק מועמד רשום יכול לפרסם פוסטים."
+              onBack={() =>
+                navigate("home")
+              }
+            />
+          ))}
 
         {currentPage === "match" && (
           <CandidateMatchPage />
@@ -281,32 +402,46 @@ export default function App() {
           <ElectionResultsPage />
         )}
 
-        {currentPage === "admin" && isAdmin && (
-          <AdminDashboard
-            onNavigateToVoting={() =>
-              navigate("voting")
-            }
-          />
-        )}
+        {currentPage === "admin" &&
+          (isAdmin ? (
+            <AdminDashboard
+              onNavigateToVoting={() =>
+                navigate("voting")
+              }
+            />
+          ) : (
+            <AccessDenied
+              message="עמוד זה מיועד למנהלי המערכת בלבד."
+              onBack={() =>
+                navigate("home")
+              }
+            />
+          ))}
 
         {currentPage === "leadership" && (
           <PlaceholderPage
             title="הנהגת תנופה"
-            onBack={() => navigate("home")}
+            onBack={() =>
+              navigate("home")
+            }
           />
         )}
 
         {currentPage === "program" && (
           <PlaceholderPage
             title="התוכנית שלנו"
-            onBack={() => navigate("home")}
+            onBack={() =>
+              navigate("home")
+            }
           />
         )}
 
         {currentPage === "news" && (
           <PlaceholderPage
             title="חדשות ועדכונים"
-            onBack={() => navigate("home")}
+            onBack={() =>
+              navigate("home")
+            }
           />
         )}
       </main>
