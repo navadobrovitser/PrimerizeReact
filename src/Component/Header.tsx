@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useAppSelector } from "../store/hooks";
 import Logo from "./Logo";
@@ -11,6 +12,8 @@ export type Page =
   | "news"
   | "primaries"
   | "candidates"
+  | "candidate-profile"
+  | "posts"
   | "login"
   | "voting"
   | "results"
@@ -19,8 +22,6 @@ export type Page =
   | "candidate-registration"
   | "candidate-personal-area"
   | "create-post"
-  | "posts"
-  | "candidate-profile"
   | "admin";
 
 interface HeaderProps {
@@ -35,9 +36,10 @@ interface CandidateProfile {
   name?: string;
 }
 
-const API_ORIGIN =
+const API_ORIGIN = (
   import.meta.env.VITE_API_ORIGIN ||
-  "https://localhost:7227";
+  "https://localhost:7227"
+).replace(/\/$/, "");
 
 const links: { label: string; page: Page }[] = [
   { label: "בית", page: "home" },
@@ -46,15 +48,9 @@ const links: { label: string; page: Page }[] = [
   { label: "התוכנית", page: "program" },
   { label: "חדשות", page: "news" },
   { label: "פריימריז", page: "primaries" },
-
-  // כל הפוסטים של כל המועמדים
   { label: "פוסטים", page: "posts" },
-
-  // כרטיסי המועמדים והפרופילים שלהם
-  { label: "מועמדים", page: "candidates" },
-
   { label: "הצבעה", page: "voting" },
-  { label: "התאמה חכמה ✦", page: "match" },
+  { label: "התאמה חכמה", page: "match" },
 ];
 
 export default function Header({
@@ -62,24 +58,15 @@ export default function Header({
   candidateRefreshKey = 0,
   onCandidateStatusChange,
 }: HeaderProps) {
-  const token = useAppSelector(
-    (state) => state.auth.token
-  );
-
-  const role = useAppSelector(
-    (state) => state.auth.role
-  );
+  const token = useAppSelector((state) => state.auth.token);
+  const role = useAppSelector((state) => state.auth.role);
 
   const [menuOpen, setMenuOpen] = useState(false);
+  const [isCandidate, setIsCandidate] = useState(false);
+  const [checking, setChecking] = useState(true);
+  const [activePage, setActivePage] = useState<Page>("home");
 
-  const [isCandidate, setIsCandidate] =
-    useState(false);
-
-  const [checking, setChecking] =
-    useState(true);
-
-  const isAdmin =
-    role?.toLowerCase() === "admin";
+  const isAdmin = role?.toLowerCase() === "admin";
 
   useEffect(() => {
     const controller = new AbortController();
@@ -91,9 +78,7 @@ export default function Header({
       setChecking(false);
       onCandidateStatusChange?.(false);
 
-      return () => {
-        controller.abort();
-      };
+      return () => controller.abort();
     }
 
     const checkCandidateStatus = async () => {
@@ -109,18 +94,14 @@ export default function Header({
           }
         );
 
-        if (controller.signal.aborted) {
-          return;
-        }
+        if (controller.signal.aborted) return;
 
-        // משתמש מחובר שאין לו רשומת מועמד
         if (response.status === 404) {
           setIsCandidate(false);
           onCandidateStatusChange?.(false);
           return;
         }
 
-        // שגיאת הרשאה או שגיאת שרת
         if (!response.ok) {
           throw new Error(
             `Candidate check failed: ${response.status}`
@@ -130,29 +111,18 @@ export default function Header({
         const candidate: CandidateProfile | null =
           await response.json();
 
-        if (controller.signal.aborted) {
-          return;
-        }
+        if (controller.signal.aborted) return;
 
         const candidateExists =
           candidate !== null &&
           Number(candidate.candidateId) > 0;
 
         setIsCandidate(candidateExists);
-
-        onCandidateStatusChange?.(
-          candidateExists
-        );
+        onCandidateStatusChange?.(candidateExists);
       } catch (error) {
-        if (controller.signal.aborted) {
-          return;
-        }
+        if (controller.signal.aborted) return;
 
-        console.error(
-          "Candidate status error:",
-          error
-        );
-
+        console.error("Candidate status error:", error);
         setIsCandidate(false);
         onCandidateStatusChange?.(false);
       } finally {
@@ -164,9 +134,7 @@ export default function Header({
 
     void checkCandidateStatus();
 
-    return () => {
-      controller.abort();
-    };
+    return () => controller.abort();
   }, [
     token,
     candidateRefreshKey,
@@ -175,6 +143,7 @@ export default function Header({
 
   const navigate = (page: Page) => {
     setMenuOpen(false);
+    setActivePage(page);
     onNavigate(page);
   };
 
@@ -186,8 +155,13 @@ export default function Header({
     <button
       key={page}
       type="button"
-      className={className}
+      className={`${className} ${
+        activePage === page ? "is-active" : ""
+      }`}
       onClick={() => navigate(page)}
+      aria-current={
+        activePage === page ? "page" : undefined
+      }
     >
       {label}
     </button>
@@ -196,28 +170,20 @@ export default function Header({
   return (
     <header className="site-header" dir="rtl">
       <div className="header-inner">
-
-        {/* לוגו */}
         <button
           type="button"
           onClick={() => navigate("home")}
           aria-label="מעבר לעמוד הבית"
           className="header-logo-button"
-          style={{
-            background: "transparent",
-            border: "none",
-            padding: 0,
-            cursor: "pointer",
-          }}
         >
           <Logo />
         </button>
 
-        {/* כפתור תפריט במובייל */}
         <button
           type="button"
           className="mobile-menu-button"
           aria-expanded={menuOpen}
+          aria-controls="main-site-navigation"
           aria-label={
             menuOpen
               ? "סגירת תפריט"
@@ -227,44 +193,48 @@ export default function Header({
             setMenuOpen((previous) => !previous)
           }
         >
-          {menuOpen ? "✕" : "☰"}
+          <span className="mobile-menu-lines">
+            {menuOpen ? "✕" : "☰"}
+          </span>
         </button>
 
-        {/* ניווט ראשי */}
         <nav
+          id="main-site-navigation"
           className={`site-nav ${
             menuOpen ? "open" : ""
           }`}
           aria-label="ניווט ראשי"
         >
-          {links.map((item) =>
-            navLink(item.label, item.page)
-          )}
-
-          {/* כפתורים למועמד רשום */}
-          {!checking && isCandidate && (
-            <>
-              {navLink(
-                "האזור האישי שלי",
-                "candidate-personal-area",
-                "candidate-nav-button"
-              )}
-
-              {navLink(
-                "+ הוספת פוסט",
-                "create-post",
-                "candidate-nav-button"
-              )}
-            </>
-          )}
-
-          {/* ניהול מערכת */}
-          {isAdmin &&
-            navLink(
-              "ניהול מערכת",
-              "admin",
-              "candidate-nav-button"
+          <div className="header-main-links">
+            {links.map((item) =>
+              navLink(item.label, item.page)
             )}
+          </div>
+
+          <div className="header-actions">
+            {!checking && isCandidate && (
+              <>
+                {navLink(
+                  "האזור האישי שלי",
+                  "candidate-personal-area",
+                  "candidate-nav-button candidate-area-button"
+                )}
+
+                {navLink(
+                  "+ הוספת פוסט",
+                  "create-post",
+                  "candidate-nav-button candidate-post-button"
+                )}
+              </>
+            )}
+
+            {isAdmin &&
+              navLink(
+                "ניהול מערכת",
+                "admin",
+                "candidate-nav-button candidate-area-button"
+              )}
+          </div>
         </nav>
       </div>
     </header>

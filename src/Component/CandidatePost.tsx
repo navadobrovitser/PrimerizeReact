@@ -1,57 +1,78 @@
+
 import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
+
 import type { Post } from "../store/posts/postsThunks";
 import { useAppSelector } from "../store/hooks";
+
 import PostLikes from "./PostLikes";
+
 import "./CandidatePost.css";
 
-const API_ORIGIN =
+const API_ORIGIN = (
   import.meta.env.VITE_API_ORIGIN ||
-  "https://localhost:7227";
+  "https://localhost:7227"
+).replace(/\/+$/, "");
 
-interface CommentDto {
-  commentId: number;
-  postId: number;
-  userId: number;
-  userName: string;
-  content: string;
-  createdAt: string;
-}
+const PREVIEW_LENGTH = 170;
 
-export interface CandidateComment {
-  id: number | string;
-  author: string;
-  text: string;
-}
-
-export interface CandidatePostData {
-  candidateId?: number;
-  id?: number | string;
-  name?: string;
-  role?: string;
-  slogan?: string;
-  city?: string;
-  imageUrl?: string;
-  profileImageUrl?: string;
-  description?: string;
-  likes?: number;
-  comments?: CandidateComment[];
-}
+// =====================================
+// TYPES
+// =====================================
 
 interface CandidatePostProps {
   post: Post;
+  initiallyExpanded?: boolean;
 }
 
-function getMediaUrl(path?: string | null): string {
-  if (!path) return "";
+interface PostComment {
+  commentId: number;
+  postId: number;
+  userId?: number;
+  userName?: string;
+  content: string;
+  createdAt?: string;
+}
 
-  const cleanUrl = path.trim();
+type MediaKind = "image" | "video" | "none";
 
-  if (/^https?:\/\//i.test(cleanUrl)) {
-    return cleanUrl;
+// =====================================
+// URL
+// =====================================
+
+function getMediaUrl(
+  value?: string | null
+): string {
+  if (!value?.trim()) return "";
+
+  const path = value.trim();
+
+  if (/^https?:\/\//i.test(path)) {
+    try {
+      const url = new URL(path);
+
+      const isFileAtRoot =
+        /^\/[^/]+\.(jpg|jpeg|png|webp|mp4|webm|mov)$/i.test(
+          url.pathname
+        );
+
+      if (
+        url.origin === API_ORIGIN &&
+        isFileAtRoot
+      ) {
+        return (
+          `${API_ORIGIN}/Images${url.pathname}` +
+          url.search
+        );
+      }
+
+      return path;
+    } catch {
+      return "";
+    }
   }
 
-  const cleanPath = cleanUrl.replace(/^\/+/, "");
+  const cleanPath = path.replace(/^\/+/, "");
 
   if (/^Images\//i.test(cleanPath)) {
     return `${API_ORIGIN}/${cleanPath}`;
@@ -60,13 +81,50 @@ function getMediaUrl(path?: string | null): string {
   return `${API_ORIGIN}/Images/${cleanPath}`;
 }
 
-function isVideoFile(url: string): boolean {
-  return /\.(mp4|webm|ogg|avi|mov)(\?.*)?$/i.test(url);
+// =====================================
+// זיהוי סוג מדיה
+// =====================================
+
+function detectMediaKind(
+  url: string,
+  contentType?: string | number
+): MediaKind {
+  if (!url) return "none";
+
+  const cleanUrl = url
+    .split("?")[0]
+    .split("#")[0]
+    .toLowerCase();
+
+  // הסיומת קובעת לפני ContentType
+  if (
+    /\.(jpg|jpeg|png|webp)$/.test(cleanUrl)
+  ) {
+    return "image";
+  }
+
+  if (
+    /\.(mp4|webm|mov|avi)$/.test(cleanUrl)
+  ) {
+    return "video";
+  }
+
+  const type = String(
+    contentType ?? ""
+  ).toLowerCase();
+
+  if (type === "image") return "image";
+  if (type === "video") return "video";
+
+  return "none";
 }
 
+// =====================================
+// DATE
+// =====================================
+
 function formatDate(
-  value?: string | null,
-  includeTime = false
+  value?: string
 ): string {
   if (!value) return "";
 
@@ -76,54 +134,115 @@ function formatDate(
     return "";
   }
 
-  if (includeTime) {
-    return date.toLocaleString("he-IL", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  }
-
-  return date.toLocaleDateString("he-IL");
+  return date.toLocaleString("he-IL", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
 
-function sortComments(
-  comments: CommentDto[]
-): CommentDto[] {
-  return [...comments].sort(
-    (a, b) =>
-      new Date(a.createdAt).getTime() -
-      new Date(b.createdAt).getTime()
-  );
-}
+// =====================================
+// COMPONENT
+// =====================================
 
 export default function CandidatePost({
   post,
+  initiallyExpanded = false,
 }: CandidatePostProps) {
   const token = useAppSelector(
     (state) => state.auth.token
   );
 
-  const [comments, setComments] = useState<CommentDto[]>([]);
-  const [showComments, setShowComments] = useState(false);
-  const [loadingComments, setLoadingComments] = useState(false);
-  const [savingComment, setSavingComment] = useState(false);
-  const [commentText, setCommentText] = useState("");
-  const [commentsError, setCommentsError] = useState("");
-  const [commentsLoaded, setCommentsLoaded] = useState(false);
+  const [expanded, setExpanded] =
+    useState(initiallyExpanded);
+
+  const [showComments, setShowComments] =
+    useState(false);
+
+  const [comments, setComments] =
+    useState<PostComment[]>([]);
+
+  const [loadingComments, setLoadingComments] =
+    useState(false);
+
+  const [savingComment, setSavingComment] =
+    useState(false);
+
+  const [commentText, setCommentText] =
+    useState("");
+
+  const [commentsError, setCommentsError] =
+    useState("");
+
+  const [commentsLoaded, setCommentsLoaded] =
+    useState(false);
+
+  const [mediaError, setMediaError] =
+    useState(false);
+
+  // =====================================
+  // POST DATA
+  // =====================================
 
   const postId = post.postId;
 
+  const candidateName =
+    post.candidateName ||
+    post.candidate?.user?.name ||
+    post.candidate?.name ||
+    "מועמד";
+
+  const content = post.content ?? "";
+
+  const mediaUrl = getMediaUrl(
+    post.mediaUrl
+  );
+
+  const mediaKind = detectMediaKind(
+    mediaUrl,
+    post.contentType
+  );
+
+  const isLongPost =
+    content.length > PREVIEW_LENGTH;
+
+  const previewText =
+    !expanded && isLongPost
+      ? content
+          .slice(0, PREVIEW_LENGTH)
+          .trimEnd() + "..."
+      : content;
+
+  const date = formatDate(post.createdAt);
+
+  const commentsCount = commentsLoaded
+    ? comments.length
+    : post.commentsCount ?? 0;
+
+  // =====================================
+  // איפוס שגיאת מדיה בפוסט חדש
+  // =====================================
+
   useEffect(() => {
+    setMediaError(false);
+  }, [mediaUrl]);
+
+  // =====================================
+  // LOAD COMMENTS
+  // =====================================
+
+  useEffect(() => {
+    if (!expanded || !showComments) {
+      return;
+    }
+
     const controller = new AbortController();
 
     const loadComments = async () => {
       setLoadingComments(true);
       setCommentsError("");
-      setCommentsLoaded(false);
-      setComments([]);
 
       try {
         const response = await fetch(
@@ -134,16 +253,21 @@ export default function CandidatePost({
         );
 
         if (!response.ok) {
-          throw new Error("לא ניתן לטעון את התגובות");
+          throw new Error(
+            "לא ניתן לטעון את התגובות"
+          );
         }
 
-        const data: CommentDto[] = await response.json();
+        const data = await response.json();
 
         if (controller.signal.aborted) {
           return;
         }
 
-        setComments(sortComments(data));
+        setComments(
+          Array.isArray(data) ? data : []
+        );
+
         setCommentsLoaded(true);
       } catch (error) {
         if (!controller.signal.aborted) {
@@ -165,14 +289,22 @@ export default function CandidatePost({
     return () => {
       controller.abort();
     };
-  }, [postId]);
+  }, [expanded, showComments, postId]);
+
+  // =====================================
+  // CREATE COMMENT
+  // =====================================
 
   const handleAddComment = async (
     event: FormEvent<HTMLFormElement>
   ) => {
     event.preventDefault();
 
-    if (!token || !commentText.trim() || savingComment) {
+    if (
+      !token ||
+      !commentText.trim() ||
+      savingComment
+    ) {
       return;
     }
 
@@ -196,32 +328,26 @@ export default function CandidatePost({
       );
 
       if (!response.ok) {
-        const errorData = await response
-          .json()
-          .catch(() => null);
-
         throw new Error(
-          errorData?.message || "פרסום התגובה נכשל"
+          "לא ניתן לפרסם את התגובה"
         );
       }
+
+      setCommentText("");
 
       const refreshResponse = await fetch(
         `${API_ORIGIN}/api/Comments/post/${postId}`
       );
 
-      if (!refreshResponse.ok) {
-        throw new Error(
-          "התגובה נשמרה, אך רענון התגובות נכשל"
+      if (refreshResponse.ok) {
+        const data = await refreshResponse.json();
+
+        setComments(
+          Array.isArray(data) ? data : []
         );
+
+        setCommentsLoaded(true);
       }
-
-      const updatedComments: CommentDto[] =
-        await refreshResponse.json();
-
-      setComments(sortComments(updatedComments));
-      setCommentText("");
-      setShowComments(true);
-      setCommentsLoaded(true);
     } catch (error) {
       setCommentsError(
         error instanceof Error
@@ -233,193 +359,232 @@ export default function CandidatePost({
     }
   };
 
-  const candidateName =
-    post.candidateName?.trim() ||
-    post.candidate?.user?.name ||
-    post.candidate?.name ||
-    "מועמד";
+  // =====================================
+  // EXPAND / COLLAPSE
+  // =====================================
 
-  const content = post.content ?? "";
-  const mediaUrl = getMediaUrl(post.mediaUrl);
-  const date = formatDate(post.createdAt, true);
-  const showVideo = isVideoFile(mediaUrl);
+  const toggleExpanded = () => {
+    setExpanded((previous) => !previous);
 
-  const commentsCount = commentsLoaded
-    ? comments.length
-    : post.commentsCount ?? 0;
+    if (expanded) {
+      setShowComments(false);
+    }
+  };
+
+  // =====================================
+  // JSX
+  // =====================================
 
   return (
-    <article className="candidate-post" dir="rtl">
+    <article
+      className={`candidate-post ${
+        expanded
+          ? "candidate-post--expanded"
+          : ""
+      }`}
+      dir="rtl"
+    >
       <div className="candidate-post-content">
+
+        {/* פרטי המועמד */}
         <div className="candidate-post-info">
           <h2>{candidateName}</h2>
 
           {post.candidate?.slogan && (
-            <div className="candidate-post-role">
+            <span className="candidate-post-role">
               {post.candidate.slogan}
-            </div>
+            </span>
           )}
 
           {date && (
-            <div className="candidate-post-city">
-              פורסם בתאריך {date}
-            </div>
+            <time className="candidate-post-city">
+              {date}
+            </time>
           )}
         </div>
 
+        {/* כותרת */}
         {post.title && (
           <h3 className="candidate-post-title">
             {post.title}
           </h3>
         )}
 
-        <p
-          className="candidate-post-description"
-          style={{ whiteSpace: "pre-wrap" }}
-        >
-          {content}
+        {/* תוכן */}
+        <p className="candidate-post-description">
+          {previewText}
         </p>
 
-        {mediaUrl && (
-          <div className="candidate-post-image">
-            {showVideo ? (
-              <video
-                src={mediaUrl}
-                controls
-                preload="metadata"
-                playsInline
-                style={{
-                  width: "100%",
-                  maxHeight: "450px",
-                  borderRadius: "12px",
-                  background: "#000",
-                }}
-              >
-                הדפדפן שלך אינו תומך בהצגת סרטונים.
-              </video>
-            ) : (
-              <img
-                src={mediaUrl}
-                alt="תמונה שצורפה לפוסט"
-                loading="lazy"
-              />
-            )}
-          </div>
+        {/* מדיה */}
+        {mediaUrl &&
+          !mediaError &&
+          mediaKind !== "none" && (
+            <div
+              className={`candidate-post-image ${
+                expanded
+                  ? "expanded-media"
+                  : "preview-media"
+              }`}
+            >
+              {mediaKind === "image" ? (
+                <img
+                  src={mediaUrl}
+                  alt={`תמונה מהפוסט של ${candidateName}`}
+                  loading="lazy"
+                  onError={() => {
+                    setMediaError(true);
+                  }}
+                />
+              ) : (
+                <video
+                  key={mediaUrl}
+                  src={mediaUrl}
+                  controls={expanded}
+                  preload="metadata"
+                  playsInline
+                  onClick={() => {
+                    if (!expanded) {
+                      setExpanded(true);
+                    }
+                  }}
+                  onError={() => {
+                    setMediaError(true);
+                  }}
+                >
+                  הדפדפן אינו תומך בסרטון.
+                </video>
+              )}
+            </div>
+          )}
+
+        {/* שגיאת טעינה */}
+        {mediaError && (
+          <p className="candidate-media-error">
+            לא ניתן לטעון את הקובץ המצורף.
+          </p>
         )}
 
-        {/* לייקים */}
-        <PostLikes postId={postId} />
-
-        <div className="candidate-post-divider" />
-
-        {/* ספירת תגובות וכפתור פתיחה */}
-        <div className="candidate-post-stats">
+        {/* כפתור הרחבה */}
+        {!initiallyExpanded && (
           <button
             type="button"
-            className="candidate-comments-toggle"
-            onClick={() =>
-              setShowComments((previous) => !previous)
-            }
-            aria-expanded={showComments}
+            className="candidate-post-expand-button"
+            onClick={toggleExpanded}
+            aria-expanded={expanded}
           >
-            {showComments
-              ? "סגירת תגובות"
-              : `תגובות (${commentsCount})`}
+            {expanded
+              ? "הצג פחות ↑"
+              : "קרא את הפוסט המלא ←"}
           </button>
+        )}
 
-          <span className="candidate-comments-count">
-            פוסט #{postId}
-          </span>
-        </div>
+        {/* לייקים ותגובות */}
+        {expanded && (
+          <div className="candidate-post-interactions">
 
-        {/* אזור התגובות */}
-        {showComments && (
-          <section className="candidate-comments-section">
-            <h3>תגובות לפוסט</h3>
+            <PostLikes postId={postId} />
 
-            {loadingComments && (
-              <p className="candidate-comments-message">
-                טוען תגובות...
-              </p>
-            )}
+            <div className="candidate-post-divider" />
 
-            {!loadingComments &&
-              commentsLoaded &&
-              comments.length === 0 && (
-                <p className="candidate-comments-message">
-                  עדיין אין תגובות. אפשר להיות הראשונים להגיב.
-                </p>
-              )}
+            <button
+              type="button"
+              className="candidate-comments-toggle"
+              onClick={() =>
+                setShowComments((prev) => !prev)
+              }
+            >
+              {showComments
+                ? "סגירת תגובות"
+                : `תגובות (${commentsCount})`}
+            </button>
 
-            {!loadingComments &&
-              comments.map((comment) => (
-                <div
-                  key={comment.commentId}
-                  className="candidate-comment"
-                >
-                  <div className="candidate-comment-header">
-                    <strong>
-                      {comment.userName || "משתמש"}
-                    </strong>
+            {showComments && (
+              <section className="candidate-comments-section">
+                <h3>תגובות לפוסט</h3>
 
-                    <time>
-                      {formatDate(comment.createdAt)}
-                    </time>
+                {loadingComments && (
+                  <p>טוען תגובות...</p>
+                )}
+
+                {!loadingComments &&
+                  commentsLoaded &&
+                  comments.length === 0 && (
+                    <p>עדיין אין תגובות.</p>
+                  )}
+
+                {comments.map((comment) => (
+                  <div
+                    key={comment.commentId}
+                    className="candidate-comment"
+                  >
+                    <div className="candidate-comment-header">
+                      <strong>
+                        {comment.userName || "משתמש"}
+                      </strong>
+
+                      <span>
+                        {formatDate(comment.createdAt)}
+                      </span>
+                    </div>
+
+                    <p>{comment.content}</p>
                   </div>
+                ))}
 
-                  <p>{comment.content}</p>
-                </div>
-              ))}
+                {token ? (
+                  <form
+                    className="candidate-comment-form"
+                    onSubmit={handleAddComment}
+                  >
+                    <label
+                      htmlFor={`comment-${postId}`}
+                    >
+                      הוספת תגובה
+                    </label>
 
-            {/* הוספת תגובה למשתמש מחובר */}
-            {token && (
-              <form
-                className="candidate-comment-form"
-                onSubmit={handleAddComment}
-              >
-                <label htmlFor={`comment-${postId}`}>
-                  הוספת תגובה
-                </label>
+                    <textarea
+                      id={`comment-${postId}`}
+                      value={commentText}
+                      onChange={(event) =>
+                        setCommentText(
+                          event.target.value
+                        )
+                      }
+                      rows={3}
+                      placeholder="כתבו תגובה..."
+                      required
+                      disabled={savingComment}
+                    />
 
-                <textarea
-                  id={`comment-${postId}`}
-                  value={commentText}
-                  onChange={(event) =>
-                    setCommentText(event.target.value)
-                  }
-                  placeholder="כתבו את התגובה שלכם..."
-                  rows={3}
-                  required
-                />
+                    <button
+                      type="submit"
+                      disabled={
+                        savingComment ||
+                        !commentText.trim()
+                      }
+                    >
+                      {savingComment
+                        ? "מפרסם..."
+                        : "פרסום תגובה"}
+                    </button>
+                  </form>
+                ) : (
+                  <p>
+                    יש להתחבר כדי לפרסם תגובה.
+                  </p>
+                )}
 
-                <button
-                  type="submit"
-                  disabled={
-                    savingComment || !commentText.trim()
-                  }
-                >
-                  {savingComment
-                    ? "מפרסם תגובה..."
-                    : "פרסום תגובה"}
-                </button>
-              </form>
+                {commentsError && (
+                  <p
+                    className="candidate-comments-error"
+                    role="alert"
+                  >
+                    {commentsError}
+                  </p>
+                )}
+              </section>
             )}
-
-            {!token && (
-              <p className="candidate-comments-message">
-                יש להתחבר כדי לפרסם תגובה.
-              </p>
-            )}
-
-            {commentsError && (
-              <p
-                className="candidate-comments-error"
-                role="alert"
-              >
-                {commentsError}
-              </p>
-            )}
-          </section>
+          </div>
         )}
       </div>
     </article>
