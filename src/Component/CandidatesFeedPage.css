@@ -1,142 +1,662 @@
+
+/* ========================================
+   CANDIDATES FEED PAGE
+======================================== */
+
 .candidates-feed-page {
   direction: rtl;
-  background: #ffffff;
-  min-height: 80vh;
-  padding: 65px 25px 100px;
-  font-family: "Heebo", Arial, sans-serif;
+  width: 100%;
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 48px 32px 90px;
+  box-sizing: border-box;
+  font-family: inherit;
 }
+
+/* כותרת העמוד */
 
 .candidates-feed-heading {
-  max-width: 1100px;
-  margin: 0 auto 40px;
-  text-align: right;
+  position: relative;
+  margin-bottom: 36px;
 }
 
-.candidates-feed-heading span {
-  color: #078b83;
-  font-size: 13px;
+.candidates-feed-heading > span {
+  display: block;
+  color: #078d87;
+  font-size: 14px;
   font-weight: 700;
+  margin-bottom: 12px;
 }
 
 .candidates-feed-heading h1 {
-  color: #123b53;
-  font-size: 38px;
-  font-weight: 900;
-  margin: 10px 0;
+  margin: 0 0 14px;
+  color: #17384a;
+  font-size: clamp(30px, 3vw, 44px);
+  font-weight: 800;
 }
 
-.candidates-feed-heading p {
-  color: #8093a0;
+.candidates-feed-heading > p {
+  color: #657989;
   font-size: 16px;
-  line-height: 1.9;
+  line-height: 1.8;
+  max-width: 650px;
 }
 
-.add-post-button,
-.publish-post-button {
-  background: #078b83;
-  color: white;
-  border: none;
-  border-radius: 25px;
-  padding: 13px 25px;
+/* הוספת פוסט */
+
+.add-post-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 18px;
+  padding: 14px 25px;
+  border: 0;
+  border-radius: 30px;
+  background: #078d87;
+  color: #fff;
   font-family: inherit;
   font-size: 15px;
   font-weight: 700;
   cursor: pointer;
+  transition: 0.2s ease;
 }
 
-.add-post-button {
-  margin-top: 18px;
+.add-post-button:hover {
+  background: #06736f;
+  transform: translateY(-2px);
 }
 
-.add-post-button:hover,
-.publish-post-button:hover {
-  background: #066e69;
+/* ========================================
+   GRID
+======================================== */
+
+.candidates-posts-list {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: start;
+  gap: 26px;
+  width: 100%;
 }
 
-.publish-post-button:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
+/* ========================================
+   POST CARD
+======================================== */
+
+.candidates-posts-list .candidate-post,
+.single-post-list .candidate-post {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  background: #fff;
+  border: 1px solid #e5ecef;
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 6px 26px rgba(20, 42, 65, 0.06);
+  transition:
+    transform 0.25s ease,
+    box-shadow 0.25s ease;
 }
 
-.create-post-form {
-  max-width: 1030px;
-  margin: 0 auto 45px;
-  padding: 30px;
-  background: #f4f9fa;
-  border: 1px solid #e1edef;
-  border-radius: 24px;
+.candidates-posts-list .candidate-post:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 14px 35px rgba(20, 42, 65, 0.11);
+}
+
+.candidates-posts-list .candidate-post-content,
+.single-post-list .candidate-post-content {
   display: flex;
   flex-direction: column;
   gap: 16px;
+  padding: 25px;
+  min-width: 0;
 }
 
-.create-post-form h2 {
+/* פרטי המועמד */
+
+.candidate-post-info {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.candidate-post-info h2 {
   margin: 0;
-  color: #123b53;
+  color: #17384a;
+  font-size: 21px;
+  font-weight: 800;
+}
+
+.candidate-post-role {
+  color: #078d87;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.candidate-post-city {
+  color: #81919d;
+  font-size: 13px;
+}
+
+.candidate-post-title {
+  margin: 0;
+  color: #18394c;
+  font-size: 19px;
+  line-height: 1.5;
+}
+
+/* תוכן הפוסט */
+
+.candidate-post-description {
+  margin: 0;
+  color: #3d5261;
+  font-size: 15px;
+  line-height: 1.85;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* ========================================
+   MEDIA
+======================================== */
+
+.candidate-post-image {
+  width: 100%;
+  overflow: hidden;
+  border-radius: 14px;
+  background: #f0f4f6;
+}
+
+.candidate-post-image img,
+.candidate-post-image video {
+  display: block;
+  width: 100%;
+}
+
+.preview-media img {
+  height: 185px;
+  max-height: 185px;
+  object-fit: cover;
+}
+
+.expanded-media img,
+.expanded-media video {
+  height: auto;
+  max-height: 450px;
+  object-fit: contain;
+}
+
+.expanded-media video {
+  background: #111;
+}
+
+/* תצוגה מקדימה לסרטון */
+
+.video-preview-placeholder {
+  min-height: 185px;
+  background: linear-gradient(
+    135deg,
+    #163c4e,
+    #087e80
+  );
+  color: white;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  text-align: center;
+  font-size: 15px;
+}
+
+.video-preview-play {
+  width: 56px;
+  height: 56px;
+  border: 1px solid rgba(255, 255, 255, 0.65);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   font-size: 23px;
 }
 
-.create-post-form label {
-  color: #31566a;
+/* ========================================
+   EXPAND BUTTON
+======================================== */
+
+.candidate-post-expand-button {
+  display: block;
+  width: 100%;
+  padding: 14px 18px;
+  border: 1px solid #cde6e3;
+  border-radius: 11px;
+  background: #eef8f7;
+  color: #078d87;
+  font-family: inherit;
+  font-size: 15px;
   font-weight: 700;
+  cursor: pointer;
+  transition:
+    background 0.2s ease,
+    color 0.2s ease;
+}
+
+.candidate-post-expand-button:hover {
+  background: #078d87;
+  color: #fff;
+}
+
+.candidate-post-expand-button:focus-visible,
+.add-post-button:focus-visible {
+  outline: 3px solid #78d7ce;
+  outline-offset: 3px;
+}
+
+/* ========================================
+   LIKES AND COMMENTS
+======================================== */
+
+.candidate-post-interactions {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  min-width: 0;
+}
+
+.candidate-post-divider {
+  height: 1px;
+  width: 100%;
+  background: #e7edef;
+}
+
+.candidate-post-stats {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.candidate-comments-toggle {
+  border: none;
+  background: transparent;
+  color: #078d87;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.candidate-comments-count {
+  color: #92a0a9;
+  font-size: 12px;
+}
+
+.candidate-comments-section {
+  padding-top: 15px;
+  border-top: 1px solid #edf0f2;
+}
+
+.candidate-comments-section h3 {
+  margin: 0 0 15px;
+  font-size: 17px;
+  color: #17384a;
+}
+
+.candidate-comment {
+  padding: 14px 0;
+  border-bottom: 1px solid #edf0f2;
+}
+
+.candidate-comment-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.candidate-comment-header strong {
+  color: #17384a;
   font-size: 14px;
 }
 
-.create-post-form textarea {
+.candidate-comment-header time {
+  color: #84939d;
+  font-size: 12px;
+}
+
+.candidate-comment p {
+  margin: 0;
+  color: #435766;
+  font-size: 14px;
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+}
+
+.candidate-comments-message {
+  color: #718391;
+  font-size: 14px;
+}
+
+.candidate-comments-error,
+.posts-error {
+  color: #b42318;
+  font-size: 14px;
+}
+
+.candidate-comment-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.candidate-comment-form label {
+  font-size: 14px;
+  font-weight: 700;
+  color: #17384a;
+}
+
+.candidate-comment-form textarea {
+  width: 100%;
+  min-height: 90px;
+  padding: 13px;
+  box-sizing: border-box;
+  border: 1px solid #dce5e9;
+  border-radius: 11px;
+  font: inherit;
   resize: vertical;
-  border: 1px solid #d8e7eb;
-  border-radius: 14px;
-  padding: 16px;
-  font: inherit;
-  font-size: 15px;
+}
+
+.candidate-comment-form textarea:focus {
   outline: none;
-  background: white;
-  color: #123b53;
+  border-color: #078d87;
 }
 
-.create-post-form textarea:focus {
-  border-color: #078b83;
-}
-
-.create-post-form input[type="file"] {
+.candidate-comment-form button {
+  align-self: flex-start;
+  padding: 11px 20px;
+  background: #078d87;
+  border: 0;
+  border-radius: 10px;
+  color: #fff;
   font: inherit;
-  color: #31566a;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+/* ========================================
+   CREATE POST FORM
+======================================== */
+
+.create-post-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  max-width: 760px;
+  margin: 0 0 35px;
+  padding: 28px;
+  background: #fff;
+  border: 1px solid #e5ecef;
+  border-radius: 20px;
+  box-shadow: 0 6px 26px rgba(20, 42, 65, 0.05);
+}
+
+.create-post-form h2 {
+  margin: 0 0 8px;
+  color: #17384a;
+}
+
+.create-post-form label {
+  color: #17384a;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.create-post-form textarea {
+  width: 100%;
+  padding: 14px;
+  box-sizing: border-box;
+  border: 1px solid #dce5e9;
+  border-radius: 12px;
+  font: inherit;
+  resize: vertical;
 }
 
 .publish-post-button {
   align-self: flex-start;
+  padding: 13px 24px;
+  border: 0;
+  border-radius: 11px;
+  background: #078d87;
+  color: #fff;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
 }
 
-.candidates-posts-list {
-  max-width: 1100px;
-  margin: 0 auto;
+.publish-post-button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 
-.posts-status,
-.posts-error {
-  text-align: center;
-  padding: 30px;
-  font-size: 16px;
+/* ========================================
+   SINGLE POST
+======================================== */
+
+.single-post-list {
+  max-width: 850px;
+  margin: 35px auto;
+}
+
+.single-post-navigation {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 20px;
+}
+
+.single-post-back-button,
+.single-post-all-button {
+  padding: 11px 18px;
+  border: 1px solid #d5e5e5;
+  border-radius: 10px;
+  background: #fff;
+  color: #087d79;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
 }
 
 .posts-status {
-  color: #8093a0;
+  padding: 25px;
+  color: #6c7f8c;
+  text-align: center;
 }
 
-.posts-error {
-  color: #b42318;
+/* ========================================
+   RESPONSIVE
+======================================== */
+
+@media (max-width: 1100px) {
+  .candidates-posts-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
-@media (max-width: 600px) {
+@media (max-width: 650px) {
   .candidates-feed-page {
-    padding: 45px 18px 70px;
+    padding: 28px 16px 60px;
+  }
+
+  .candidates-posts-list {
+    grid-template-columns: 1fr;
+    gap: 18px;
+  }
+
+  .candidates-posts-list .candidate-post-content,
+  .single-post-list .candidate-post-content {
+    padding: 20px;
   }
 
   .candidates-feed-heading h1 {
-    font-size: 29px;
+    font-size: 30px;
+  }
+
+  .preview-media img,
+  .video-preview-placeholder {
+    height: 200px;
+    min-height: 200px;
   }
 
   .create-post-form {
     padding: 20px;
+  }
+}
+
+/* ====================================
+   כרטיסיות בגובה אחיד
+==================================== */
+
+.candidates-posts-list {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: stretch;
+  gap: 26px;
+}
+
+.candidates-posts-list .candidate-post {
+  height: 100%;
+  min-height: 490px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+}
+
+.candidates-posts-list .candidate-post-content {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+
+/* שם ותאריך */
+.candidates-posts-list .candidate-post-info {
+  min-height: 65px;
+}
+
+/* טקסט מקוצר לגובה אחיד */
+.candidates-posts-list
+.candidate-post:not(.candidate-post--expanded)
+.candidate-post-description {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
+  overflow: hidden;
+  min-height: 112px;
+  max-height: 112px;
+}
+
+/* אזור המדיה */
+.candidates-posts-list
+.candidate-post:not(.candidate-post--expanded)
+.candidate-post-image {
+  height: 190px;
+  flex-shrink: 0;
+}
+
+.candidates-posts-list
+.candidate-post:not(.candidate-post--expanded)
+.candidate-post-image img {
+  width: 100%;
+  height: 190px;
+  object-fit: cover;
+}
+
+/* כפתור תמיד בתחתית */
+.candidates-posts-list
+.candidate-post-expand-button {
+  margin-top: auto;
+}
+
+/* כשהפוסט פתוח */
+.candidates-posts-list
+.candidate-post--expanded
+.candidate-post-description {
+  display: block;
+  min-height: 0;
+  max-height: none;
+}
+
+@media (max-width: 1100px) {
+  .candidates-posts-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 650px) {
+  .candidates-posts-list {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* שלוש עמודות עצמאיות */
+
+.candidates-posts-list {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: start;
+  gap: 26px;
+}
+
+.candidate-post-column {
+  display: flex;
+  flex-direction: column;
+  gap: 26px;
+  min-width: 0;
+}
+
+/* כל כרטיסייה עצמאית */
+
+.candidate-post-column .candidate-post {
+  height: auto;
+  min-height: 490px;
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+}
+
+.candidate-post-column .candidate-post-content {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.candidate-post-column .candidate-post-expand-button {
+  margin-top: auto;
+}
+
+/* כרטיסייה פתוחה גדלה רק לפי התוכן שלה */
+
+.candidate-post-column .candidate-post--expanded {
+  height: auto;
+}
+
+@media (max-width: 1100px) {
+  .candidates-posts-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .candidate-post-column:nth-child(3) {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 650px) {
+  .candidates-posts-list {
+    grid-template-columns: 1fr;
+  }
+
+  .candidate-post-column:nth-child(3) {
+    grid-column: auto;
   }
 }

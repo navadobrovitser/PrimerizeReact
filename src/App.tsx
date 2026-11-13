@@ -1,7 +1,8 @@
+
 import { useCallback, useEffect, useState } from "react";
 import type { Page } from "./Component/Header";
 import { useAppSelector } from "./store/hooks";
-import ProgramPage from "./Component/ProgramPage";
+
 import Header from "./Component/Header";
 import Footer from "./Component/Footer";
 import HomePage from "./Component/HomePage";
@@ -22,25 +23,13 @@ import AdminDashboard from "./Component/AdminDashboard";
 import SetPasswordPage from "./Component/SetPasswordPage";
 import NewsPage from "./Component/NewsPage";
 import LeadershipPage from "./Component/LeadershipPage";
+import ProgramPage from "./Component/ProgramPage";
+
 import "./App.css";
 
-function PlaceholderPage({
-  title,
-  onBack,
-}: {
-  title: string;
-  onBack: () => void;
-}) {
-  return (
-    <section className="placeholder-page" dir="rtl">
-      <h1>{title}</h1>
-      <p>העמוד הזה נמצא כרגע בבנייה.</p>
-      <button type="button" onClick={onBack}>
-        חזרה לעמוד הבית
-      </button>
-    </section>
-  );
-}
+// =====================================
+// הודעת חוסר הרשאה
+// =====================================
 
 function AccessDenied({
   message,
@@ -57,6 +46,7 @@ function AccessDenied({
     >
       <h1>אין הרשאה</h1>
       <p>{message}</p>
+
       <button type="button" onClick={onBack}>
         חזרה לעמוד הבית
       </button>
@@ -64,63 +54,101 @@ function AccessDenied({
   );
 }
 
+// =====================================
+// APP
+// =====================================
+
 export default function App() {
-  const token = useAppSelector((state) => state.auth.token);
-  const role = useAppSelector((state) => state.auth.role);
-
-  const isLoggedIn = Boolean(token);
-  const isAdmin = role?.toLowerCase() === "admin";
-
-  const [isPasswordSetupPage, setIsPasswordSetupPage] =
-    useState(
-      () => window.location.pathname === "/set-password"
-    );
-
-  const [page, setPage] = useState<Page>("home");
-
-  // המועמד שנבחר להצגת הפרופיל
-  const [selectedCandidateId, setSelectedCandidateId] =
-    useState<number | null>(null);
-
-  // הפוסט שנבחר מתוך עמוד החדשות
-  const [selectedPostId, setSelectedPostId] =
-    useState<number | null>(null);
-
-  const [showLoginSuccess, setShowLoginSuccess] =
-    useState(false);
-
-  const [candidateRefreshKey, setCandidateRefreshKey] =
-    useState(0);
-
-  const [candidateStatus, setCandidateStatus] =
-    useState<boolean | null>(null);
-
-  const handleCandidateStatusChange = useCallback(
-    (value: boolean) => {
-      setCandidateStatus(value);
-    },
-    []
+  const token = useAppSelector(
+    (state) => state.auth.token
   );
 
-  // מעבר למסך הבית אחרי התחברות
+  const role = useAppSelector(
+    (state) => state.auth.role
+  );
+
+  const isLoggedIn = Boolean(token);
+  const isAdmin =
+    role?.toLowerCase() === "admin";
+
+  const [
+    isPasswordSetupPage,
+    setIsPasswordSetupPage,
+  ] = useState(
+    () =>
+      window.location.pathname ===
+      "/set-password"
+  );
+
+  const [page, setPage] =
+    useState<Page>("home");
+
+  const [
+    selectedCandidateId,
+    setSelectedCandidateId,
+  ] = useState<number | null>(null);
+
+  const [
+    selectedPostId,
+    setSelectedPostId,
+  ] = useState<number | null>(null);
+
+  const [
+    showLoginSuccess,
+    setShowLoginSuccess,
+  ] = useState(false);
+
+  const [
+    candidateRefreshKey,
+    setCandidateRefreshKey,
+  ] = useState(0);
+
+  const [
+    candidateStatus,
+    setCandidateStatus,
+  ] = useState<boolean | null>(null);
+
+  const handleCandidateStatusChange =
+    useCallback((value: boolean) => {
+      setCandidateStatus(value);
+    }, []);
+
+  // =====================================
+  // אחרי התחברות
+  // =====================================
+
   useEffect(() => {
-    if (isLoggedIn && !isPasswordSetupPage) {
+    if (
+      isLoggedIn &&
+      !isPasswordSetupPage
+    ) {
       setPage("home");
       setSelectedPostId(null);
       setSelectedCandidateId(null);
+
       window.scrollTo(0, 0);
     }
-  }, [isLoggedIn, isPasswordSetupPage]);
+  }, [
+    isLoggedIn,
+    isPasswordSetupPage,
+  ]);
 
-  // זיהוי ניווט לדף הגדרת סיסמה
+  // =====================================
+  // זיהוי ניווט להגדרת סיסמה
+  // =====================================
+
   useEffect(() => {
     const handlePopState = () => {
       setIsPasswordSetupPage(
-        window.location.pathname === "/set-password"
+        window.location.pathname ===
+          "/set-password"
       );
     };
 
-    window.addEventListener("popstate", handlePopState);
+    window.addEventListener(
+      "popstate",
+      handlePopState
+    );
 
     return () => {
       window.removeEventListener(
@@ -130,19 +158,35 @@ export default function App() {
     };
   }, []);
 
-  // איפוס סטטוס מועמד כשהמשתמש מתחלף
+  // =====================================
+  // איפוס הרשאות מועמד
+  // =====================================
+
   useEffect(() => {
     setCandidateStatus(null);
   }, [token, candidateRefreshKey]);
 
+  // =====================================
+  // חזרה להתחברות
+  // =====================================
+
   const goToLoginFromPasswordSetup = () => {
-    window.history.replaceState({}, "", "/");
+    window.history.replaceState(
+      {},
+      "",
+      "/"
+    );
+
     setIsPasswordSetupPage(false);
     setPage("login");
+
     window.scrollTo(0, 0);
   };
 
-  // ניווט בין העמודים
+  // =====================================
+  // ניווט בין עמודים
+  // =====================================
+
   const navigate = (next: Page) => {
     setShowLoginSuccess(false);
 
@@ -157,22 +201,28 @@ export default function App() {
       return;
     }
 
-    // משתמש מחובר כבר רשום
-    if (next === "register" || next === "login") {
-      setPage("home");
-      return;
-    }
-
-    // ניהול למנהל בלבד
-    if (next === "admin" && !isAdmin) {
-      setPage("home");
-      return;
-    }
-
-    // אזור אישי ויצירת פוסט למועמדים בלבד
     if (
-      (next === "candidate-personal-area" ||
-        next === "create-post") &&
+      next === "register" ||
+      next === "login"
+    ) {
+      setPage("home");
+      return;
+    }
+
+    if (
+      next === "admin" &&
+      !isAdmin
+    ) {
+      setPage("home");
+      return;
+    }
+
+    // אזור אישי והוספת פוסט למועמד בלבד
+    if (
+      (
+        next === "candidate-personal-area" ||
+        next === "create-post"
+      ) &&
       candidateStatus !== true
     ) {
       setPage("home");
@@ -188,14 +238,24 @@ export default function App() {
     });
   };
 
-  // פתיחת פרופיל של מועמד
-  const openCandidateProfile = (candidateId: number) => {
+  // =====================================
+  // פתיחת פרופיל מועמד
+  // =====================================
+
+  const openCandidateProfile = (
+    candidateId: number
+  ) => {
     setSelectedCandidateId(candidateId);
     navigate("candidate-profile");
   };
 
-  // פתיחת פוסט מסוים מתוך החדשות
-  const handleOpenPost = (postId: number) => {
+  // =====================================
+  // פתיחת פוסט מתוך החדשות
+  // =====================================
+
+  const handleOpenPost = (
+    postId: number
+  ) => {
     setSelectedPostId(postId);
     setPage("posts");
 
@@ -205,40 +265,69 @@ export default function App() {
     });
   };
 
-  // לאחר רישום מועמד חדש
+  // =====================================
+  // מועמד חדש
+  // =====================================
+
   const handleCandidateCreated = () => {
-    setCandidateRefreshKey((previous) => previous + 1);
+    setCandidateRefreshKey(
+      (previous) => previous + 1
+    );
+
     setCandidateStatus(null);
     setPage("primaries");
   };
 
-  // לאחר עדכון פרטי מועמד
+  // =====================================
+  // עדכון מועמד
+  // =====================================
+
   const handleCandidateSaved = () => {
-    setCandidateRefreshKey((previous) => previous + 1);
+    setCandidateRefreshKey(
+      (previous) => previous + 1
+    );
   };
 
-  // הגדרת סיסמה
+  // =====================================
+  // עמוד הגדרת סיסמה
+  // =====================================
+
   if (isPasswordSetupPage) {
     return (
-      <div className="app-layout" dir="rtl">
+      <div
+        className="app-layout"
+        dir="rtl"
+      >
         <main className="app-main">
           <SetPasswordPage
-            onGoToLogin={goToLoginFromPasswordSetup}
+            onGoToLogin={
+              goToLoginFromPasswordSetup
+            }
           />
         </main>
       </div>
     );
   }
 
+  // =====================================
   // משתמש לא מחובר
+  // =====================================
+
   if (!isLoggedIn) {
     return (
-      <div className="app-layout" dir="rtl">
+      <div
+        className="app-layout"
+        dir="rtl"
+      >
         <main className="app-main">
           {page === "register" ? (
             <PartyRegisterPage
-              onSwitchToLogin={() => setPage("login")}
-              onRegisterSuccess={() => setPage("login")}
+              onSwitchToLogin={() =>
+                setPage("login")
+              }
+              onRegisterSuccess={() =>
+                setPage("login")
+              }
             />
           ) : (
             <LoginPage
@@ -246,7 +335,9 @@ export default function App() {
                 setShowLoginSuccess(true);
                 setPage("home");
               }}
-              onRegisterClick={() => setPage("register")}
+              onRegisterClick={() =>
+                setPage("register")
+              }
             />
           )}
         </main>
@@ -254,17 +345,28 @@ export default function App() {
     );
   }
 
+  // =====================================
+  // משתמש מחובר
+  // =====================================
+
   return (
-    <div className="app-layout" dir="rtl">
+    <div
+      className="app-layout"
+      dir="rtl"
+    >
       <Header
         onNavigate={navigate}
-        candidateRefreshKey={candidateRefreshKey}
+        candidateRefreshKey={
+          candidateRefreshKey
+        }
         onCandidateStatusChange={
           handleCandidateStatusChange
         }
       />
 
       <main className="app-main">
+
+        {/* הודעת התחברות */}
         {showLoginSuccess && (
           <div
             role="status"
@@ -280,7 +382,8 @@ export default function App() {
               border: "1px solid #a8dfba",
               display: "flex",
               alignItems: "center",
-              justifyContent: "space-between",
+              justifyContent:
+                "space-between",
               gap: "16px",
               direction: "rtl",
             }}
@@ -292,7 +395,9 @@ export default function App() {
 
             <button
               type="button"
-              onClick={() => setShowLoginSuccess(false)}
+              onClick={() =>
+                setShowLoginSuccess(false)
+              }
               aria-label="סגירת הודעת הצלחה"
               style={{
                 background: "transparent",
@@ -308,19 +413,45 @@ export default function App() {
           </div>
         )}
 
-        {/* עמוד הבית */}
+        {/* בית */}
         {page === "home" && (
           <HomePage
-            onJoinClick={() => navigate("candidates")}
-            onProgramClick={() => navigate("program")}
+            onJoinClick={() =>
+              navigate("candidates")
+            }
+            onProgramClick={() =>
+              navigate("program")
+            }
           />
         )}
 
         {/* אודות */}
         {page === "about" && (
           <AboutPage
-            onCandidatesClick={() => navigate("candidates")}
-            onProgramClick={() => navigate("program")}
+            onCandidatesClick={() =>
+              navigate("candidates")
+            }
+            onProgramClick={() =>
+              navigate("program")
+            }
+          />
+        )}
+
+        {/* הנהגה */}
+        {page === "leadership" && (
+          <LeadershipPage
+            onCandidatesClick={() =>
+              navigate("primaries")
+            }
+          />
+        )}
+
+        {/* התוכנית */}
+        {page === "program" && (
+          <ProgramPage
+            onCandidatesClick={() =>
+              navigate("primaries")
+            }
           />
         )}
 
@@ -328,7 +459,9 @@ export default function App() {
         {page === "primaries" && (
           <PrimariesPage
             onApplyClick={() =>
-              navigate("candidate-registration")
+              navigate(
+                "candidate-registration"
+              )
             }
           />
         )}
@@ -336,43 +469,65 @@ export default function App() {
         {/* הרשמה כמועמד */}
         {page === "candidate-registration" && (
           <CandidateRegistrationPage
-            onCandidateCreated={handleCandidateCreated}
+            onCandidateCreated={
+              handleCandidateCreated
+            }
           />
         )}
 
         {/* אזור אישי למועמד */}
         {page === "candidate-personal-area" &&
-          (candidateStatus === true ? (
-            <CandidatePersonalArea
-              onBack={() => navigate("primaries")}
-              onSaved={handleCandidateSaved}
-            />
-          ) : candidateStatus === null ? (
-            <div
-              className="placeholder-page"
-              role="status"
-            >
-              בודק הרשאות מועמד...
-            </div>
-          ) : (
-            <AccessDenied
-              message="עמוד זה מיועד למועמדים בלבד."
-              onBack={() => navigate("home")}
-            />
-          ))}
+          (
+            candidateStatus === true ? (
+              <CandidatePersonalArea
+                onBack={() =>
+                  navigate("primaries")
+                }
+                onSaved={
+                  handleCandidateSaved
+                }
+              />
+            ) : candidateStatus === null ? (
+              <div
+                className="placeholder-page"
+                role="status"
+              >
+                בודק הרשאות מועמד...
+              </div>
+            ) : (
+              <AccessDenied
+                message="עמוד זה מיועד למועמדים בלבד."
+                onBack={() =>
+                  navigate("home")
+                }
+              />
+            )
+          )}
 
-        {/* כל הפוסטים של המועמדים */}
+        {/* פוסטים */}
         {page === "posts" && (
           <CandidatesFeedPage
-            selectedPostId={selectedPostId}
-            isCandidate={candidateStatus === true}
+            selectedPostId={
+              selectedPostId
+            }
+            isCandidate={
+              candidateStatus === true
+            }
+
+            // הכפתור מעביר לטופס המרכזי
+            onCreatePost={() =>
+              navigate("create-post")
+            }
+
             onClearSelectedPost={() => {
               setSelectedPostId(null);
+
               window.scrollTo({
                 top: 0,
                 behavior: "smooth",
               });
             }}
+
             onBackToNews={() => {
               setSelectedPostId(null);
               navigate("news");
@@ -380,10 +535,12 @@ export default function App() {
           />
         )}
 
-        {/* כרטיסי המועמדים */}
+        {/* מועמדים */}
         {page === "candidates" && (
           <CandidatesPage
-            onSelectCandidate={openCandidateProfile}
+            onSelectCandidate={
+              openCandidateProfile
+            }
           />
         )}
 
@@ -391,84 +548,77 @@ export default function App() {
         {page === "candidate-profile" &&
           selectedCandidateId !== null && (
             <CandidateProfilePage
-              candidateId={selectedCandidateId}
-              onBack={() => navigate("candidates")}
+              candidateId={
+                selectedCandidateId
+              }
+              onBack={() =>
+                navigate("candidates")
+              }
             />
           )}
 
-        {/* יצירת פוסט - למועמד בלבד */}
+        {/* הוספת פוסט */}
         {page === "create-post" &&
-          (candidateStatus === true ? (
-            <CreatePostPage />
-          ) : (
-            <AccessDenied
-              message="רק מועמד רשום יכול לפרסם פוסטים."
-              onBack={() => navigate("home")}
-            />
-          ))}
+          (
+            candidateStatus === true ? (
+              <CreatePostPage />
+            ) : (
+              <AccessDenied
+                message="רק מועמד רשום יכול לפרסם פוסטים."
+                onBack={() =>
+                  navigate("home")
+                }
+              />
+            )
+          )}
 
         {/* התאמה חכמה */}
-        {page === "match" && <CandidateMatchPage />}
+        {page === "match" && (
+          <CandidateMatchPage />
+        )}
 
         {/* הצבעה */}
         {page === "voting" && (
           <VotingPage
-            onViewResults={() => navigate("results")}
+            onViewResults={() =>
+              navigate("results")
+            }
           />
         )}
 
-        {/* תוצאות הבחירות */}
+        {/* תוצאות */}
         {page === "results" && (
           <ElectionResultsPage />
         )}
 
-        {/* ניהול מערכת */}
+        {/* ניהול */}
         {page === "admin" &&
-          (isAdmin ? (
-            <AdminDashboard
-              onNavigateToVoting={() => navigate("voting")}
-            />
-          ) : (
-            <AccessDenied
-              message="עמוד זה מיועד למנהלי המערכת בלבד."
-              onBack={() => navigate("home")}
-            />
-          ))}
-{page === "leadership" && (
-  <LeadershipPage
-    onCandidatesClick={() => navigate("primaries")}
-  />
-)}
-
-<<<<<<< HEAD
-        {/* הנהגה */}
-        {page === "leadership" && (
-          <PlaceholderPage
-            title="הנהגת תנופה"
-            onBack={() => navigate("home")}
-          />
-        )}
-
-        {/* התוכנית */}
-        {page === "program" && (
-          <PlaceholderPage
-            title="התוכנית שלנו"
-            onBack={() => navigate("home")}
-          />
-        )}
-=======
-      {page === "program" && (
-  <ProgramPage
-    onCandidatesClick={() => navigate("primaries")}
-  />
-)}
->>>>>>> 2ad1515 (hanaga)
+          (
+            isAdmin ? (
+              <AdminDashboard
+                onNavigateToVoting={() =>
+                  navigate("voting")
+                }
+              />
+            ) : (
+              <AccessDenied
+                message="עמוד זה מיועד למנהלי המערכת בלבד."
+                onBack={() =>
+                  navigate("home")
+                }
+              />
+            )
+          )}
 
         {/* חדשות */}
         {page === "news" && (
           <NewsPage
-            onOpenPost={handleOpenPost}
-            onBack={() => navigate("home")}
+            onOpenPost={
+              handleOpenPost
+            }
+            onBack={() =>
+              navigate("home")
+            }
           />
         )}
       </main>
