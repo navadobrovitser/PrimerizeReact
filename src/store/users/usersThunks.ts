@@ -35,6 +35,7 @@ export const registerUser = createAsyncThunk<
               .join(" ")
           : errorData?.message ||
             errorData?.detail ||
+            errorData?.title ||
             "שגיאה בהרשמת המשתמש";
 
         return rejectWithValue(message);
