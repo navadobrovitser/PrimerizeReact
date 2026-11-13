@@ -13,10 +13,6 @@
   position: sticky;
   top: 0;
   z-index: 1000;
-<<<<<<< HEAD
-  width: 100%;
-=======
-
   width: 100%;
   min-height: 82px;
 
@@ -25,26 +21,11 @@
   box-shadow: 0 4px 22px rgba(18, 60, 86, 0.045);
 
   font-family: "Heebo", "Assistant", Arial, sans-serif;
->>>>>>> 2ad1515 (hanaga)
 }
 
 .header-inner {
   width: 100%;
   max-width: 1600px;
-<<<<<<< HEAD
-  height: 100%;
-  margin: auto;
-  padding: 0 24px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 20px;
-  box-sizing: border-box;
-}
-
-/* Logo */
-
-=======
   min-height: 82px;
   margin: 0 auto;
   padding: 0 30px;
@@ -75,7 +56,6 @@
   cursor: pointer;
 }
 
->>>>>>> 2ad1515 (hanaga)
 .brand-logo {
   display: inline-flex;
   align-items: center;
@@ -115,26 +95,13 @@
   font-weight: 500;
 }
 
-<<<<<<< HEAD
-/* Navigation */
-=======
 /* =====================================
    NAVIGATION LAYOUT
 ===================================== */
->>>>>>> 2ad1515 (hanaga)
 
 .site-nav {
   display: flex;
   align-items: center;
-<<<<<<< HEAD
-  justify-content: flex-start;
-  gap: clamp(8px, 1.3vw, 20px);
-  min-width: 0;
-}
-
-.site-nav a {
-  font-size: 13px;
-=======
   justify-content: space-between;
 
   flex: 1;
@@ -185,7 +152,6 @@
 
   font-family: inherit;
   font-size: 14px;
->>>>>>> 2ad1515 (hanaga)
   font-weight: 600;
   line-height: 1.5;
   letter-spacing: 0;
@@ -195,34 +161,12 @@
 
   cursor: pointer;
   transition: color 0.2s ease;
-  white-space: nowrap;
-  flex-shrink: 0;
 }
 
 .site-nav .header-nav-link:hover {
   color: var(--header-turquoise);
 }
 
-<<<<<<< HEAD
-.site-nav .header-join-button,
-.site-nav .candidate-nav-button {
-  background: #087f83;
-  color: white;
-  padding: 10px 16px;
-  border-radius: 25px;
-  font-weight: 700;
-  transition: background 0.2s ease;
-  white-space: nowrap;
-}
-
-.site-nav .header-join-button:hover,
-.site-nav .candidate-nav-button:hover {
-  background: #076c70;
-  color: white;
-}
-
-/* Mobile menu button */
-=======
 /* Active page underline */
 
 .site-nav .header-nav-link::after {
@@ -332,7 +276,6 @@
 /* =====================================
    MOBILE MENU BUTTON
 ===================================== */
->>>>>>> 2ad1515 (hanaga)
 
 .mobile-menu-button {
   display: none;
@@ -355,11 +298,6 @@
   flex-shrink: 0;
 }
 
-<<<<<<< HEAD
-/* Responsive navigation */
-
-@media (max-width: 1350px) {
-=======
 .mobile-menu-lines {
   line-height: 1;
 }
@@ -408,7 +346,6 @@
     justify-content: space-between;
   }
 
->>>>>>> 2ad1515 (hanaga)
   .mobile-menu-button {
     display: inline-flex;
   }
@@ -430,19 +367,9 @@
     box-sizing: border-box;
 
     background: #ffffff;
-<<<<<<< HEAD
-    padding: 24px;
-    flex-direction: column;
-    align-items: stretch;
-    gap: 20px;
-    box-shadow: 0 12px 20px rgba(0, 0, 0, 0.08);
-    max-height: calc(100vh - 76px);
-    overflow-y: auto;
-=======
     border-bottom: 1px solid #e5edf0;
 
     box-shadow: 0 15px 30px rgba(18, 60, 86, 0.1);
->>>>>>> 2ad1515 (hanaga)
   }
 
   .site-nav.open {
@@ -452,33 +379,6 @@
     gap: 20px;
   }
 
-<<<<<<< HEAD
-  .site-nav a {
-    font-size: 15px;
-    padding: 8px 4px;
-  }
-
-  .site-nav .header-join-button,
-  .site-nav .candidate-nav-button {
-    margin-right: 0;
-    text-align: center;
-    padding: 12px 20px;
-  }
-}
-
-@media (max-width: 600px) {
-  .header-inner {
-    padding: 0 16px;
-  }
-
-  .brand-text strong {
-    font-size: 20px;
-  }
-
-  .brand-symbol {
-    width: 39px;
-    height: 39px;
-=======
   .header-main-links {
     display: flex;
     flex-direction: column;
@@ -528,7 +428,6 @@
 
     padding: 12px 18px;
     font-size: 14px;
->>>>>>> 2ad1515 (hanaga)
   }
 }
 
