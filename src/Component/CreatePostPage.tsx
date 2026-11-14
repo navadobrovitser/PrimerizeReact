@@ -13,7 +13,7 @@ const API_ORIGIN = (
 const POSTS_API = `${API_ORIGIN}/api/Posts`;
 const CANDIDATE_API = `${API_ORIGIN}/api/Candidates/me`;
 
-const MAX_IMAGE_SIZE = 10 * 1024 * 1024;
+const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
 const MAX_VIDEO_SIZE = 20 * 1024 * 1024;
 
 const IMAGE_EXTENSIONS = ["jpg", "jpeg", "png", "webp"];
@@ -32,6 +32,10 @@ interface Post {
 
 interface CandidateProfile {
   candidateId: number;
+}
+
+interface CreatePostPageProps {
+  onPublished?: (postId?: number) => void;
 }
 
 // =====================================
@@ -152,8 +156,8 @@ function isImagePost(post: Post): boolean {
     post.contentType ?? ""
   ).toLowerCase();
 
-  if (type === "image") return true;
-  if (type === "video") return false;
+  if (type === "image" || type === "2") return true;
+  if (type === "video" || type === "3") return false;
 
   return /\.(jpg|jpeg|png|webp)(\?.*)?$/i.test(
     post.mediaUrl || ""
@@ -165,8 +169,8 @@ function isVideoPost(post: Post): boolean {
     post.contentType ?? ""
   ).toLowerCase();
 
-  if (type === "video") return true;
-  if (type === "image") return false;
+  if (type === "video" || type === "3") return true;
+  if (type === "image" || type === "2") return false;
 
   return /\.(mp4|webm|mov|avi|ogg)(\?.*)?$/i.test(
     post.mediaUrl || ""
@@ -177,7 +181,9 @@ function isVideoPost(post: Post): boolean {
 // העמוד
 // =====================================
 
-export default function CreatePostPage() {
+export default function CreatePostPage({
+  onPublished,
+}: CreatePostPageProps) {
   const token = useAppSelector(
     (state) => state.auth.token
   );
@@ -239,7 +245,7 @@ export default function CreatePostPage() {
     const result: Post[] = await response.json();
 
     if (!signal?.aborted) {
-      setPosts(result);
+      setPosts(Array.isArray(result) ? result : []);
     }
   };
 
@@ -353,7 +359,7 @@ export default function CreatePostPage() {
     if (file.size > maxSize) {
       setError(
         detectedType === "Image"
-          ? "גודל התמונה חייב להיות עד 10MB."
+          ? "גודל התמונה חייב להיות עד 5MB."
           : "גודל הסרטון חייב להיות עד 20MB."
       );
 
@@ -418,12 +424,39 @@ export default function CreatePostPage() {
         throw new Error(await readError(response));
       }
 
+      const payload: unknown =
+        await response.json().catch(() => null);
+
+      let publishedPostId: number | undefined;
+
+      if (payload && typeof payload === "object") {
+        const result = payload as Record<string, unknown>;
+
+        const post =
+          result.data &&
+          typeof result.data === "object"
+            ? (result.data as Record<string, unknown>)
+            : result;
+
+        if (
+          typeof post.postId === "number" &&
+          post.postId > 0
+        ) {
+          publishedPostId = post.postId;
+        }
+      }
+
       setContent("");
       setMediaFile(null);
       setMediaType("Text");
       setFileKey((previous) => previous + 1);
 
       setSuccess("הפוסט פורסם בהצלחה!");
+
+      if (onPublished) {
+        onPublished(publishedPostId);
+        return;
+      }
 
       try {
         await loadPosts(token);
@@ -451,7 +484,6 @@ export default function CreatePostPage() {
   return (
     <main className="create-post-page" dir="rtl">
       <div className="create-post-container">
-
         <header className="create-post-hero">
           <span>תנופה | אזור המועמדים</span>
 
@@ -513,7 +545,7 @@ export default function CreatePostPage() {
             />
 
             <small>
-              תמונות: JPG, PNG, WEBP — עד 10MB
+              תמונות: JPG, PNG, WEBP — עד 5MB
             </small>
 
             <small>

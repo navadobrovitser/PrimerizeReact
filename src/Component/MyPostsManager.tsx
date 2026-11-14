@@ -1,13 +1,27 @@
 
-import { useCallback, useEffect, useRef, useState } from "react";
-import type { ChangeEvent, FormEvent } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
+import type {
+  ChangeEvent,
+  FormEvent,
+} from "react";
+
 import { useAppSelector } from "../store/hooks";
+import {
+  getMediaUrl,
+  detectMediaKind,
+} from "../utils/mediaUrl";
+
 import "./MyPostsManager.css";
 
 const API = (
   import.meta.env.VITE_API_ORIGIN ||
   "https://localhost:7227"
-).replace(/\/$/, "");
+).replace(/\/+$/, "");
 
 const POSTS_API = `${API}/api/Posts`;
 
@@ -26,43 +40,102 @@ interface Post {
 
 type PostType = "Text" | "Image" | "Video";
 
-function normalizeType(value?: string | number): PostType {
-  const type = String(value ?? "").toLowerCase();
+const IMAGE_EXTENSIONS = [
+  "jpg", "jpeg", "png", "webp",
+];
 
-  if (type === "2" || type === "image") return "Image";
-  if (type === "3" || type === "video") return "Video";
+const VIDEO_EXTENSIONS = [
+  "mp4", "webm", "mov",
+];
+
+function getFileType(
+  file: File
+): PostType | null {
+  const extension = file.name
+    .split(".")
+    .pop()
+    ?.toLowerCase();
+
+  if (
+    extension &&
+    IMAGE_EXTENSIONS.includes(extension)
+  ) {
+    return "Image";
+  }
+
+  if (
+    extension &&
+    VIDEO_EXTENSIONS.includes(extension)
+  ) {
+    return "Video";
+  }
+
+  return null;
+}
+
+function normalizeType(
+  value?: string | number
+): PostType {
+  const type = String(
+    value ?? ""
+  ).toLowerCase();
+
+  if (
+    type === "2" ||
+    type === "image"
+  ) {
+    return "Image";
+  }
+
+  if (
+    type === "3" ||
+    type === "video"
+  ) {
+    return "Video";
+  }
 
   return "Text";
 }
 
-function getMediaUrl(path?: string | null): string {
-  if (!path) return "";
-  if (/^https?:\/\//i.test(path)) return path;
+async function getError(
+  response: Response
+): Promise<string> {
+  const data = await response
+    .json()
+    .catch(() => null);
 
-  return `${API}/${path.replace(/^\/+/, "")}`;
-}
-
-async function getError(response: Response): Promise<string> {
-  const data = await response.json().catch(() => null);
-
-  if (typeof data?.message === "string") return data.message;
-
-  if (data?.errors) {
-    const messages = Object.values(data.errors)
-      .flat()
-      .filter((item): item is string => typeof item === "string");
-
-    if (messages.length) return messages.join(" ");
+  if (
+    typeof data?.message === "string"
+  ) {
+    return data.message;
   }
 
-  if (response.status === 401)
+  if (data?.errors) {
+    const messages = Object.values(
+      data.errors
+    )
+      .flat()
+      .filter(
+        (item): item is string =>
+          typeof item === "string"
+      );
+
+    if (messages.length) {
+      return messages.join(" ");
+    }
+  }
+
+  if (response.status === 401) {
     return "פג תוקף ההתחברות. יש להתחבר מחדש.";
+  }
 
-  if (response.status === 403)
+  if (response.status === 403) {
     return "אין הרשאה לבצע פעולה זו.";
+  }
 
-  if (response.status === 404)
+  if (response.status === 404) {
     return "הפוסט לא נמצא או שאינו שייך לך.";
+  }
 
   return typeof data?.title === "string"
     ? data.title
@@ -70,24 +143,74 @@ async function getError(response: Response): Promise<string> {
 }
 
 export default function MyPostsManager() {
-  const token = useAppSelector((state) => state.auth.token);
+  const token = useAppSelector(
+    (state) => state.auth.token
+  );
 
-  const [posts, setPosts] = useState<Post[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [busy, setBusy] = useState(false);
+  const [posts, setPosts] =
+    useState<Post[]>([]);
 
-  const [editingPost, setEditingPost] = useState<Post | null>(null);
-  const [content, setContent] = useState("");
-  const [video, setVideo] = useState<File | null>(null);
-  const [fileKey, setFileKey] = useState(0);
+  const [loading, setLoading] =
+    useState(true);
 
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
+  const [busy, setBusy] =
+    useState(false);
 
-  // כל פוסט נפתח ונסגר בנפרד
-  const [expandedPosts, setExpandedPosts] = useState<number[]>([]);
+  const [
+    editingPost,
+    setEditingPost,
+  ] = useState<Post | null>(null);
 
-  const formRef = useRef<HTMLFormElement>(null);
+  const [content, setContent] =
+    useState("");
+
+  const [mediaFile, setMediaFile] =
+    useState<File | null>(null);
+
+  const [previewUrl, setPreviewUrl] =
+    useState<string | null>(null);
+
+  const [fileKey, setFileKey] =
+    useState(0);
+
+  const [error, setError] =
+    useState("");
+
+  const [success, setSuccess] =
+    useState("");
+
+  const [
+    expandedPosts,
+    setExpandedPosts,
+  ] = useState<number[]>([]);
+
+  const formRef =
+    useRef<HTMLFormElement>(null);
+
+  // =====================================
+  // תצוגה מקדימה
+  // =====================================
+
+  useEffect(() => {
+    if (!mediaFile) {
+      setPreviewUrl(null);
+      return;
+    }
+
+    const url = URL.createObjectURL(
+      mediaFile
+    );
+
+    setPreviewUrl(url);
+
+    return () => {
+      URL.revokeObjectURL(url);
+    };
+  }, [mediaFile]);
+
+  // =====================================
+  // טעינת הפוסטים שלי
+  // =====================================
 
   const loadPosts = useCallback(
     async (signal?: AbortSignal) => {
@@ -96,28 +219,40 @@ export default function MyPostsManager() {
         return;
       }
 
-      const response = await fetch(`${POSTS_API}/my-posts`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-        signal,
-      });
+      const response = await fetch(
+        `${POSTS_API}/my-posts`,
+        {
+          headers: {
+            Authorization:
+              `Bearer ${token}`,
+          },
+          signal,
+        }
+      );
 
       if (!response.ok) {
-        throw new Error(await getError(response));
+        throw new Error(
+          await getError(response)
+        );
       }
 
-      const result: unknown = await response.json();
+      const result: unknown =
+        await response.json();
 
       if (!signal?.aborted) {
-        setPosts(Array.isArray(result) ? result : []);
+        setPosts(
+          Array.isArray(result)
+            ? result
+            : []
+        );
       }
     },
     [token]
   );
 
   useEffect(() => {
-    const controller = new AbortController();
+    const controller =
+      new AbortController();
 
     setLoading(true);
     setError("");
@@ -141,19 +276,31 @@ export default function MyPostsManager() {
     return () => controller.abort();
   }, [loadPosts]);
 
+  // =====================================
+  // הרחבת פוסט
+  // =====================================
+
   function togglePost(postId: number) {
     setExpandedPosts((prev) =>
       prev.includes(postId)
-        ? prev.filter((id) => id !== postId)
+        ? prev.filter(
+            (id) => id !== postId
+          )
         : [...prev, postId]
     );
   }
 
+  // =====================================
+  // איפוס טופס
+  // =====================================
+
   function resetForm() {
     setEditingPost(null);
     setContent("");
-    setVideo(null);
-    setFileKey((value) => value + 1);
+    setMediaFile(null);
+    setFileKey(
+      (value) => value + 1
+    );
   }
 
   function scrollToForm() {
@@ -173,40 +320,93 @@ export default function MyPostsManager() {
   function editPost(post: Post) {
     setEditingPost(post);
     setContent(post.content || "");
-    setVideo(null);
-    setFileKey((value) => value + 1);
+    setMediaFile(null);
+
+    setFileKey(
+      (value) => value + 1
+    );
+
     setError("");
     setSuccess("");
     scrollToForm();
   }
 
-  function chooseVideo(event: ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0] || null;
+  // =====================================
+  // בחירת תמונה או סרטון
+  // =====================================
 
-    if (
-      file &&
-      (!/\.(mp4|avi|mov)$/i.test(file.name) ||
-        file.size > 20 * 1024 * 1024)
-    ) {
-      setError("אפשר להעלות סרטון MP4, AVI או MOV עד 20MB.");
-      setVideo(null);
+  function chooseMedia(
+    event: ChangeEvent<HTMLInputElement>
+  ) {
+    const file =
+      event.target.files?.[0] || null;
+
+    if (!file) {
+      setMediaFile(null);
+      setError("");
+      return;
+    }
+
+    const type = getFileType(file);
+
+    if (!type) {
+      setError(
+        "מותר להעלות תמונות JPG, PNG, WEBP או סרטונים MP4, WEBM, MOV."
+      );
+
+      setMediaFile(null);
+      event.target.value = "";
+      return;
+    }
+
+    const maxBytes =
+      type === "Image"
+        ? 5 * 1024 * 1024
+        : 20 * 1024 * 1024;
+
+    if (file.size > maxBytes) {
+      setError(
+        type === "Image"
+          ? "תמונה עד 5MB בלבד."
+          : "סרטון עד 20MB בלבד."
+      );
+
+      setMediaFile(null);
       event.target.value = "";
       return;
     }
 
     setError("");
-    setVideo(file);
+    setMediaFile(file);
   }
 
-  async function savePost(event: FormEvent<HTMLFormElement>) {
+  function removeMedia() {
+    setMediaFile(null);
+    setFileKey(
+      (value) => value + 1
+    );
+  }
+
+  // =====================================
+  // פרסום או עריכת פוסט
+  // =====================================
+
+  async function savePost(
+    event: FormEvent<HTMLFormElement>
+  ) {
     event.preventDefault();
 
     if (!token || busy) return;
 
     const trimmed = content.trim();
 
-    if (!trimmed || trimmed.length > 4000) {
-      setError("יש להזין תוכן באורך 1 עד 4000 תווים.");
+    if (
+      !trimmed ||
+      trimmed.length > 4000
+    ) {
+      setError(
+        "יש להזין תוכן באורך 1 עד 4000 תווים."
+      );
       return;
     }
 
@@ -216,34 +416,57 @@ export default function MyPostsManager() {
 
     try {
       const form = new FormData();
-      form.append("Content", trimmed);
 
-      const contentType: PostType = video
-        ? "Video"
-        : editingPost
-          ? normalizeType(editingPost.contentType)
-          : "Text";
+      form.append(
+        "Content",
+        trimmed
+      );
 
-      form.append("ContentType", contentType);
+      const contentType: PostType =
+        mediaFile
+          ? getFileType(mediaFile) ?? "Text"
+          : editingPost
+            ? normalizeType(
+                editingPost.contentType
+              )
+            : "Text";
 
-      if (video) {
-        form.append("MediaFile", video);
+      form.append(
+        "ContentType",
+        contentType
+      );
+
+      if (mediaFile) {
+        form.append(
+          "MediaFile",
+          mediaFile
+        );
       }
 
       const url = editingPost
         ? `${POSTS_API}/${editingPost.postId}`
         : POSTS_API;
 
-      const response = await fetch(url, {
-        method: editingPost ? "PUT" : "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-        body: form,
-      });
+      const response = await fetch(
+        url,
+        {
+          method: editingPost
+            ? "PUT"
+            : "POST",
+
+          headers: {
+            Authorization:
+              `Bearer ${token}`,
+          },
+
+          body: form,
+        }
+      );
 
       if (!response.ok) {
-        throw new Error(await getError(response));
+        throw new Error(
+          await getError(response)
+        );
       }
 
       const message = editingPost
@@ -256,7 +479,9 @@ export default function MyPostsManager() {
       try {
         await loadPosts();
       } catch {
-        setError("הפוסט נשמר, אך לא ניתן לרענן את הרשימה.");
+        setError(
+          "הפוסט נשמר, אך לא ניתן לרענן את הרשימה."
+        );
       }
     } catch (err) {
       setError(
@@ -269,12 +494,19 @@ export default function MyPostsManager() {
     }
   }
 
-  async function deletePost(post: Post) {
+  // =====================================
+  // מחיקת פוסט
+  // =====================================
+
+  async function deletePost(
+    post: Post
+  ) {
     if (!token || busy) return;
 
-    const confirmed = window.confirm(
-      "האם למחוק את הפוסט לצמיתות? גם הלייקים והתגובות המשויכים אליו יימחקו."
-    );
+    const confirmed =
+      window.confirm(
+        "האם למחוק את הפוסט לצמיתות? גם הלייקים והתגובות המשויכים אליו יימחקו."
+      );
 
     if (!confirmed) return;
 
@@ -288,33 +520,50 @@ export default function MyPostsManager() {
         {
           method: "DELETE",
           headers: {
-            Authorization: `Bearer ${token}`,
+            Authorization:
+              `Bearer ${token}`,
           },
         }
       );
 
       if (!response.ok) {
-        throw new Error(await getError(response));
+        throw new Error(
+          await getError(response)
+        );
       }
 
-      if (editingPost?.postId === post.postId) {
+      if (
+        editingPost?.postId ===
+        post.postId
+      ) {
         resetForm();
       }
 
       setPosts((current) =>
-        current.filter((item) => item.postId !== post.postId)
+        current.filter(
+          (item) =>
+            item.postId !==
+            post.postId
+        )
       );
 
       setExpandedPosts((current) =>
-        current.filter((id) => id !== post.postId)
+        current.filter(
+          (id) =>
+            id !== post.postId
+        )
       );
 
-      setSuccess("הפוסט נמחק בהצלחה.");
+      setSuccess(
+        "הפוסט נמחק בהצלחה."
+      );
 
       try {
         await loadPosts();
       } catch {
-        setError("הפוסט נמחק, אך לא ניתן לרענן את הרשימה.");
+        setError(
+          "הפוסט נמחק, אך לא ניתן לרענן את הרשימה."
+        );
       }
     } catch (err) {
       setError(
@@ -327,8 +576,15 @@ export default function MyPostsManager() {
     }
   }
 
+  // =====================================
+  // תצוגה
+  // =====================================
+
   return (
-    <section className="posts-manager" dir="rtl">
+    <section
+      className="posts-manager"
+      dir="rtl"
+    >
       <div className="posts-manager-heading">
         <div>
           <span className="posts-manager-eyebrow">
@@ -338,8 +594,9 @@ export default function MyPostsManager() {
           <h2>הפוסטים שלי</h2>
 
           <p>
-            כאן אפשר לפרסם עדכונים, לערוך פוסטים קיימים
-            ולנהל את התוכן שמוצג לחברי המפלגה.
+            כאן אפשר לפרסם עדכונים,
+            לערוך פוסטים קיימים ולנהל
+            את התוכן שמוצג לחברי המפלגה.
           </p>
         </div>
 
@@ -354,13 +611,19 @@ export default function MyPostsManager() {
       </div>
 
       {error && (
-        <div className="posts-manager-error" role="alert">
+        <div
+          className="posts-manager-error"
+          role="alert"
+        >
           {error}
         </div>
       )}
 
       {success && (
-        <div className="posts-manager-success" role="status">
+        <div
+          className="posts-manager-success"
+          role="status"
+        >
           {success}
         </div>
       )}
@@ -373,11 +636,15 @@ export default function MyPostsManager() {
         <div className="posts-manager-form-heading">
           <div>
             <span>
-              {editingPost ? "עריכת פרסום" : "פרסום חדש"}
+              {editingPost
+                ? "עריכת פרסום"
+                : "פרסום חדש"}
             </span>
 
             <h3>
-              {editingPost ? "עריכת הפוסט" : "מה תרצו לשתף?"}
+              {editingPost
+                ? "עריכת הפוסט"
+                : "מה תרצו לשתף?"}
             </h3>
           </div>
 
@@ -400,7 +667,11 @@ export default function MyPostsManager() {
         <textarea
           id="manager-post-content"
           value={content}
-          onChange={(event) => setContent(event.target.value)}
+          onChange={(event) =>
+            setContent(
+              event.target.value
+            )
+          }
           maxLength={4000}
           rows={6}
           placeholder="כתבו כאן את הפוסט שלכם..."
@@ -412,41 +683,90 @@ export default function MyPostsManager() {
           {content.length} / 4000 תווים
         </div>
 
-        <label htmlFor="manager-post-video">
-          {editingPost ? "החלפת סרטון" : "הוספת סרטון"}
+        <label htmlFor="manager-post-media">
+          {editingPost
+            ? "החלפת תמונה או סרטון"
+            : "הוספת תמונה או סרטון"}
           <span> (לא חובה)</span>
         </label>
 
         <input
           key={fileKey}
-          id="manager-post-video"
+          id="manager-post-media"
           type="file"
-          accept=".mp4,.avi,.mov"
-          onChange={chooseVideo}
+          accept=".jpg,.jpeg,.png,.webp,.mp4,.webm,.mov"
+          onChange={chooseMedia}
           disabled={busy}
         />
 
         <p className="posts-manager-hint">
-          MP4, AVI או MOV — עד 20MB
+          תמונות JPG, PNG, WEBP עד 5MB;
+          סרטונים MP4, WEBM, MOV עד 20MB
         </p>
 
-        {video && (
-          <p className="posts-manager-file">
-            הסרטון שנבחר: {video.name}
-          </p>
+        {mediaFile && (
+          <div className="posts-manager-preview">
+            <p className="posts-manager-file">
+              הקובץ שנבחר:{" "}
+              {mediaFile.name}
+            </p>
+
+            {previewUrl &&
+              getFileType(mediaFile) ===
+                "Image" && (
+                <img
+                  src={previewUrl}
+                  alt="תצוגה מקדימה"
+                  style={{
+                    width: "100%",
+                    maxHeight: 300,
+                    objectFit: "contain",
+                    borderRadius: 10,
+                  }}
+                />
+              )}
+
+            {previewUrl &&
+              getFileType(mediaFile) ===
+                "Video" && (
+                <video
+                  src={previewUrl}
+                  controls
+                  preload="metadata"
+                  style={{
+                    width: "100%",
+                    maxHeight: 300,
+                    borderRadius: 10,
+                  }}
+                />
+              )}
+
+            <button
+              type="button"
+              onClick={removeMedia}
+              disabled={busy}
+            >
+              הסרת הקובץ
+            </button>
+          </div>
         )}
 
-        {editingPost?.mediaUrl && !video && (
-          <p className="posts-manager-hint">
-            אם לא תבחרו סרטון חדש, המדיה הקיימת תישמר.
-          </p>
-        )}
+        {editingPost?.mediaUrl &&
+          !mediaFile && (
+            <p className="posts-manager-hint">
+              אם לא תבחרו קובץ חדש,
+              המדיה הקיימת תישמר.
+            </p>
+          )}
 
         <div className="posts-manager-form-actions">
           <button
             type="submit"
             className="posts-manager-submit"
-            disabled={busy || !content.trim()}
+            disabled={
+              busy ||
+              !content.trim()
+            }
           >
             {busy
               ? "שומר..."
@@ -459,7 +779,9 @@ export default function MyPostsManager() {
 
       <div className="posts-manager-list-heading">
         <h3>הפרסומים שלי</h3>
-        <span>{posts.length} פוסטים</span>
+        <span>
+          {posts.length} פוסטים
+        </span>
       </div>
 
       {loading ? (
@@ -473,10 +795,26 @@ export default function MyPostsManager() {
       ) : (
         <div className="posts-manager-list">
           {posts.map((post) => {
-            const type = normalizeType(post.contentType);
-            const url = getMediaUrl(post.mediaUrl);
+            const url = getMediaUrl(
+              post.mediaUrl
+            );
 
-            const isExpanded = expandedPosts.includes(post.postId);
+            const kind = detectMediaKind(
+              url,
+              post.contentType
+            );
+
+            const type: PostType =
+              kind === "image"
+                ? "Image"
+                : kind === "video"
+                  ? "Video"
+                  : "Text";
+
+            const isExpanded =
+              expandedPosts.includes(
+                post.postId
+              );
 
             return (
               <article
@@ -496,12 +834,13 @@ export default function MyPostsManager() {
                     <time>
                       {new Date(
                         post.createdAt
-                      ).toLocaleDateString("he-IL")}
+                      ).toLocaleDateString(
+                        "he-IL"
+                      )}
                     </time>
                   )}
                 </div>
 
-                {/* טקסט הפוסט: סגור כברירת מחדל */}
                 <div className="posts-manager-text-wrapper">
                   <div
                     className={`posts-manager-post-text ${
@@ -518,35 +857,47 @@ export default function MyPostsManager() {
                     <button
                       type="button"
                       className="posts-manager-expand"
-                      onClick={() => togglePost(post.postId)}
-                      aria-expanded={isExpanded}
+                      onClick={() =>
+                        togglePost(
+                          post.postId
+                        )
+                      }
+                      aria-expanded={
+                        isExpanded
+                      }
                       aria-controls={`post-content-${post.postId}`}
                     >
-                      {isExpanded ? "הצג פחות" : "הצג עוד"}
+                      {isExpanded
+                        ? "הצג פחות"
+                        : "הצג עוד"}
 
                       <span aria-hidden="true">
-                        {isExpanded ? "↑" : "↓"}
+                        {isExpanded
+                          ? "↑"
+                          : "↓"}
                       </span>
                     </button>
                   )}
                 </div>
 
-                {url && type === "Image" && (
-                  <img
-                    className="posts-manager-media"
-                    src={url}
-                    alt="תמונה מצורפת לפוסט"
-                  />
-                )}
+                {url &&
+                  type === "Image" && (
+                    <img
+                      className="posts-manager-media"
+                      src={url}
+                      alt="תמונה מצורפת לפוסט"
+                    />
+                  )}
 
-                {url && type === "Video" && (
-                  <video
-                    className="posts-manager-media"
-                    src={url}
-                    controls
-                    preload="metadata"
-                  />
-                )}
+                {url &&
+                  type === "Video" && (
+                    <video
+                      className="posts-manager-media"
+                      src={url}
+                      controls
+                      preload="metadata"
+                    />
+                  )}
 
                 <div className="posts-manager-card-footer">
                   <div className="posts-manager-stats">
@@ -569,7 +920,9 @@ export default function MyPostsManager() {
                     <button
                       type="button"
                       className="posts-manager-edit"
-                      onClick={() => editPost(post)}
+                      onClick={() =>
+                        editPost(post)
+                      }
                       disabled={busy}
                     >
                       עריכה
@@ -578,7 +931,11 @@ export default function MyPostsManager() {
                     <button
                       type="button"
                       className="posts-manager-delete"
-                      onClick={() => void deletePost(post)}
+                      onClick={() =>
+                        void deletePost(
+                          post
+                        )
+                      }
                       disabled={busy}
                     >
                       מחיקה
