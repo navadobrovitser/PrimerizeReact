@@ -1,0 +1,140 @@
+.secure-voting-root {
+  width: 100%;
+  min-height: 100vh;
+  background: #f3f9fb;
+  font-family: "Heebo", Arial, sans-serif;
+  color: #123b53;
+}
+
+.secure-voting-root:fullscreen {
+  width: 100vw;
+  height: 100vh;
+  overflow-y: auto;
+  background: #f3f9fb;
+}
+
+.secure-voting-content {
+  min-height: 100vh;
+}
+
+.secure-voting-entrance {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 35px 20px;
+  background:
+    radial-gradient(
+      ellipse at 50% 10%,
+      #d8f3f2 0%,
+      transparent 65%
+    ),
+    linear-gradient(145deg, #f3f9fb, #eaf3f8);
+}
+
+.secure-voting-card {
+  width: 100%;
+  max-width: 620px;
+  padding: 48px 42px;
+  background: white;
+  border: 1px solid #dceced;
+  border-radius: 28px;
+  box-shadow: 0 25px 75px rgba(17, 64, 86, 0.1);
+  text-align: center;
+}
+
+.secure-voting-symbol {
+  width: 75px;
+  height: 75px;
+  margin: 0 auto 20px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: #dff5f2;
+  color: #078e90;
+  font-size: 42px;
+}
+
+.secure-voting-eyebrow {
+  color: #078e90;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.secure-voting-card h1 {
+  margin: 15px 0;
+  color: #0a3049;
+  font-size: clamp(25px, 4vw, 35px);
+  font-weight: 900;
+}
+
+.secure-voting-card > p {
+  color: #708796;
+  font-size: 16px;
+  line-height: 1.9;
+}
+
+.secure-voting-instructions {
+  margin: 28px 0;
+  padding: 20px 25px;
+  background: #f2f9fa;
+  border-radius: 18px;
+  text-align: right;
+}
+
+.secure-voting-instructions p {
+  color: #254456;
+  font-size: 14px;
+  line-height: 1.8;
+  margin: 8px 0;
+}
+
+.secure-voting-enter {
+  width: 100%;
+  padding: 17px 25px;
+  border: none;
+  border-radius: 30px;
+  background: #0bb8b5;
+  color: #063b48;
+  font: inherit;
+  font-size: 17px;
+  font-weight: 900;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.secure-voting-enter:hover {
+  background: #09a5a2;
+  transform: translateY(-2px);
+}
+
+.secure-voting-secondary {
+  margin-top: 12px;
+  border: none;
+  background: transparent;
+  color: #36576b;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.secure-voting-error {
+  padding: 12px;
+  background: #fff1f2;
+  color: #be123c !important;
+  border-radius: 10px;
+}
+
+.secure-voting-card small {
+  display: block;
+  margin-top: 22px;
+  color: #8296a2;
+  font-size: 12px;
+  line-height: 1.7;
+}
+
+@media (max-width: 600px) {
+  .secure-voting-card {
+    padding: 30px 22px;
+  }
+}

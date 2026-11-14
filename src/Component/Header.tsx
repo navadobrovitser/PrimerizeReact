@@ -50,6 +50,7 @@ const links: { label: string; page: Page }[] = [
   { label: "פריימריז", page: "primaries" },
   { label: "פוסטים", page: "posts" },
   { label: "הצבעה", page: "voting" },
+  { label: "תוצאות הבחירות", page: "results" },
   { label: "התאמה חכמה", page: "match" },
 ];
 

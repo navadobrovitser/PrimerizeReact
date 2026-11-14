@@ -8,9 +8,7 @@ import "./VotingPage.css";
 
 const API = "https://localhost:7227/api/Voting";
 
-interface VotingPageProps {
-  onViewResults: () => void;
-}
+
 
 interface ElectionStatus {
   isClosed: boolean;
@@ -21,8 +19,8 @@ interface ExtendedVoteStatus {
   voteDate?: string | null;
 }
 
-export default function VotingPage({ onViewResults }: VotingPageProps) {
-  const dispatch = useAppDispatch();
+export default function VotingPage() {
+    const dispatch = useAppDispatch();
 
   const { token, isAuthenticated } = useAppSelector(
     (state) => state.auth
@@ -287,32 +285,7 @@ export default function VotingPage({ onViewResults }: VotingPageProps) {
             </p>
           )}
 
-          <div
-            style={{
-              textAlign: "center",
-              marginTop: "24px",
-            }}
-          >
-            <button
-              type="button"
-              onClick={onViewResults}
-              style={{
-                padding: "14px 30px",
-                borderRadius: "14px",
-                border: "none",
-                background:
-                  "linear-gradient(135deg, #7c3aed, #2563eb)",
-                color: "white",
-                fontSize: "17px",
-                fontWeight: "bold",
-                cursor: "pointer",
-                boxShadow:
-                  "0 6px 18px rgba(124, 58, 237, 0.25)",
-              }}
-            >
-              צפייה בתוצאות הבחירות
-            </button>
-          </div>
+         
         </div>
 
         {!isAuthenticated && (

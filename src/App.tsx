@@ -24,9 +24,13 @@ import SetPasswordPage from "./Component/SetPasswordPage";
 import NewsPage from "./Component/NewsPage";
 import LeadershipPage from "./Component/LeadershipPage";
 import ProgramPage from "./Component/ProgramPage";
-
+import SecureVotingGate from "./Component/SecureVotingGate";
 import "./App.css";
-
+import { useAppDispatch } from "./store/hooks";
+import { logout } from "./store/Auth/authSlice";
+import { resetVoting } from "./store/voting/votingSlice";
+import { fetchVoteStatus } from "./store/voting/votingThunks";
+import VotingSuccessPage from "./Component/VotingSuccessPage";
 // =====================================
 // הודעת חוסר הרשאה
 // =====================================
@@ -59,6 +63,7 @@ function AccessDenied({
 // =====================================
 
 export default function App() {
+  const dispatch = useAppDispatch();
   const token = useAppSelector(
     (state) => state.auth.token
   );
@@ -70,7 +75,36 @@ export default function App() {
   const isLoggedIn = Boolean(token);
   const isAdmin =
     role?.toLowerCase() === "admin";
+const hasVoted = useAppSelector(
+  (state) => state.voting.hasVoted
+);
+const voteStatusChecked = useAppSelector(
+  (state) => state.voting.statusChecked
+);
 
+const checkingVoteStatus = useAppSelector(
+  (state) => state.voting.checkingStatus
+);
+const voteSubmitting = useAppSelector(
+  (state) => state.voting.submitting
+);
+
+const [votingFullscreenActive, setVotingFullscreenActive] =
+  useState(false);
+
+const [votingSessionKey, setVotingSessionKey] =
+  useState(0);
+
+const handleVotingSessionReset = useCallback(() => {
+  setVotingSessionKey((previous) => previous + 1);
+}, []);
+
+const handleVotingActiveChange = useCallback(
+  (active: boolean) => {
+    setVotingFullscreenActive(active);
+  },
+  []
+);
   const [
     isPasswordSetupPage,
     setIsPasswordSetupPage,
@@ -82,6 +116,18 @@ export default function App() {
 
   const [page, setPage] =
     useState<Page>("home");
+const hideSiteNavigation =
+  page === "voting" &&
+  votingFullscreenActive &&
+  !hasVoted;
+
+  useEffect(() => {
+  if (page !== "voting" || !token) {
+    return;
+  }
+
+  void dispatch(fetchVoteStatus());
+}, [page, token, dispatch]);
 
   const [
     selectedCandidateId,
@@ -273,7 +319,29 @@ export default function App() {
     setCandidateRefreshKey(
       (previous) => previous + 1
     );
+// =====================================
+// חזרה לאתר לאחר הצבעה
+// =====================================
 
+const handleReturnFromVoting = () => {
+  setVotingFullscreenActive(false);
+  setPage("home");
+  window.scrollTo(0, 0);
+};
+
+// =====================================
+// התנתקות לאחר הצבעה
+// =====================================
+
+const handleLogoutFromVoting = () => {
+  setVotingFullscreenActive(false);
+
+  dispatch(resetVoting());
+  dispatch(logout());
+
+  setPage("login");
+  window.scrollTo(0, 0);
+};
     setCandidateStatus(null);
     setPage("primaries");
   };
@@ -287,7 +355,29 @@ export default function App() {
       (previous) => previous + 1
     );
   };
+// =====================================
+// חזרה לאתר לאחר הצבעה
+// =====================================
 
+const handleReturnFromVoting = () => {
+  setVotingFullscreenActive(false);
+  setPage("home");
+  window.scrollTo(0, 0);
+};
+
+// =====================================
+// התנתקות לאחר הצבעה
+// =====================================
+
+const handleLogoutFromVoting = () => {
+  setVotingFullscreenActive(false);
+
+  dispatch(resetVoting());
+  dispatch(logout());
+
+  setPage("login");
+  window.scrollTo(0, 0);
+};
   // =====================================
   // עמוד הגדרת סיסמה
   // =====================================
@@ -354,15 +444,13 @@ export default function App() {
       className="app-layout"
       dir="rtl"
     >
-      <Header
-        onNavigate={navigate}
-        candidateRefreshKey={
-          candidateRefreshKey
-        }
-        onCandidateStatusChange={
-          handleCandidateStatusChange
-        }
-      />
+ {!hideSiteNavigation && (
+  <Header
+    onNavigate={navigate}
+    candidateRefreshKey={candidateRefreshKey}
+    onCandidateStatusChange={handleCandidateStatusChange}
+  />
+)}
 
       <main className="app-main">
 
@@ -577,15 +665,33 @@ export default function App() {
           <CandidateMatchPage />
         )}
 
-        {/* הצבעה */}
-        {page === "voting" && (
-          <VotingPage
-            onViewResults={() =>
-              navigate("results")
-            }
-          />
-        )}
-
+   {/* הצבעה */}
+{page === "voting" && (
+  !voteStatusChecked || checkingVoteStatus ? (
+    <div
+      className="placeholder-page"
+      role="status"
+      dir="rtl"
+    >
+      <h2>בודקים את סטטוס ההצבעה שלך...</h2>
+      <p>נא להמתין מספר רגעים.</p>
+    </div>
+  ) : hasVoted ? (
+    <VotingSuccessPage
+      onReturnHome={handleReturnFromVoting}
+      onLogout={handleLogoutFromVoting}
+    />
+  ) : (
+    <SecureVotingGate
+      onActiveChange={handleVotingActiveChange}
+      onSessionReset={handleVotingSessionReset}
+      completed={hasVoted}
+      submitting={voteSubmitting}
+    >
+      <VotingPage key={votingSessionKey} />
+    </SecureVotingGate>
+  )
+)}
         {/* תוצאות */}
         {page === "results" && (
           <ElectionResultsPage />
@@ -623,7 +729,9 @@ export default function App() {
         )}
       </main>
 
-      <Footer onNavigate={navigate} />
-    </div>
+{!hideSiteNavigation && (
+  <Footer onNavigate={navigate} />
+)} 
+ </div>
   );
 }
