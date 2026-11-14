@@ -1,142 +1,285 @@
+
+/* ========================================
+   PRIMERIZE — CANDIDATES FEED
+   ======================================== */
+
 .candidates-feed-page {
+  --feed-primary: #173b58;
+  --feed-primary-dark: #102b43;
+  --feed-accent: #c4a36c;
+  --feed-text: #21364a;
+  --feed-muted: #718092;
+  --feed-border: #e3e9ee;
+  --feed-background: #f5f7fa;
+
+  width: 100%;
+  min-height: 75vh;
+  padding: 54px 24px 90px;
+  background: var(--feed-background);
   direction: rtl;
-  background: #ffffff;
-  min-height: 80vh;
-  padding: 65px 25px 100px;
-  font-family: "Heebo", Arial, sans-serif;
+  box-sizing: border-box;
 }
 
+.candidates-feed-page *,
+.candidates-feed-page *::before,
+.candidates-feed-page *::after {
+  box-sizing: border-box;
+}
+
+/* ========================================
+   כותרת העמוד
+   ======================================== */
+
 .candidates-feed-heading {
-  max-width: 1100px;
-  margin: 0 auto 40px;
+  width: min(100%, 1260px);
+  margin: 0 auto 38px;
   text-align: right;
 }
 
-.candidates-feed-heading span {
-  color: #078b83;
-  font-size: 13px;
+.candidates-feed-heading > span {
+  display: block;
+  margin-bottom: 12px;
+  color: #9b7a48;
+  font-size: 12px;
   font-weight: 700;
+  letter-spacing: 1px;
 }
 
 .candidates-feed-heading h1 {
-  color: #123b53;
-  font-size: 38px;
-  font-weight: 900;
-  margin: 10px 0;
+  margin: 0 0 12px;
+  color: var(--feed-primary-dark);
+  font-size: clamp(30px, 3vw, 45px);
+  font-weight: 800;
+  line-height: 1.2;
 }
 
-.candidates-feed-heading p {
-  color: #8093a0;
-  font-size: 16px;
+.candidates-feed-heading > p {
+  max-width: 650px;
+  margin: 0;
+  color: var(--feed-muted);
+  font-size: 15px;
   line-height: 1.9;
 }
 
-.add-post-button,
-.publish-post-button {
-  background: #078b83;
-  color: white;
-  border: none;
-  border-radius: 25px;
-  padding: 13px 25px;
-  font-family: inherit;
-  font-size: 15px;
-  font-weight: 700;
-  cursor: pointer;
-}
+/* ========================================
+   כפתור הוספת פוסט
+   ======================================== */
 
 .add-post-button {
-  margin-top: 18px;
-}
-
-.add-post-button:hover,
-.publish-post-button:hover {
-  background: #066e69;
-}
-
-.publish-post-button:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.create-post-form {
-  max-width: 1030px;
-  margin: 0 auto 45px;
-  padding: 30px;
-  background: #f4f9fa;
-  border: 1px solid #e1edef;
-  border-radius: 24px;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.create-post-form h2 {
-  margin: 0;
-  color: #123b53;
-  font-size: 23px;
-}
-
-.create-post-form label {
-  color: #31566a;
-  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 46px;
+  margin-top: 24px;
+  padding: 11px 26px;
+  border: 1px solid var(--feed-primary);
+  border-radius: 9px;
+  background: var(--feed-primary);
+  color: #fff;
+  font: inherit;
   font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background 0.2s ease,
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
-.create-post-form textarea {
-  resize: vertical;
-  border: 1px solid #d8e7eb;
-  border-radius: 14px;
-  padding: 16px;
-  font: inherit;
-  font-size: 15px;
-  outline: none;
-  background: white;
-  color: #123b53;
+.add-post-button:hover {
+  background: var(--feed-primary-dark);
+  transform: translateY(-2px);
+  box-shadow: 0 7px 18px rgba(23, 59, 88, 0.15);
 }
 
-.create-post-form textarea:focus {
-  border-color: #078b83;
+.add-post-button:active {
+  transform: translateY(0);
 }
 
-.create-post-form input[type="file"] {
-  font: inherit;
-  color: #31566a;
+.add-post-button:focus-visible {
+  outline: 3px solid var(--feed-accent);
+  outline-offset: 3px;
 }
 
-.publish-post-button {
-  align-self: flex-start;
-}
+/* ========================================
+   גריד — עמודות עצמאיות
+   ======================================== */
 
 .candidates-posts-list {
-  max-width: 1100px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: start;
+  gap: 24px;
+  width: min(100%, 1260px);
   margin: 0 auto;
 }
 
+.candidate-post-column {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  min-width: 0;
+  gap: 24px;
+}
+
+/*
+  כל עמודה מכילה כרטיסיות אחת מתחת לשנייה.
+  פתיחת כרטיסייה משנה רק את גובה העמודה שלה.
+*/
+
+.candidate-post-column > .candidate-post {
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+}
+
+/* ========================================
+   פוסט בודד
+   ======================================== */
+
+.single-post-list {
+  width: min(100%, 800px);
+  margin: 0 auto;
+}
+
+.single-post-list .candidate-post {
+  width: 100%;
+}
+
+.single-post-navigation {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 22px;
+}
+
+.single-post-back-button,
+.single-post-all-button {
+  min-height: 43px;
+  padding: 10px 19px;
+  border-radius: 8px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.single-post-back-button {
+  background: #fff;
+  color: var(--feed-primary);
+  border: 1px solid #cbd7e0;
+}
+
+.single-post-all-button {
+  background: var(--feed-primary);
+  color: #fff;
+  border: 1px solid var(--feed-primary);
+}
+
+.single-post-back-button:hover {
+  background: #edf3f7;
+}
+
+.single-post-all-button:hover {
+  background: var(--feed-primary-dark);
+}
+
+/* ========================================
+   מצבי טעינה ושגיאה
+   ======================================== */
+
 .posts-status,
 .posts-error {
+  width: min(100%, 800px);
+  margin: 30px auto;
+  padding: 25px;
+  border-radius: 12px;
   text-align: center;
-  padding: 30px;
-  font-size: 16px;
+  font-size: 15px;
+  line-height: 1.8;
 }
 
 .posts-status {
-  color: #8093a0;
+  color: var(--feed-muted);
+  background: #fff;
+  border: 1px solid var(--feed-border);
 }
 
 .posts-error {
-  color: #b42318;
+  color: #a13232;
+  background: #fff4f4;
+  border: 1px solid #efcaca;
 }
 
-@media (max-width: 600px) {
+/* ========================================
+   טאבלט
+   ======================================== */
+
+@media (max-width: 1100px) {
   .candidates-feed-page {
-    padding: 45px 18px 70px;
+    padding: 42px 20px 70px;
+  }
+
+  .candidates-posts-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 20px;
+  }
+
+  .candidate-post-column {
+    gap: 20px;
+  }
+}
+
+/* ========================================
+   מובייל
+   ======================================== */
+
+@media (max-width: 650px) {
+  .candidates-feed-page {
+    padding: 30px 14px 55px;
+  }
+
+  .candidates-feed-heading {
+    margin-bottom: 25px;
   }
 
   .candidates-feed-heading h1 {
     font-size: 29px;
   }
 
-  .create-post-form {
-    padding: 20px;
+  .candidates-feed-heading > p {
+    font-size: 14px;
+  }
+
+  .add-post-button {
+    width: 100%;
+  }
+
+  .candidates-posts-list {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 18px;
+  }
+
+  .candidate-post-column {
+    gap: 18px;
+  }
+
+  .single-post-navigation {
+    flex-direction: column;
+  }
+
+  .single-post-navigation button {
+    width: 100%;
+  }
+}
+
+/* ========================================
+   נגישות
+   ======================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  .candidates-feed-page button {
+    transition: none;
   }
 }

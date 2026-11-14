@@ -1,0 +1,124 @@
+
+.candidate-profile-page {
+  background: #f7fafb;
+  min-height: 85vh;
+  padding: 45px 22px 90px;
+  font-family: "Heebo", Arial, sans-serif;
+}
+
+.candidate-profile-container {
+  max-width: 1100px;
+  margin: auto;
+}
+
+.candidate-profile-back {
+  border: none;
+  background: transparent;
+  color: #078b83;
+  font-size: 15px;
+  font-weight: 800;
+  cursor: pointer;
+  margin-bottom: 30px;
+}
+
+.candidate-profile-hero {
+  display: flex;
+  gap: 38px;
+  align-items: center;
+  background: white;
+  border-radius: 26px;
+  padding: 35px;
+  border: 1px solid #e5ecef;
+  box-shadow: 0 12px 35px rgba(13, 48, 65, 0.06);
+}
+
+.candidate-profile-photo {
+  width: 220px;
+  height: 220px;
+  border-radius: 22px;
+  overflow: hidden;
+  background: #dcebed;
+  flex-shrink: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 80px;
+  color: #078b83;
+}
+
+.candidate-profile-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.candidate-profile-intro > span {
+  color: #078b83;
+  font-weight: 700;
+}
+
+.candidate-profile-intro h1 {
+  font-size: 42px;
+  color: #123b53;
+  margin: 12px 0;
+}
+
+.candidate-profile-intro h2 {
+  color: #597484;
+  font-size: 21px;
+  font-weight: 500;
+}
+
+.candidate-profile-resume,
+.candidate-profile-video {
+  background: white;
+  border: 1px solid #e5ecef;
+  border-radius: 22px;
+  padding: 32px;
+  margin-top: 28px;
+}
+
+.candidate-profile-resume h2,
+.candidate-profile-video h2,
+.candidate-profile-posts > h2 {
+  color: #123b53;
+  font-size: 26px;
+  margin: 0 0 20px;
+}
+
+.candidate-profile-resume p {
+  color: #526f80;
+  line-height: 2;
+  white-space: pre-wrap;
+}
+
+.candidate-profile-video video {
+  width: 100%;
+  max-height: 500px;
+  border-radius: 15px;
+  background: #123b53;
+}
+
+.candidate-profile-posts {
+  margin-top: 55px;
+}
+
+.candidate-profile-error {
+  color: #b42318;
+}
+
+@media (max-width: 650px) {
+  .candidate-profile-hero {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .candidate-profile-intro h1 {
+    font-size: 32px;
+  }
+
+  .candidate-profile-photo {
+    width: 180px;
+    height: 180px;
+  }
+}

@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
 import { registerUser } from "../store/users/usersThunks";
@@ -15,8 +14,9 @@ export function RegisterScreen({
 }: RegisterScreenProps) {
   const dispatch = useAppDispatch();
 
-  const { loading, error, successMessage } =
-    useAppSelector((state) => state.users);
+  const { loading, error, successMessage } = useAppSelector(
+    (state) => state.users
+  );
 
   const [fullName, setFullName] = useState("");
   const [idNumber, setIdNumber] = useState("");
@@ -26,6 +26,13 @@ export function RegisterScreen({
   const [confirmPassword, setConfirmPassword] = useState("");
   const [gender, setGender] = useState("");
   const [validationError, setValidationError] = useState("");
+
+  const clearErrors = () => {
+    setValidationError("");
+    if (error) {
+      dispatch(clearRegisterStatus());
+    }
+  };
 
   const inputStyle: React.CSSProperties = {
     width: "100%",
@@ -49,6 +56,7 @@ export function RegisterScreen({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
     setValidationError("");
     dispatch(clearRegisterStatus());
 
@@ -67,7 +75,7 @@ export function RegisterScreen({
       return;
     }
 
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
       setValidationError("כתובת האימייל אינה תקינה");
       return;
     }
@@ -91,7 +99,7 @@ export function RegisterScreen({
       registerUser({
         id: idNumber,
         name: fullName.trim(),
-        email: email.trim(),
+        email: email.trim().toLowerCase(),
         password,
         phone,
         gender,
@@ -143,7 +151,7 @@ export function RegisterScreen({
             {successMessage}
           </h3>
 
-          <p>חבר המפלגה נוסף בהצלחה למערכת.</p>
+          <p>בקשת ההצטרפות נשלחה בהצלחה וממתינה לאישור מנהל.</p>
 
           <button
             type="button"
@@ -171,7 +179,10 @@ export function RegisterScreen({
             <input
               style={inputStyle}
               value={fullName}
-              onChange={(e) => setFullName(e.target.value)}
+              onChange={(e) => {
+                setFullName(e.target.value);
+                clearErrors();
+              }}
               placeholder="הזן שם מלא"
               maxLength={50}
               required
@@ -183,11 +194,12 @@ export function RegisterScreen({
             <input
               style={inputStyle}
               value={idNumber}
-              onChange={(e) =>
+              onChange={(e) => {
                 setIdNumber(
                   e.target.value.replace(/\D/g, "").slice(0, 9)
-                )
-              }
+                );
+                clearErrors();
+              }}
               placeholder="9 ספרות"
               inputMode="numeric"
               maxLength={9}
@@ -201,7 +213,10 @@ export function RegisterScreen({
               style={inputStyle}
               type="tel"
               value={phone}
-              onChange={(e) => setPhone(e.target.value)}
+              onChange={(e) => {
+                setPhone(e.target.value);
+                clearErrors();
+              }}
               placeholder="0526775666"
               required
             />
@@ -213,7 +228,10 @@ export function RegisterScreen({
               style={inputStyle}
               type="email"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(e) => {
+                setEmail(e.target.value);
+                clearErrors();
+              }}
               placeholder="example@gmail.com"
               required
             />
@@ -225,7 +243,10 @@ export function RegisterScreen({
               style={inputStyle}
               type="password"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={(e) => {
+                setPassword(e.target.value);
+                clearErrors();
+              }}
               placeholder="לפחות 8 תווים"
               autoComplete="new-password"
               required
@@ -238,7 +259,10 @@ export function RegisterScreen({
               style={inputStyle}
               type="password"
               value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
+              onChange={(e) => {
+                setConfirmPassword(e.target.value);
+                clearErrors();
+              }}
               placeholder="הקלידי שוב את הסיסמה"
               autoComplete="new-password"
               required
@@ -250,7 +274,10 @@ export function RegisterScreen({
             <select
               style={inputStyle}
               value={gender}
-              onChange={(e) => setGender(e.target.value)}
+              onChange={(e) => {
+                setGender(e.target.value);
+                clearErrors();
+              }}
               required
             >
               <option value="">בחרי מגדר</option>
@@ -262,16 +289,19 @@ export function RegisterScreen({
           {(validationError || error) && (
             <div
               role="alert"
+              aria-live="polite"
               style={{
                 background: "#fef2f2",
                 color: "#b91c1c",
-                padding: "12px",
-                borderRadius: "6px",
+                border: "1px solid #fecaca",
+                padding: "12px 14px",
+                borderRadius: "8px",
                 marginBottom: "15px",
                 fontSize: "14px",
+                fontWeight: 500,
               }}
             >
-              {validationError || error}
+              ⚠ {validationError || error}
             </div>
           )}
 
@@ -289,7 +319,7 @@ export function RegisterScreen({
               cursor: loading ? "not-allowed" : "pointer",
             }}
           >
-            {loading ? "שומר את החבר..." : "הוספת חבר מפלגה"}
+            {loading ? "שולח בקשה..." : "הוספת חבר מפלגה"}
           </button>
         </form>
       )}

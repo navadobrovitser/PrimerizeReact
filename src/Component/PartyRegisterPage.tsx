@@ -1,11 +1,8 @@
 
 import { useState } from "react";
 import type { ChangeEvent, FormEvent } from "react";
-import "./PartyRegisterPage.css";
 
-// =============================================
-// Types
-// =============================================
+import "./PartyRegisterPage.css";
 
 interface RegisterData {
   id: string;
@@ -31,17 +28,12 @@ const initialData: RegisterData = {
   gender: "",
 };
 
-// =============================================
-// Component
-// =============================================
-
 export default function PartyRegisterPage({
   onSwitchToLogin,
   onRegisterSuccess,
 }: PartyRegisterPageProps) {
-  const [data, setData] = useState<RegisterData>(
-    initialData
-  );
+  const [data, setData] =
+    useState<RegisterData>(initialData);
 
   const [acceptedTerms, setAcceptedTerms] =
     useState(false);
@@ -50,10 +42,7 @@ export default function PartyRegisterPage({
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
 
-  // =============================================
-  // Update fields
-  // =============================================
-
+  // עדכון שדות
   const update = (
     event: ChangeEvent<
       HTMLInputElement | HTMLSelectElement
@@ -69,10 +58,7 @@ export default function PartyRegisterPage({
     setError("");
   };
 
-  // =============================================
-  // Validation
-  // =============================================
-
+  // בדיקת תקינות
   const validate = (): string => {
     const cleanId = data.id.trim();
 
@@ -94,7 +80,6 @@ export default function PartyRegisterPage({
       return "כתובת האימייל אינה תקינה.";
     }
 
-    // Remove spaces and hyphens from phone
     const cleanPhone = data.phone.replace(
       /[\s-]/g,
       ""
@@ -115,10 +100,7 @@ export default function PartyRegisterPage({
     return "";
   };
 
-  // =============================================
-  // Submit registration
-  // =============================================
-
+  // שליחת הרשמה
   const handleSubmit = async (
     event: FormEvent<HTMLFormElement>
   ) => {
@@ -167,7 +149,7 @@ export default function PartyRegisterPage({
             message = result.title;
           }
         } catch {
-          // Server did not return JSON
+          // השרת לא החזיר JSON
         }
 
         throw new Error(message);
@@ -185,17 +167,11 @@ export default function PartyRegisterPage({
     }
   };
 
-  // =============================================
-  // JSX
-  // =============================================
-
   return (
     <div className="party-register-page" dir="rtl">
       <div className="party-register-layout">
-        {/* =====================================
-            Side section
-        ===================================== */}
 
+        {/* צד עיצובי */}
         <aside className="party-register-side">
           <div className="party-side-content">
             <div className="party-brand">
@@ -256,17 +232,11 @@ export default function PartyRegisterPage({
           <div className="party-side-decoration" />
         </aside>
 
-        {/* =====================================
-            Main section
-        ===================================== */}
-
+        {/* טופס הרשמה */}
         <main className="party-register-main">
           <div className="party-register-card">
-            {success ? (
-              // =================================
-              // Success
-              // =================================
 
+            {success ? (
               <div className="party-success">
                 <div className="party-success-icon">
                   ✓
@@ -298,10 +268,6 @@ export default function PartyRegisterPage({
               </div>
             ) : (
               <>
-                {/* =============================
-                    Form heading
-                ============================= */}
-
                 <div className="party-form-heading">
                   <span className="party-form-eyebrow">
                     הצטרפות לתנופה
@@ -315,18 +281,14 @@ export default function PartyRegisterPage({
                   </p>
                 </div>
 
-                {/* =============================
-                    Registration form
-                ============================= */}
-
                 <form
                   className="party-register-form"
                   onSubmit={handleSubmit}
                   noValidate
                 >
                   <div className="party-form-grid">
-                    {/* Full name */}
 
+                    {/* שם מלא */}
                     <div className="party-field">
                       <label htmlFor="register-name">
                         שם מלא *
@@ -345,8 +307,7 @@ export default function PartyRegisterPage({
                       />
                     </div>
 
-                    {/* ID */}
-
+                    {/* תעודת זהות */}
                     <div className="party-field">
                       <label htmlFor="register-id">
                         תעודת זהות *
@@ -365,8 +326,7 @@ export default function PartyRegisterPage({
                       />
                     </div>
 
-                    {/* Email */}
-
+                    {/* אימייל */}
                     <div className="party-field">
                       <label htmlFor="register-email">
                         כתובת אימייל *
@@ -384,8 +344,7 @@ export default function PartyRegisterPage({
                       />
                     </div>
 
-                    {/* Phone */}
-
+                    {/* טלפון */}
                     <div className="party-field">
                       <label htmlFor="register-phone">
                         טלפון נייד *
@@ -404,8 +363,7 @@ export default function PartyRegisterPage({
                       />
                     </div>
 
-                    {/* Gender */}
-
+                    {/* מגדר */}
                     <div className="party-field">
                       <label htmlFor="register-gender">
                         מגדר *
@@ -433,12 +391,10 @@ export default function PartyRegisterPage({
                     </div>
                   </div>
 
-                  {/* =============================
-                      Terms
-                  ============================= */}
-
-                  <label className="party-check-row party-terms">
+                  {/* אישור תנאים + קישור */}
+                  <div className="party-check-row party-terms">
                     <input
+                      id="acceptedTerms"
                       type="checkbox"
                       checked={acceptedTerms}
                       onChange={(e) =>
@@ -449,16 +405,22 @@ export default function PartyRegisterPage({
                     />
 
                     <span>
-                      קראתי ואני מסכים/ה
-                      לתנאי החברות ולמדיניות
-                      הפרטיות של המערכת.
+                      <label htmlFor="acceptedTerms">
+                        קראתי ואני מסכים/ה ל
+                      </label>
+                      {" "}
+                      <a
+                        href="/terms.html"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        תנאי החברות ומדיניות הפרטיות
+                      </a>
+                      {" של המערכת."}
                     </span>
-                  </label>
+                  </div>
 
-                  {/* =============================
-                      Error message
-                  ============================= */}
-
+                  {/* הודעת שגיאה */}
                   {error && (
                     <div
                       className="party-error"
@@ -468,10 +430,7 @@ export default function PartyRegisterPage({
                     </div>
                   )}
 
-                  {/* =============================
-                      Submit button
-                  ============================= */}
-
+                  {/* שליחה */}
                   <button
                     type="submit"
                     className="party-primary-button"
@@ -482,10 +441,6 @@ export default function PartyRegisterPage({
                       : "שליחת בקשת הצטרפות ←"}
                   </button>
                 </form>
-
-                {/* =============================
-                    Login link
-                ============================= */}
 
                 <div className="party-login-link">
                   כבר יש לך חשבון?{" "}

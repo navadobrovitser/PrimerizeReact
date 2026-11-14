@@ -12,18 +12,34 @@ export type Page =
   | "news"
   | "primaries"
   | "candidates"
+  | "candidate-profile"
+  | "posts"
   | "login"
   | "voting"
   | "results"
   | "match"
   | "register"
   | "candidate-registration"
+  | "candidate-personal-area"
   | "create-post"
   | "admin";
+
 interface HeaderProps {
   onNavigate: (page: Page) => void;
   candidateRefreshKey?: number;
+  onCandidateStatusChange?: (isCandidate: boolean) => void;
 }
+
+interface CandidateProfile {
+  candidateId: number;
+  userId?: number;
+  name?: string;
+}
+
+const API_ORIGIN = (
+  import.meta.env.VITE_API_ORIGIN ||
+  "https://localhost:7227"
+).replace(/\/$/, "");
 
 const links: { label: string; page: Page }[] = [
   { label: "בית", page: "home" },
@@ -32,153 +48,194 @@ const links: { label: string; page: Page }[] = [
   { label: "התוכנית", page: "program" },
   { label: "חדשות", page: "news" },
   { label: "פריימריז", page: "primaries" },
-  { label: "פוסטים", page: "candidates" },
+  { label: "פוסטים", page: "posts" },
   { label: "הצבעה", page: "voting" },
-  { label: "התאמה חכמה ✦", page: "match" },
-
+  { label: "תוצאות הבחירות", page: "results" },
+  { label: "התאמה חכמה", page: "match" },
 ];
 
 export default function Header({
   onNavigate,
   candidateRefreshKey = 0,
+  onCandidateStatusChange,
 }: HeaderProps) {
-  const token = useAppSelector(
-    (state) => state.auth.token
-  );
- const role = useAppSelector((state) => state.auth.role);
-  const [open, setOpen] = useState(false);
-  const [candidate, setCandidate] = useState(false);
+  const token = useAppSelector((state) => state.auth.token);
+  const role = useAppSelector((state) => state.auth.role);
+
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [isCandidate, setIsCandidate] = useState(false);
   const [checking, setChecking] = useState(true);
-  const [statusLoaded, setStatusLoaded] = useState(false);
+  const [activePage, setActivePage] = useState<Page>("home");
+
+  const isAdmin = role?.toLowerCase() === "admin";
 
   useEffect(() => {
     const controller = new AbortController();
 
-    setCandidate(false);
+    setIsCandidate(false);
     setChecking(true);
-    setStatusLoaded(false);
 
     if (!token) {
       setChecking(false);
-      setStatusLoaded(true);
+      onCandidateStatusChange?.(false);
+
       return () => controller.abort();
     }
 
-    fetch(
-      "https://localhost:7227/api/Candidates/eligibility",
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-        signal: controller.signal,
-      }
-    )
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error("בדיקת מועמדות נכשלה");
+    const checkCandidateStatus = async () => {
+      try {
+        const response = await fetch(
+          `${API_ORIGIN}/api/Candidates/me`,
+          {
+            method: "GET",
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+            signal: controller.signal,
+          }
+        );
+
+        if (controller.signal.aborted) return;
+
+        if (response.status === 404) {
+          setIsCandidate(false);
+          onCandidateStatusChange?.(false);
+          return;
         }
 
-        return response.json();
-      })
-      .then((data) => {
-        if (!controller.signal.aborted) {
-          setCandidate(data.alreadyCandidate === true);
-          setStatusLoaded(true);
+        if (!response.ok) {
+          throw new Error(
+            `Candidate check failed: ${response.status}`
+          );
         }
-      })
-      .catch((error) => {
-        if (!controller.signal.aborted) {
-          console.error(error);
-        }
-      })
-      .finally(() => {
+
+        const candidate: CandidateProfile | null =
+          await response.json();
+
+        if (controller.signal.aborted) return;
+
+        const candidateExists =
+          candidate !== null &&
+          Number(candidate.candidateId) > 0;
+
+        setIsCandidate(candidateExists);
+        onCandidateStatusChange?.(candidateExists);
+      } catch (error) {
+        if (controller.signal.aborted) return;
+
+        console.error("Candidate status error:", error);
+        setIsCandidate(false);
+        onCandidateStatusChange?.(false);
+      } finally {
         if (!controller.signal.aborted) {
           setChecking(false);
         }
-      });
+      }
+    };
+
+    void checkCandidateStatus();
 
     return () => controller.abort();
-  }, [token, candidateRefreshKey]);
+  }, [
+    token,
+    candidateRefreshKey,
+    onCandidateStatusChange,
+  ]);
 
   const navigate = (page: Page) => {
-    setOpen(false);
+    setMenuOpen(false);
+    setActivePage(page);
     onNavigate(page);
   };
-console.log("Current role:", role);
-console.log("Is candidate:", candidate);
+
+  const navLink = (
+    label: string,
+    page: Page,
+    className = "header-nav-link"
+  ) => (
+    <button
+      key={page}
+      type="button"
+      className={`${className} ${
+        activePage === page ? "is-active" : ""
+      }`}
+      onClick={() => navigate(page)}
+      aria-current={
+        activePage === page ? "page" : undefined
+      }
+    >
+      {label}
+    </button>
+  );
+
   return (
     <header className="site-header" dir="rtl">
       <div className="header-inner">
-        <div
+        <button
+          type="button"
           onClick={() => navigate("home")}
-          style={{ cursor: "pointer" }}
+          aria-label="מעבר לעמוד הבית"
+          className="header-logo-button"
         >
           <Logo />
-        </div>
+        </button>
 
         <button
           type="button"
           className="mobile-menu-button"
-          aria-expanded={open}
+          aria-expanded={menuOpen}
+          aria-controls="main-site-navigation"
           aria-label={
-            open ? "סגירת תפריט" : "פתיחת תפריט"
+            menuOpen
+              ? "סגירת תפריט"
+              : "פתיחת תפריט"
           }
-          onClick={() => setOpen((prev) => !prev)}
+          onClick={() =>
+            setMenuOpen((previous) => !previous)
+          }
         >
-          {open ? "✕" : "☰"}
+          <span className="mobile-menu-lines">
+            {menuOpen ? "✕" : "☰"}
+          </span>
         </button>
 
-        <nav className={`site-nav ${open ? "open" : ""}`}>
-          {links.map((item) => (
-            <a
-              key={item.page}
-              href="#"
-              onClick={(e) => {
-                e.preventDefault();
-                navigate(item.page);
-              }}
-            >
-              {item.label}
-            </a>
-          ))}
+        <nav
+          id="main-site-navigation"
+          className={`site-nav ${
+            menuOpen ? "open" : ""
+          }`}
+          aria-label="ניווט ראשי"
+        >
+          <div className="header-main-links">
+            {links.map((item) =>
+              navLink(item.label, item.page)
+            )}
+          </div>
 
-          {!checking && statusLoaded && (
-            candidate ? (
-              <a
-                href="#"
-                className="candidate-nav-button"
-                onClick={(e) => {
-                  e.preventDefault();
-                  navigate("create-post");
-                }}
-              >
-                + הוספת פוסט
-              </a>
-            ) : (
-              <a
-                href="#"
-                className="candidate-nav-button"
-                onClick={(e) => {
-                  e.preventDefault();
-                  navigate("candidate-registration");
-                }}
-              >
-                הגשת מועמדות
-              </a>
-            )
-          )}
+          <div className="header-actions">
+            {!checking && isCandidate && (
+              <>
+                {navLink(
+                  "האזור האישי שלי",
+                  "candidate-personal-area",
+                  "candidate-nav-button candidate-area-button"
+                )}
 
-          {role === "Admin" && (
-  <a
-    href="#"
-    onClick={(e) => {
-      e.preventDefault();
-      navigate("admin");
-    }}
-  >
-    ניהול מערכת
-  </a>
-)}
+                {navLink(
+                  "+ הוספת פוסט",
+                  "create-post",
+                  "candidate-nav-button candidate-post-button"
+                )}
+              </>
+            )}
+
+            {isAdmin &&
+              navLink(
+                "ניהול מערכת",
+                "admin",
+                "candidate-nav-button candidate-area-button"
+              )}
+          </div>
         </nav>
       </div>
     </header>

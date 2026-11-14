@@ -1,18 +1,24 @@
 
-
-
-
 import "./Footer.css";
-
 import Logo from "./Logo";
+import type { Page } from "./Header";
 
-export default function Footer() {
+interface FooterProps {
+  onNavigate: (page: Page) => void;
+}
+
+export default function Footer({
+  onNavigate,
+}: FooterProps) {
   const year = new Date().getFullYear();
 
-  return (
-    <footer className="site-footer">
-      <div className="footer-container">
+  const navigate = (page: Page) => {
+    onNavigate(page);
+  };
 
+  return (
+    <footer className="site-footer" dir="rtl">
+      <div className="footer-container">
         <div className="footer-about">
           <Logo light />
 
@@ -25,32 +31,75 @@ export default function Footer() {
 
         <div className="footer-column">
           <h3>ניווט מהיר</h3>
-          <a href="/">בית</a>
-          <a href="/about">אודות</a>
-          <a href="/leadership">הנהגה</a>
-          <a href="/plan">התוכנית</a>
-          <a href="/news">חדשות</a>
-          <a href="/primaries">פריימריז</a>
+
+          <button type="button" onClick={() => navigate("home")}>
+            בית
+          </button>
+
+          <button type="button" onClick={() => navigate("about")}>
+            אודות
+          </button>
+
+          <button type="button" onClick={() => navigate("leadership")}>
+            הנהגה
+          </button>
+
+          <button type="button" onClick={() => navigate("program")}>
+            התוכנית
+          </button>
+
+          <button type="button" onClick={() => navigate("news")}>
+            חדשות
+          </button>
+
+          <button type="button" onClick={() => navigate("primaries")}>
+            פריימריז
+          </button>
         </div>
 
         <div className="footer-column">
           <h3>מידע נוסף</h3>
-          <a href="/join">הצטרפות למפלגה</a>
-          <a href="/contact">יצירת קשר</a>
-          <a href="/privacy">מדיניות פרטיות</a>
-          <a href="/terms">תנאי שימוש</a>
+
+          <button
+            type="button"
+            onClick={() => navigate("candidates")}
+          >
+            פוסטים ועדכונים
+          </button>
+
+          <a
+            href="/privacy.html"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            מדיניות פרטיות
+          </a>
+
+          <a
+            href="/terms.html"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            תנאי שימוש
+          </a>
         </div>
 
         <div className="footer-column">
           <h3>בואו להיות חלק</h3>
 
           <p>
-            הצטרפו אלינו וקחו חלק בעיצוב העתיד.
+            הכירו את המועמדים,
+            התעדכנו בפעילותם וקחו חלק
+            בעיצוב העתיד.
           </p>
 
-          <a href="/join" className="footer-join">
-            הצטרפו עכשיו
-          </a>
+          <button
+            type="button"
+            className="footer-join"
+            onClick={() => navigate("primaries")}
+          >
+            הכירו את המועמדים
+          </button>
         </div>
       </div>
 

@@ -1,54 +1,200 @@
 
 import { useEffect, useState } from "react";
-import type {
-  FormEvent,
-  ChangeEvent,
-} from "react";
+import type { FormEvent, ChangeEvent } from "react";
 
 import { useAppSelector } from "../store/hooks";
 import "./CreatePostPage.css";
 
-const API = "https://localhost:7227/api/Posts";
+const API_ORIGIN = (
+  import.meta.env.VITE_API_ORIGIN ||
+  "https://localhost:7227"
+).replace(/\/+$/, "");
+
+const POSTS_API = `${API_ORIGIN}/api/Posts`;
+const CANDIDATE_API = `${API_ORIGIN}/api/Candidates/me`;
+
+const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
+const MAX_VIDEO_SIZE = 20 * 1024 * 1024;
+
+const IMAGE_EXTENSIONS = ["jpg", "jpeg", "png", "webp"];
+const VIDEO_EXTENSIONS = ["mp4", "webm", "mov"];
+
+type MediaType = "Text" | "Image" | "Video";
 
 interface Post {
   postId: number;
   candidateId: number;
   content: string;
-  contentType?: string;
+  contentType?: string | number;
   mediaUrl?: string | null;
   createdAt?: string;
 }
 
-async function readError(
-  response: Response
-): Promise<string> {
-  const data = await response
-    .json()
-    .catch(() => null);
+interface CandidateProfile {
+  candidateId: number;
+}
 
-  return (
-    data?.message ||
-    data?.title ||
-    (response.status === 403
-      ? "אין הרשאה לפרסם פוסט"
-      : "הבקשה נכשלה")
+interface CreatePostPageProps {
+  onPublished?: (postId?: number) => void;
+}
+
+// =====================================
+// קריאת שגיאות מהשרת
+// =====================================
+
+async function readError(response: Response): Promise<string> {
+  const data = await response.json().catch(() => null);
+
+  if (typeof data?.message === "string") {
+    return data.message;
+  }
+
+  if (typeof data?.title === "string") {
+    return data.title;
+  }
+
+  if (data?.errors && typeof data.errors === "object") {
+    const messages = Object.values(data.errors)
+      .flatMap((value) =>
+        Array.isArray(value) ? value : []
+      )
+      .filter(
+        (value): value is string =>
+          typeof value === "string"
+      );
+
+    if (messages.length > 0) {
+      return messages.join(" ");
+    }
+  }
+
+  if (response.status === 401) {
+    return "פג תוקף ההתחברות. יש להתחבר מחדש.";
+  }
+
+  if (response.status === 403) {
+    return "אין הרשאה לבצע פעולה זו.";
+  }
+
+  return `הבקשה נכשלה (${response.status})`;
+}
+
+// =====================================
+// זיהוי סוג הקובץ
+// =====================================
+
+function getMediaType(file: File): MediaType | null {
+  const extension = file.name
+    .split(".")
+    .pop()
+    ?.toLowerCase();
+
+  if (!extension) return null;
+
+  if (
+    IMAGE_EXTENSIONS.includes(extension) &&
+    file.type.startsWith("image/")
+  ) {
+    return "Image";
+  }
+
+  if (
+    VIDEO_EXTENSIONS.includes(extension) &&
+    (file.type.startsWith("video/") || file.type === "")
+  ) {
+    return "Video";
+  }
+
+  return null;
+}
+
+// =====================================
+// בניית כתובת נכונה לתמונה או סרטון
+// =====================================
+
+function resolveMediaUrl(
+  url?: string | null
+): string | null {
+  if (!url?.trim()) return null;
+
+  const cleanUrl = url.trim();
+
+  if (/^https?:\/\//i.test(cleanUrl)) {
+    try {
+      const parsed = new URL(cleanUrl);
+
+      if (
+        parsed.origin === API_ORIGIN &&
+        /^\/[^/]+\.(jpg|jpeg|png|webp|mp4|webm|mov|avi|ogg)$/i.test(
+          parsed.pathname
+        )
+      ) {
+        return `${API_ORIGIN}/Images${parsed.pathname}${parsed.search}`;
+      }
+
+      return cleanUrl;
+    } catch {
+      return null;
+    }
+  }
+
+  const cleanPath = cleanUrl.replace(/^\/+/, "");
+
+  if (/^Images\//i.test(cleanPath)) {
+    return `${API_ORIGIN}/${cleanPath}`;
+  }
+
+  return `${API_ORIGIN}/Images/${cleanPath}`;
+}
+
+// =====================================
+// זיהוי תמונה או סרטון בפוסט
+// =====================================
+
+function isImagePost(post: Post): boolean {
+  const type = String(
+    post.contentType ?? ""
+  ).toLowerCase();
+
+  if (type === "image" || type === "2") return true;
+  if (type === "video" || type === "3") return false;
+
+  return /\.(jpg|jpeg|png|webp)(\?.*)?$/i.test(
+    post.mediaUrl || ""
   );
 }
 
-export default function CreatePostPage() {
+function isVideoPost(post: Post): boolean {
+  const type = String(
+    post.contentType ?? ""
+  ).toLowerCase();
+
+  if (type === "video" || type === "3") return true;
+  if (type === "image" || type === "2") return false;
+
+  return /\.(mp4|webm|mov|avi|ogg)(\?.*)?$/i.test(
+    post.mediaUrl || ""
+  );
+}
+
+// =====================================
+// העמוד
+// =====================================
+
+export default function CreatePostPage({
+  onPublished,
+}: CreatePostPageProps) {
   const token = useAppSelector(
     (state) => state.auth.token
   );
 
-  const [authorized, setAuthorized] =
-    useState(false);
-
-  const [checking, setChecking] =
-    useState(true);
+  const [authorized, setAuthorized] = useState(false);
+  const [checking, setChecking] = useState(true);
 
   const [content, setContent] = useState("");
-  const [video, setVideo] =
-    useState<File | null>(null);
+  const [mediaFile, setMediaFile] = useState<File | null>(null);
+  const [mediaType, setMediaType] = useState<MediaType>("Text");
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(false);
@@ -56,12 +202,34 @@ export default function CreatePostPage() {
   const [success, setSuccess] = useState("");
   const [fileKey, setFileKey] = useState(0);
 
+  // =====================================
+  // תצוגה מקדימה
+  // =====================================
+
+  useEffect(() => {
+    if (!mediaFile) {
+      setPreviewUrl(null);
+      return;
+    }
+
+    const objectUrl = URL.createObjectURL(mediaFile);
+    setPreviewUrl(objectUrl);
+
+    return () => {
+      URL.revokeObjectURL(objectUrl);
+    };
+  }, [mediaFile]);
+
+  // =====================================
+  // טעינת פוסטים אישיים
+  // =====================================
+
   const loadPosts = async (
     currentToken: string,
     signal?: AbortSignal
   ) => {
     const response = await fetch(
-      `${API}/my-posts`,
+      `${POSTS_API}/my-posts`,
       {
         headers: {
           Authorization: `Bearer ${currentToken}`,
@@ -71,17 +239,19 @@ export default function CreatePostPage() {
     );
 
     if (!response.ok) {
-      throw new Error(
-        await readError(response)
-      );
+      throw new Error(await readError(response));
     }
 
     const result: Post[] = await response.json();
 
     if (!signal?.aborted) {
-      setPosts(result);
+      setPosts(Array.isArray(result) ? result : []);
     }
   };
+
+  // =====================================
+  // בדיקת הרשאת מועמד
+  // =====================================
 
   useEffect(() => {
     const controller = new AbortController();
@@ -90,6 +260,7 @@ export default function CreatePostPage() {
     setChecking(true);
     setPosts([]);
     setError("");
+    setSuccess("");
 
     if (!token) {
       setChecking(false);
@@ -98,49 +269,45 @@ export default function CreatePostPage() {
 
     const run = async () => {
       try {
-        const response = await fetch(
-          "https://localhost:7227/api/Candidates/eligibility",
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-            signal: controller.signal,
-          }
-        );
+        const response = await fetch(CANDIDATE_API, {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          signal: controller.signal,
+        });
 
-        if (!response.ok) {
-          throw new Error(
-            await readError(response)
-          );
-        }
+        if (controller.signal.aborted) return;
 
-        const data = await response.json();
-
-        if (!data.alreadyCandidate) {
-          if (!controller.signal.aborted) {
-            setError(
-              "רק מועמד רשום יכול לפרסם פוסטים."
-            );
-          }
+        if (response.status === 404) {
+          setAuthorized(false);
           return;
         }
 
-        if (!controller.signal.aborted) {
-          setAuthorized(true);
+        if (!response.ok) {
+          throw new Error(await readError(response));
         }
 
-        await loadPosts(
-          token,
-          controller.signal
-        );
-      } catch (err) {
-        if (!controller.signal.aborted) {
-          setError(
-            err instanceof Error
-              ? err.message
-              : "שגיאה בחיבור לשרת"
-          );
+        const candidate: CandidateProfile =
+          await response.json();
+
+        if (controller.signal.aborted) return;
+
+        if (!candidate || candidate.candidateId <= 0) {
+          setAuthorized(false);
+          return;
         }
+
+        setAuthorized(true);
+        await loadPosts(token, controller.signal);
+      } catch (err) {
+        if (controller.signal.aborted) return;
+
+        setError(
+          err instanceof Error
+            ? err.message
+            : "שגיאה בחיבור לשרת"
+        );
       } finally {
         if (!controller.signal.aborted) {
           setChecking(false);
@@ -153,47 +320,81 @@ export default function CreatePostPage() {
     return () => controller.abort();
   }, [token]);
 
-  const chooseVideo = (
-    e: ChangeEvent<HTMLInputElement>
+  // =====================================
+  // בחירת תמונה או סרטון
+  // =====================================
+
+  const chooseMedia = (
+    event: ChangeEvent<HTMLInputElement>
   ) => {
     setError("");
+    setSuccess("");
 
-    const file = e.target.files?.[0] ?? null;
+    const file = event.target.files?.[0] ?? null;
 
-    if (
-      file &&
-      (
-        !/\.(mp4|avi|mov)$/i.test(file.name) ||
-        file.size > 20 * 1024 * 1024
-      )
-    ) {
+    if (!file) {
+      setMediaFile(null);
+      setMediaType("Text");
+      return;
+    }
+
+    const detectedType = getMediaType(file);
+
+    if (!detectedType) {
       setError(
-        "ניתן להעלות סרטון MP4, AVI או MOV בגודל עד 20MB."
+        "ניתן להעלות תמונות JPG, PNG, WEBP או סרטונים MP4, WEBM, MOV."
       );
 
-      setVideo(null);
-      e.target.value = "";
+      setMediaFile(null);
+      setMediaType("Text");
+      event.target.value = "";
       return;
     }
 
-    setVideo(file);
+    const maxSize =
+      detectedType === "Image"
+        ? MAX_IMAGE_SIZE
+        : MAX_VIDEO_SIZE;
+
+    if (file.size > maxSize) {
+      setError(
+        detectedType === "Image"
+          ? "גודל התמונה חייב להיות עד 5MB."
+          : "גודל הסרטון חייב להיות עד 20MB."
+      );
+
+      setMediaFile(null);
+      setMediaType("Text");
+      event.target.value = "";
+      return;
+    }
+
+    setMediaFile(file);
+    setMediaType(detectedType);
   };
 
-  const submit = async (
-    e: FormEvent<HTMLFormElement>
-  ) => {
-    e.preventDefault();
+  const removeMedia = () => {
+    setMediaFile(null);
+    setMediaType("Text");
+    setFileKey((prev) => prev + 1);
+    setError("");
+  };
 
-    if (!token || !authorized || loading) {
-      return;
-    }
+  // =====================================
+  // פרסום פוסט
+  // =====================================
+
+  const submit = async (
+    event: FormEvent<HTMLFormElement>
+  ) => {
+    event.preventDefault();
+
+    if (!token || !authorized || loading) return;
 
     const text = content.trim();
 
     if (!text || text.length > 4000) {
-      setError(
-        "יש להזין תוכן עד 4000 תווים."
-      );
+      setError("יש להזין תוכן עד 4000 תווים.");
       return;
     }
 
@@ -205,16 +406,13 @@ export default function CreatePostPage() {
       const form = new FormData();
 
       form.append("Content", text);
-      form.append(
-        "ContentType",
-        video ? "Video" : "Text"
-      );
+      form.append("ContentType", mediaType);
 
-      if (video) {
-        form.append("MediaFile", video);
+      if (mediaFile) {
+        form.append("MediaFile", mediaFile);
       }
 
-      const response = await fetch(API, {
+      const response = await fetch(POSTS_API, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -223,20 +421,51 @@ export default function CreatePostPage() {
       });
 
       if (!response.ok) {
-        throw new Error(
-          await readError(response)
-        );
+        throw new Error(await readError(response));
+      }
+
+      const payload: unknown =
+        await response.json().catch(() => null);
+
+      let publishedPostId: number | undefined;
+
+      if (payload && typeof payload === "object") {
+        const result = payload as Record<string, unknown>;
+
+        const post =
+          result.data &&
+          typeof result.data === "object"
+            ? (result.data as Record<string, unknown>)
+            : result;
+
+        if (
+          typeof post.postId === "number" &&
+          post.postId > 0
+        ) {
+          publishedPostId = post.postId;
+        }
       }
 
       setContent("");
-      setVideo(null);
-      setFileKey((prev) => prev + 1);
+      setMediaFile(null);
+      setMediaType("Text");
+      setFileKey((previous) => previous + 1);
 
-      setSuccess(
-        "הפוסט פורסם בהצלחה!"
-      );
+      setSuccess("הפוסט פורסם בהצלחה!");
 
-      await loadPosts(token);
+      if (onPublished) {
+        onPublished(publishedPostId);
+        return;
+      }
+
+      try {
+        await loadPosts(token);
+      } catch (refreshError) {
+        console.error(
+          "Post published, but refresh failed:",
+          refreshError
+        );
+      }
     } catch (err) {
       setError(
         err instanceof Error
@@ -248,6 +477,10 @@ export default function CreatePostPage() {
     }
   };
 
+  // =====================================
+  // תצוגת העמוד
+  // =====================================
+
   return (
     <main className="create-post-page" dir="rtl">
       <div className="create-post-container">
@@ -257,8 +490,8 @@ export default function CreatePostPage() {
           <h1>הוספת פוסט</h1>
 
           <p>
-            שתפו את החזון, הרעיונות
-            והעדכונים שלכם עם חברי המפלגה.
+            שתפו את החזון, הרעיונות והעדכונים שלכם
+            עם חברי המפלגה.
           </p>
         </header>
 
@@ -284,8 +517,8 @@ export default function CreatePostPage() {
             <textarea
               id="post-content"
               value={content}
-              onChange={(e) =>
-                setContent(e.target.value)
+              onChange={(event) =>
+                setContent(event.target.value)
               }
               maxLength={4000}
               rows={7}
@@ -298,45 +531,94 @@ export default function CreatePostPage() {
               {content.length} / 4000 תווים
             </small>
 
-            <label htmlFor="post-video">
-              סרטון (לא חובה)
+            <label htmlFor="post-media">
+              הוספת תמונה או סרטון (לא חובה)
             </label>
 
             <input
               key={fileKey}
-              id="post-video"
+              id="post-media"
               type="file"
-              accept=".mp4,.avi,.mov"
-              onChange={chooseVideo}
+              accept=".jpg,.jpeg,.png,.webp,.mp4,.webm,.mov,image/jpeg,image/png,image/webp,video/mp4,video/webm,video/quicktime"
+              onChange={chooseMedia}
               disabled={loading}
             />
 
             <small>
-              MP4, AVI או MOV — עד 20MB
+              תמונות: JPG, PNG, WEBP — עד 5MB
             </small>
 
-            {video && (
-              <small>
-                נבחר: {video.name}
-              </small>
+            <small>
+              סרטונים: MP4, WEBM, MOV — עד 20MB
+            </small>
+
+            {mediaFile && (
+              <div
+                className="post-media-preview"
+                style={{
+                  marginTop: "16px",
+                  padding: "16px",
+                  border: "1px solid #dce7ed",
+                  borderRadius: "12px",
+                }}
+              >
+                <p>
+                  <strong>הקובץ שנבחר:</strong>{" "}
+                  {mediaFile.name}
+                </p>
+
+                {previewUrl && mediaType === "Image" && (
+                  <img
+                    src={previewUrl}
+                    alt="תצוגה מקדימה של התמונה"
+                    style={{
+                      width: "100%",
+                      maxHeight: "350px",
+                      objectFit: "contain",
+                      borderRadius: "10px",
+                    }}
+                  />
+                )}
+
+                {previewUrl && mediaType === "Video" && (
+                  <video
+                    src={previewUrl}
+                    controls
+                    preload="metadata"
+                    playsInline
+                    style={{
+                      width: "100%",
+                      maxHeight: "350px",
+                      borderRadius: "10px",
+                    }}
+                  />
+                )}
+
+                <button
+                  type="button"
+                  onClick={removeMedia}
+                  disabled={loading}
+                  style={{ marginTop: "12px" }}
+                >
+                  הסרת הקובץ
+                </button>
+              </div>
             )}
 
             <button
               type="submit"
-              disabled={
-                loading || !content.trim()
-              }
+              disabled={loading || !content.trim()}
             >
               {loading
                 ? "מפרסם..."
                 : "פרסום הפוסט"}
             </button>
           </form>
-        ) : (
+        ) : !error ? (
           <div className="create-post-notice">
             רק מועמד רשום יכול להוסיף פוסטים.
           </div>
-        )}
+        ) : null}
 
         {error && (
           <p
@@ -361,26 +643,58 @@ export default function CreatePostPage() {
             <h2>הפוסטים שלי</h2>
 
             {posts.length === 0 ? (
-              <p>
-                עדיין לא פרסמת פוסטים.
-              </p>
+              <p>עדיין לא פרסמת פוסטים.</p>
             ) : (
-              posts.map((post) => (
-                <article
-                  className="my-post-card"
-                  key={post.postId}
-                >
-                  <p>{post.content}</p>
+              posts.map((post) => {
+                const mediaUrl = resolveMediaUrl(
+                  post.mediaUrl
+                );
 
-                  {post.createdAt && (
-                    <small>
-                      {new Date(
-                        post.createdAt
-                      ).toLocaleDateString("he-IL")}
-                    </small>
-                  )}
-                </article>
-              ))
+                return (
+                  <article
+                    className="my-post-card"
+                    key={post.postId}
+                  >
+                    <p>{post.content}</p>
+
+                    {mediaUrl && isImagePost(post) && (
+                      <img
+                        src={mediaUrl}
+                        alt="תמונת הפוסט"
+                        loading="lazy"
+                        style={{
+                          width: "100%",
+                          maxHeight: "350px",
+                          objectFit: "contain",
+                          borderRadius: "10px",
+                        }}
+                      />
+                    )}
+
+                    {mediaUrl && isVideoPost(post) && (
+                      <video
+                        src={mediaUrl}
+                        controls
+                        preload="metadata"
+                        playsInline
+                        style={{
+                          width: "100%",
+                          maxHeight: "350px",
+                          borderRadius: "10px",
+                        }}
+                      />
+                    )}
+
+                    {post.createdAt && (
+                      <small>
+                        {new Date(
+                          post.createdAt
+                        ).toLocaleDateString("he-IL")}
+                      </small>
+                    )}
+                  </article>
+                );
+              })
             )}
           </section>
         )}
