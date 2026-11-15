@@ -1,3 +1,4 @@
+
 import { useEffect, useMemo, useState } from "react";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
 import { fetchCandidates } from "../store/candidates/candidatesThunks";
@@ -6,13 +7,13 @@ import "./PrimariesPage.css";
 
 interface PrimariesPageProps {
   onApplyClick?: () => void;
+  onCandidateClick: (candidateId: number) => void;
 }
 
-const API_ORIGIN =
-  import.meta.env.VITE_API_ORIGIN ||
-  "https://localhost:7227";
+const API_ORIGIN = (
+  import.meta.env.VITE_API_ORIGIN || window.location.origin
+).replace(/\/$/, "");
 
-// תיקון כתובות התמונות שמגיעות מהשרת
 function mediaUrl(value?: string | null): string {
   if (!value) return "";
 
@@ -25,14 +26,15 @@ function mediaUrl(value?: string | null): string {
   const cleanPath = cleanUrl.replace(/^\/+/, "");
 
   if (/^Images\//i.test(cleanPath)) {
-    return `${API_ORIGIN.replace(/\/$/, "")}/${cleanPath}`;
+    return `${API_ORIGIN}/${cleanPath}`;
   }
 
-  return `${API_ORIGIN.replace(/\/$/, "")}/Images/${cleanPath}`;
+  return `${API_ORIGIN}/Images/${cleanPath}`;
 }
 
 export default function PrimariesPage({
   onApplyClick,
+  onCandidateClick,
 }: PrimariesPageProps) {
   const dispatch = useAppDispatch();
 
@@ -56,11 +58,9 @@ export default function PrimariesPage({
         .map((candidate) => ({
           id: candidate.candidateId!,
           name: candidate.name || "מועמד",
-          role:
-            candidate.slogan || "מועמד בפריימריז",
+          role: candidate.slogan || "מועמד בפריימריז",
           imageUrl: mediaUrl(
-            candidate.profileImageUrl ||
-              candidate.imageUrl
+            candidate.profileImageUrl || candidate.imageUrl
           ),
         })),
     [items]
@@ -69,9 +69,7 @@ export default function PrimariesPage({
   const filtered = candidates.filter((candidate) =>
     candidate.name
       .toLocaleLowerCase("he-IL")
-      .includes(
-        search.trim().toLocaleLowerCase("he-IL")
-      )
+      .includes(search.trim().toLocaleLowerCase("he-IL"))
   );
 
   return (
@@ -87,13 +85,13 @@ export default function PrimariesPage({
             </div>
 
             <h1 className="primaries-title">
-              הבחירה שלכם קובעת מי יוביל את התנופה
+              הכירו את המועמדים לפריימריז
             </h1>
 
             <p className="primaries-description">
-              הכירו את המועמדים, קראו על הניסיון
-              והחזון שלהם ובחרו את מי שתרצו
-              לראות בהנהגה.
+              היכנסו לפרופיל של כל מועמד כדי לקרוא
+              את קורות החיים, לצפות בסרטון ההיכרות
+              ולעיין בפוסטים שפרסם.
             </p>
 
             <div className="primaries-actions">
@@ -102,9 +100,7 @@ export default function PrimariesPage({
                 className="primaries-primary-btn"
                 onClick={() =>
                   document
-                    .getElementById(
-                      "primaries-candidates"
-                    )
+                    .getElementById("primaries-candidates")
                     ?.scrollIntoView({
                       behavior: "smooth",
                     })
@@ -149,8 +145,8 @@ export default function PrimariesPage({
               <h2>המועמדים שלנו</h2>
 
               <p>
-                כל המועמדים המופיעים כאן נטענים
-                ממערכת הבחירות.
+                לחצו על "לפרופיל המלא" כדי לצפות
+                במידע של כל מועמד.
               </p>
             </div>
 
@@ -173,9 +169,7 @@ export default function PrimariesPage({
 
           {!loading && error && (
             <div role="alert">
-              <p>
-                לא ניתן לטעון מועמדים: {error}
-              </p>
+              <p>לא ניתן לטעון מועמדים: {error}</p>
 
               <button
                 type="button"
@@ -193,10 +187,23 @@ export default function PrimariesPage({
             (filtered.length > 0 ? (
               <div className="primaries-cards-grid">
                 {filtered.map((candidate) => (
-                  <CandidateCard
+                  <div
                     key={candidate.id}
-                    candidate={candidate}
-                  />
+                    className="primaries-profile-card-wrapper"
+                  >
+                    <CandidateCard candidate={candidate} />
+
+                    <button
+                      type="button"
+                      className="primaries-profile-button"
+                      onClick={() =>
+                        onCandidateClick(candidate.id)
+                      }
+                    >
+                      לצפייה בפרופיל המלא
+                      <span aria-hidden="true"> ←</span>
+                    </button>
+                  </div>
                 ))}
               </div>
             ) : (
