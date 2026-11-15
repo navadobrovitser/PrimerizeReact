@@ -5,12 +5,9 @@ import type { Post } from "../store/posts/postsThunks";
 import "./CandidateProfilePage.css";
 
 // כתובת שרת ה-C#
-const API = (
-  import.meta.env.VITE_API_ORIGIN ||
-  (import.meta.env.DEV
-    ? "https://localhost:7227"
-    : "https://primerize.runasp.net")
-).replace(/\/+$/, "");
+import { API_ORIGIN } from "../config/api";
+
+const API = API_ORIGIN;
 
 interface CandidateProfile {
   candidateId: number;

@@ -4,8 +4,9 @@ import type { ChangeEvent, FormEvent } from "react";
 import { useAppSelector } from "../store/hooks";
 import "./CandidateRegistrationPage.css";
 
-const API_URL = "https://localhost:7227/api/Candidates";
+import { API_ORIGIN } from "../config/api";
 
+const API_URL = `${API_ORIGIN}/api/Candidates`;
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
 const MAX_VIDEO_SIZE = 20 * 1024 * 1024;
 

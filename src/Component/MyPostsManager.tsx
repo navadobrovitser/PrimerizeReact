@@ -17,12 +17,9 @@ import {
 } from "../utils/mediaUrl";
 
 import "./MyPostsManager.css";
+import { API_ORIGIN } from "../config/api";
 
-const API = (
-  import.meta.env.VITE_API_ORIGIN ||
-  "https://localhost:7227"
-).replace(/\/+$/, "");
-
+const API = API_ORIGIN;
 const POSTS_API = `${API}/api/Posts`;
 
 interface Post {

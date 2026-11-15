@@ -11,12 +11,7 @@ interface PrimariesPageProps {
 }
 
 
-
-
-const API_ORIGIN = (
-  import.meta.env.VITE_API_ORIGIN ||
-  "https://localhost:7227"
-).replace(/\/+$/, "");
+import { API_ORIGIN } from "../config/api";
 
 function mediaUrl(value?: string | null): string {
   if (!value) return "";

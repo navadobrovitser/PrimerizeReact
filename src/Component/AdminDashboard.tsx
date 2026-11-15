@@ -2,9 +2,9 @@ import { useCallback, useEffect, useState } from "react";
 import { useAppSelector } from "../store/hooks";
 import "./AdminDashboard.css";
 import RegulationManagement from "./RegulationManagement";
-const API =
-  (import.meta.env.VITE_API_ORIGIN || "https://localhost:7227")
-    .replace(/\/$/, "") + "/api";
+import { API_ORIGIN } from "../config/api";
+
+const API = API_ORIGIN;
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 

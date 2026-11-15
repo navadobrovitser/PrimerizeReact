@@ -28,10 +28,7 @@ interface ChatMessage {
 }
 
 // כתובת השרת הקיים
-const API_ORIGIN = (
-  import.meta.env.VITE_API_ORIGIN ||
-  "https://localhost:7227"
-).replace(/\/$/, "");
+import { API_ORIGIN } from "../config/api";
 
 export default function RegulationChatPage() {
   // הטוקן של המשתמש שכבר התחבר לאתר

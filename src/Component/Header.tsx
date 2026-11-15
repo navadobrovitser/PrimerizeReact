@@ -38,10 +38,9 @@ interface CandidateProfile {
   name?: string;
 }
 
-const API_ORIGIN = (
-  import.meta.env.VITE_API_ORIGIN ||
-  "https://primerize.runasp.net"
-).replace(/\/$/, "");
+import { API_ORIGIN } from "../config/api";
+
+const API = API_ORIGIN;
 
 // קישורי הניווט הראשיים
 const links: { label: string; page: Page }[] = [

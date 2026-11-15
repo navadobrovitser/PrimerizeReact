@@ -1,10 +1,10 @@
-
 import { createAsyncThunk } from "@reduxjs/toolkit";
 
-const API_ORIGIN = (
-  import.meta.env.VITE_API_ORIGIN ||
-  "https://localhost:7227"
-).replace(/\/+$/, "");
+const API_ORIGIN = import.meta.env.VITE_API_ORIGIN?.replace(/\/+$/, "");
+
+if (!API_ORIGIN) {
+  throw new Error("VITE_API_ORIGIN is not configured");
+}
 
 const API_URL = `${API_ORIGIN}/api/Auth`;
 

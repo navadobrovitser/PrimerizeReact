@@ -2,10 +2,9 @@
 import { useEffect, useMemo, useState } from "react";
 import "./NewsPage.css";
 
-const API =
-  import.meta.env.VITE_API_ORIGIN ||
-  "https://localhost:7227";
+import { API_ORIGIN } from "../config/api";
 
+const API = API_ORIGIN;
 interface PostDto {
   postId: number;
   candidateId: number;
