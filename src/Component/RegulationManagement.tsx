@@ -1,3 +1,4 @@
+
 import { useCallback, useEffect, useState } from "react";
 import { useAppSelector } from "../store/hooks";
 
@@ -10,7 +11,7 @@ const API =
     .replace(/\/$/, "") + "/api";
 
 // =====================================================
-// טיפוסים של נתוני התקנון
+// טיפוסים
 // =====================================================
 
 type RegulationVersion = {
@@ -27,24 +28,30 @@ type RegulationSection = {
   content: string;
 };
 
+type ReuseResult = {
+  message: string;
+  versionId: number;
+  reusedCount: number;
+  remaining: number;
+};
+
 export default function RegulationManagement() {
   const token = useAppSelector((state) => state.auth.token);
 
   // =====================================================
-  // ניהול גרסאות התקנון
+  // ניהול גרסאות
   // =====================================================
 
   const [versions, setVersions] = useState<RegulationVersion[]>([]);
-  const [selectedVersionId, setSelectedVersionId] = useState<number | null>(
-    null
-  );
+  const [selectedVersionId, setSelectedVersionId] =
+    useState<number | null>(null);
   const [newVersionNumber, setNewVersionNumber] = useState("");
 
   const [loadingVersions, setLoadingVersions] = useState(true);
   const [creatingDraft, setCreatingDraft] = useState(false);
 
   // =====================================================
-  // ניהול סעיפי הגרסה שנבחרה
+  // ניהול סעיפים
   // =====================================================
 
   const [sections, setSections] = useState<RegulationSection[]>([]);
@@ -53,6 +60,13 @@ export default function RegulationManagement() {
 
   const [loadingSections, setLoadingSections] = useState(false);
   const [saving, setSaving] = useState(false);
+
+  // =====================================================
+  // הכנת Embeddings
+  // =====================================================
+
+  const [reusing, setReusing] = useState(false);
+  const [completing, setCompleting] = useState(false);
 
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
@@ -79,8 +93,22 @@ export default function RegulationManagement() {
     ? selectedVersion.totalSections - selectedVersion.missingEmbeddings
     : 0;
 
+  const isPreparing = reusing || completing;
+
+  const isBusy =
+    loadingVersions ||
+    loadingSections ||
+    creatingDraft ||
+    saving ||
+    isPreparing;
+
+  const preparationComplete =
+    !!selectedVersion &&
+    selectedVersion.totalSections > 0 &&
+    selectedVersion.missingEmbeddings === 0;
+
   // =====================================================
-  // פונקציית עזר לטיפול בתשובות שגיאה מהשרת
+  // טיפול בתשובות שגיאה
   // =====================================================
 
   const getErrorMessage = async (
@@ -89,57 +117,72 @@ export default function RegulationManagement() {
   ): Promise<string> => {
     const data = await response.json().catch(() => null);
 
+    if (response.status === 429) {
+      return "מכסת Gemini הסתיימה כרגע. נסי שוב לאחר חידוש המכסה.";
+    }
+
     return data?.message || data?.title || fallback;
   };
 
   // =====================================================
-  // טעינת כל גרסאות התקנון
-  //
-  // משתמשים ב-GET /api/regulation/versions.
-  // אם קיימת טיוטה, נבחר אותה כברירת מחדל.
-  // אחרת נבחר את הגרסה הראשונה.
+  // בקשה לרשימת גרסאות מהשרת
+  // =====================================================
+
+  const fetchVersions = useCallback(async (): Promise<
+    RegulationVersion[]
+  > => {
+    if (!token) {
+      throw new Error("יש להתחבר כמנהלת כדי לנהל את התקנון.");
+    }
+
+    const response = await fetch(`${API}/regulation/versions`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(
+        await getErrorMessage(
+          response,
+          "לא ניתן לטעון את גרסאות התקנון."
+        )
+      );
+    }
+
+    const data: RegulationVersion[] = await response.json();
+
+    if (!Array.isArray(data)) {
+      throw new Error("רשימת הגרסאות שהתקבלה אינה תקינה.");
+    }
+
+    return data;
+  }, [token]);
+
+  // =====================================================
+  // רענון גרסאות ושמירה על הגרסה שנבחרה
   // =====================================================
 
   const loadVersions = useCallback(async () => {
-    if (!token) {
-      setLoadingVersions(false);
-      setError("יש להתחבר כמנהלת כדי לנהל את התקנון.");
-      return;
-    }
-
     setLoadingVersions(true);
     setError("");
 
     try {
-      const response = await fetch(`${API}/regulation/versions`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      if (!response.ok) {
-        const data = await response.json().catch(() => null);
-
-        throw new Error(
-          data?.message || "לא ניתן לטעון את גרסאות התקנון."
-        );
-      }
-
-      const data: RegulationVersion[] = await response.json();
-
-      if (!Array.isArray(data)) {
-        throw new Error("רשימת הגרסאות שהתקבלה אינה תקינה.");
-      }
+      const data = await fetchVersions();
 
       setVersions(data);
 
       setSelectedVersionId((current) => {
-        if (current !== null &&
-            data.some((v) => v.versionId === current)) {
+        if (
+          current !== null &&
+          data.some((version) => version.versionId === current)
+        ) {
           return current;
         }
 
-        const draft = data.find((v) => v.status === "Draft");
+        const draft = data.find(
+          (version) => version.status === "Draft"
+        );
 
         return draft?.versionId ?? data[0]?.versionId ?? null;
       });
@@ -152,10 +195,10 @@ export default function RegulationManagement() {
     } finally {
       setLoadingVersions(false);
     }
-  }, [token]);
+  }, [fetchVersions]);
 
   // =====================================================
-  // טעינה ראשונית של הגרסאות
+  // טעינה ראשונית
   // =====================================================
 
   useEffect(() => {
@@ -188,10 +231,11 @@ export default function RegulationManagement() {
       );
 
       if (!response.ok) {
-        const data = await response.json().catch(() => null);
-
         throw new Error(
-          data?.message || "לא ניתן לטעון את סעיפי התקנון."
+          await getErrorMessage(
+            response,
+            "לא ניתן לטעון את סעיפי התקנון."
+          )
         );
       }
 
@@ -219,22 +263,16 @@ export default function RegulationManagement() {
     }
   }, [token, selectedVersionId]);
 
-  // =====================================================
-  // טעינה מחדש בכל שינוי גרסה
-  // =====================================================
-
   useEffect(() => {
     void loadSections();
   }, [loadSections]);
 
   // =====================================================
-  // בחירת גרסה אחרת
-  //
-  // אם יש שינויים שלא נשמרו, מבקשים אישור.
+  // מעבר לגרסה אחרת
   // =====================================================
 
   const changeVersion = (versionId: number) => {
-    if (saving || loadingSections) return;
+    if (isBusy) return;
 
     if (
       hasChanges &&
@@ -248,21 +286,17 @@ export default function RegulationManagement() {
     setSections([]);
     setSelectedNumber("");
     setEditedContent("");
-
     setSelectedVersionId(versionId);
     setError("");
     setMessage("");
   };
 
   // =====================================================
-  // יצירת טיוטה חדשה מתוך הגרסה המפורסמת
-  //
-  // לא מעתיקים ידנית את הסעיפים ב-React.
-  // השרת יוצר את הגרסה ומחזיר את המזהה שלה.
+  // יצירת טיוטה חדשה
   // =====================================================
 
   const createDraft = async () => {
-    if (!token || creatingDraft) return;
+    if (!token || isBusy) return;
 
     const versionNumber = newVersionNumber.trim();
 
@@ -276,7 +310,11 @@ export default function RegulationManagement() {
       return;
     }
 
-    if (versions.some((v) => v.versionNumber === versionNumber)) {
+    if (
+      versions.some(
+        (version) => version.versionNumber === versionNumber
+      )
+    ) {
       setError("כבר קיימת גרסת תקנון עם מספר זה.");
       return;
     }
@@ -316,36 +354,22 @@ export default function RegulationManagement() {
         );
       }
 
-      const result: { versionId: number } = await response.json();
+      const result: { versionId: number } =
+        await response.json();
 
       if (!Number.isInteger(result.versionId)) {
         throw new Error("השרת לא החזיר מזהה טיוטה תקין.");
       }
 
-      // טוענים מחדש את הגרסאות כדי לקבל גם
-      // את הסטטוס ומספר הסעיפים של הטיוטה החדשה.
-      const versionsResponse = await fetch(
-        `${API}/regulation/versions`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      if (!versionsResponse.ok) {
-        throw new Error(
-          "הטיוטה נוצרה, אך לא ניתן לרענן את רשימת הגרסאות."
-        );
-      }
-
-      const updatedVersions: RegulationVersion[] =
-        await versionsResponse.json();
+      const updatedVersions = await fetchVersions();
 
       setVersions(updatedVersions);
       setSelectedVersionId(result.versionId);
       setNewVersionNumber("");
-      setMessage(`טיוטת גרסה ${versionNumber} נוצרה בהצלחה.`);
+
+      setMessage(
+        `טיוטת גרסה ${versionNumber} נוצרה בהצלחה.`
+      );
     } catch (err) {
       setError(
         err instanceof Error
@@ -358,10 +382,12 @@ export default function RegulationManagement() {
   };
 
   // =====================================================
-  // בחירת סעיף לעריכה
+  // בחירת סעיף
   // =====================================================
 
   const selectSection = (sectionNumber: string) => {
+    if (isBusy) return;
+
     const section = sections.find(
       (item) => item.sectionNumber === sectionNumber
     );
@@ -384,9 +410,7 @@ export default function RegulationManagement() {
   };
 
   // =====================================================
-  // שמירת סעיף בטיוטה בלבד
-  //
-  // גם React וגם השרת בודקים את מצב הגרסה.
+  // שמירת סעיף בטיוטה
   // =====================================================
 
   const saveSection = async () => {
@@ -395,7 +419,7 @@ export default function RegulationManagement() {
       selectedVersionId === null ||
       !selectedNumber ||
       !isDraft ||
-      saving
+      isBusy
     ) {
       return;
     }
@@ -446,25 +470,14 @@ export default function RegulationManagement() {
       );
 
       setEditedContent(savedContent);
-      setMessage(`סעיף ${selectedNumber} נשמר בהצלחה.`);
 
-      // מרעננים את מצב ה-Embeddings לאחר השמירה.
-      // פעולה זו לא משנה את הגרסה שנבחרה.
-      const versionsResponse = await fetch(
-        `${API}/regulation/versions`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
+      // לאחר שינוי סעיף, ה-Embedding שלו עשוי להתבטל.
+      const updatedVersions = await fetchVersions();
+      setVersions(updatedVersions);
+
+      setMessage(
+        `סעיף ${selectedNumber} נשמר בהצלחה.`
       );
-
-      if (versionsResponse.ok) {
-        const updatedVersions: RegulationVersion[] =
-          await versionsResponse.json();
-
-        setVersions(updatedVersions);
-      }
     } catch (err) {
       setError(
         err instanceof Error
@@ -476,6 +489,262 @@ export default function RegulationManagement() {
     }
   };
 
+  // =====================================================
+  // שימוש חוזר ב-Embeddings
+  //
+  // מעתיק מהגרסה המפורסמת וקטורים של סעיפים
+  // בעלי מספר ותוכן זהים.
+  //
+  // לא מבצע קריאות ל-Gemini.
+  // =====================================================
+
+  const reuseEmbeddings = async () => {
+    if (
+      !token ||
+      selectedVersionId === null ||
+      !isDraft ||
+      isBusy
+    ) {
+      return;
+    }
+
+    if (hasChanges) {
+      setError(
+        "יש לשמור או לבטל את השינויים בסעיף לפני הכנת התקנון."
+      );
+      return;
+    }
+
+    setReusing(true);
+    setError("");
+    setMessage("");
+
+    try {
+      const response = await fetch(
+        `${API}/regulation/reuse-embeddings?versionId=${selectedVersionId}`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(
+          await getErrorMessage(
+            response,
+            "העתקת ה-Embeddings נכשלה."
+          )
+        );
+      }
+
+      const result: ReuseResult = await response.json();
+
+      const updatedVersions = await fetchVersions();
+      setVersions(updatedVersions);
+
+      setMessage(
+        `הבדיקה הסתיימה: הועתקו ${result.reusedCount} Embeddings. ` +
+          `נותרו ${result.remaining} סעיפים להכנה.`
+      );
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "אירעה שגיאה בשימוש החוזר ב-Embeddings."
+      );
+    } finally {
+      setReusing(false);
+    }
+  };
+
+  // =====================================================
+  // השלמת Embeddings חסרים
+  //
+  // מפעילה את פעולת ההשלמה הקיימת בשרת.
+  // פעולה זו עשויה לצרוך מכסת Gemini.
+  // =====================================================
+
+  const completeEmbeddings = async () => {
+    if (
+      !token ||
+      selectedVersionId === null ||
+      !isDraft ||
+      isBusy ||
+      !selectedVersion ||
+      selectedVersion.missingEmbeddings === 0
+    ) {
+      return;
+    }
+
+    if (hasChanges) {
+      setError(
+        "יש לשמור או לבטל את השינויים לפני השלמת Embeddings."
+      );
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `לגרסה ${selectedVersion.versionNumber} חסרים ` +
+        `${selectedVersion.missingEmbeddings} Embeddings.\n\n` +
+        "הפעולה תשלח בקשות ל-Gemini ועשויה לצרוך מכסה.\n" +
+        "האם להמשיך?"
+    );
+
+    if (!confirmed) return;
+
+    setCompleting(true);
+    setError("");
+    setMessage("");
+
+    try {
+      const response = await fetch(
+        `${API}/regulation/complete-embeddings?versionId=${selectedVersionId}`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(
+          await getErrorMessage(
+            response,
+            "השלמת ה-Embeddings נכשלה."
+          )
+        );
+      }
+
+      // השרת עשוי להחזיר נתוני סיכום.
+      // מקור האמת למצב העדכני הוא רשימת הגרסאות.
+      const updatedVersions = await fetchVersions();
+      setVersions(updatedVersions);
+
+      const updatedVersion = updatedVersions.find(
+        (version) => version.versionId === selectedVersionId
+      );
+
+      if (updatedVersion) {
+        const prepared =
+          updatedVersion.totalSections -
+          updatedVersion.missingEmbeddings;
+
+        setMessage(
+          `הפעולה הסתיימה. מוכנים ${prepared} מתוך ` +
+            `${updatedVersion.totalSections} Embeddings.`
+        );
+      } else {
+        setMessage(
+          "פעולת ההשלמה הסתיימה. יש לרענן את הגרסאות."
+        );
+      }
+    } catch (err) {
+      // גם אם ההשלמה נכשלה באמצע,
+      // ייתכן שחלק מהווקטורים נשמרו בשרת.
+      // לכן מרעננים את המצב העדכני.
+      try {
+        const updatedVersions = await fetchVersions();
+        setVersions(updatedVersions);
+      } catch {
+        // משאירים את השגיאה המקורית להצגה.
+      }
+
+      setError(
+        err instanceof Error
+          ? err.message
+          : "אירעה שגיאה בהשלמת ה-Embeddings."
+      );
+    } finally {
+      setCompleting(false);
+    }
+  };
+// =====================================================
+// פרסום גרסת תקנון
+//
+// הפעולה זמינה רק לטיוטה שכל ה-Embeddings
+// שלה מוכנים.
+//
+// לפני הפרסום מבקשים אישור מפורש מהמנהלת.
+// השרת מעביר את הגרסה הקודמת לארכיון.
+// =====================================================
+
+const [publishing, setPublishing] = useState(false);
+
+const publishRegulation = async () => {
+  if (
+    !token ||
+    selectedVersionId === null ||
+    !isDraft ||
+    !preparationComplete ||
+    isBusy ||
+    publishing
+  ) {
+    return;
+  }
+
+  if (hasChanges) {
+    setError("יש לשמור או לבטל שינויים לפני הפרסום.");
+    return;
+  }
+
+  const confirmed = window.confirm(
+    `האם לפרסם את גרסת התקנון ${selectedVersion?.versionNumber}?\n\n` +
+      "הגרסה הנוכחית תועבר לארכיון.\n" +
+      "הגרסה החדשה תהפוך לגרסה הפעילה בצ'אט.\n\n" +
+      "האם את בטוחה שברצונך להמשיך?"
+  );
+
+  if (!confirmed) return;
+
+  setPublishing(true);
+  setError("");
+  setMessage("");
+
+  try {
+    const response = await fetch(
+      `${API}/regulation/publish?versionId=${selectedVersionId}`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(
+        await getErrorMessage(
+          response,
+          "פרסום גרסת התקנון נכשל."
+        )
+      );
+    }
+
+    const result: {
+      versionNumber: string;
+      archivedVersions: number;
+    } = await response.json();
+
+    const updatedVersions = await fetchVersions();
+    setVersions(updatedVersions);
+
+    setMessage(
+      `גרסה ${result.versionNumber} פורסמה בהצלחה! ` +
+        `${result.archivedVersions} גרסאות קודמות הועברו לארכיון.`
+    );
+  } catch (err) {
+    setError(
+      err instanceof Error
+        ? err.message
+        : "אירעה שגיאה בפרסום התקנון."
+    );
+  } finally {
+    setPublishing(false);
+  }
+};
   // =====================================================
   // תצוגת מסך הניהול
   // =====================================================
@@ -489,12 +758,13 @@ export default function RegulationManagement() {
       <h2>ניהול גרסאות התקנון</h2>
 
       <p>
-        צפייה בגרסאות, יצירת טיוטות ועריכת סעיפים.
+        צפייה בגרסאות, יצירת טיוטות, עריכת סעיפים
+        והכנת התקנון לפרסום.
         הגרסה המפורסמת נשארת ללא שינוי עד לפרסום חדש.
       </p>
 
       {/* ===============================================
-          אזור בחירת הגרסה
+          בחירת גרסה
       =============================================== */}
 
       <div style={{ marginTop: 24 }}>
@@ -511,7 +781,7 @@ export default function RegulationManagement() {
           onChange={(event) =>
             changeVersion(Number(event.target.value))
           }
-          disabled={loadingVersions || creatingDraft || saving}
+          disabled={isBusy}
           style={{
             width: "100%",
             padding: 12,
@@ -535,14 +805,16 @@ export default function RegulationManagement() {
                 ? "טיוטה"
                 : version.status === "Published"
                   ? "מפורסמת"
-                  : version.status}
+                  : version.status === "Archived"
+                    ? "בארכיון"
+                    : version.status}
             </option>
           ))}
         </select>
       </div>
 
       {/* ===============================================
-          פרטי הגרסה שנבחרה
+          פרטי הגרסה
       =============================================== */}
 
       {selectedVersion && (
@@ -554,7 +826,11 @@ export default function RegulationManagement() {
 
           <p>
             <strong>סטטוס:</strong>{" "}
-            {isDraft ? "טיוטה — ניתנת לעריכה" : "מפורסמת — לצפייה בלבד"}
+            {isDraft
+              ? "טיוטה — ניתנת לעריכה"
+              : selectedVersion.status === "Published"
+                ? "מפורסמת — לצפייה בלבד"
+                : "בארכיון — לצפייה בלבד"}
           </p>
 
           <p>
@@ -614,7 +890,7 @@ export default function RegulationManagement() {
           }
           placeholder="לדוגמה: 1.2"
           maxLength={20}
-          disabled={creatingDraft}
+          disabled={isBusy}
           style={{
             width: "100%",
             boxSizing: "border-box",
@@ -629,11 +905,144 @@ export default function RegulationManagement() {
           type="button"
           className="admin-primary"
           onClick={() => void createDraft()}
-          disabled={creatingDraft || !newVersionNumber.trim()}
+          disabled={isBusy || !newVersionNumber.trim()}
         >
           {creatingDraft ? "יוצר טיוטה..." : "יצירת טיוטה"}
         </button>
       </div>
+
+      {/* ===============================================
+          הכנת הטיוטה לפרסום — אזור חדש
+      =============================================== */}
+
+      {selectedVersion && isDraft && (
+        <div
+          style={{
+            marginTop: 28,
+            padding: 20,
+            border: "1px solid #cbd5e1",
+            borderRadius: 12,
+          }}
+        >
+          <h3>הכנת הטיוטה לפרסום</h3>
+
+          <p>
+            המערכת בודקת אילו סעיפים כבר מוכנים,
+            ומשלימה Embeddings רק לפי הצורך.
+          </p>
+
+          <div style={{ marginTop: 16 }}>
+            <strong>מצב ההכנה:</strong>
+
+            <p>
+              {preparedEmbeddings} מתוך{" "}
+              {selectedVersion.totalSections} סעיפים מוכנים
+            </p>
+
+            <progress
+              value={preparedEmbeddings}
+              max={selectedVersion.totalSections || 1}
+              style={{
+                width: "100%",
+                height: 14,
+              }}
+            />
+
+            <p>
+              חסרים:{" "}
+              <strong>
+                {selectedVersion.missingEmbeddings}
+              </strong>
+            </p>
+          </div>
+
+          <div
+            className="admin-actions"
+            style={{
+              marginTop: 20,
+              display: "flex",
+              gap: 12,
+              flexWrap: "wrap",
+            }}
+          >
+            <button
+              type="button"
+              className="admin-secondary"
+              onClick={() => void reuseEmbeddings()}
+              disabled={
+                isBusy ||
+                hasChanges ||
+                selectedVersion.missingEmbeddings === 0
+              }
+            >
+              {reusing
+                ? "בודק ומעתיק Embeddings..."
+                : "שימוש חוזר ב-Embeddings"}
+            </button>
+
+            <button
+              type="button"
+              className="admin-primary"
+              onClick={() => void completeEmbeddings()}
+              disabled={
+                isBusy ||
+                hasChanges ||
+                selectedVersion.missingEmbeddings === 0
+              }
+            >
+              {completing
+                ? "משלים Embeddings..."
+                : "השלמת Embeddings חסרים"}
+            </button>
+          </div>
+
+          {hasChanges && (
+            <p style={{ marginTop: 12, color: "#a16207" }}>
+              יש לשמור או לבטל שינויים לפני הכנת התקנון.
+            </p>
+          )}
+
+          {preparationComplete && (
+            <p style={{ marginTop: 16 }}>
+              <strong>
+                כל ה-Embeddings מוכנים!
+              </strong>{" "}
+              ניתן להתקדם לשלב בדיקות הפרסום.
+            </p>
+          )}
+
+{/* ===============================================
+    כפתור פרסום גרסת התקנון
+=============================================== */}
+
+{preparationComplete && (
+  <div style={{ marginTop: 20 }}>
+    <button
+      type="button"
+      className="admin-primary"
+      onClick={() => void publishRegulation()}
+      disabled={isBusy || publishing || hasChanges}
+    >
+      {publishing
+        ? "מפרסם את התקנון..."
+        : "פרסום גרסת התקנון"}
+    </button>
+
+    <p style={{ marginTop: 10, fontSize: 13 }}>
+      הפרסום יהפוך את הגרסה הזאת לגרסה הפעילה בצ'אט.
+      הגרסה המפורסמת הקודמת תישמר בארכיון.
+    </p>
+  </div>
+)}
+
+
+          <p style={{ marginTop: 16, fontSize: 13 }}>
+            שימוש חוזר אינו צורך מכסת Gemini.
+            השלמת Embeddings חסרים עשויה לצרוך מכסה.
+            הכנת הטיוטה אינה מפרסמת אותה.
+          </p>
+        </div>
+      )}
 
       {/* ===============================================
           הודעות מערכת
@@ -665,7 +1074,9 @@ export default function RegulationManagement() {
 
       <div style={{ marginTop: 28 }}>
         <h3>
-          {isDraft ? "עריכת סעיפי הטיוטה" : "צפייה בסעיפי התקנון"}
+          {isDraft
+            ? "עריכת סעיפי הטיוטה"
+            : "צפייה בסעיפי התקנון"}
         </h3>
 
         <button
@@ -684,9 +1095,7 @@ export default function RegulationManagement() {
             void loadSections();
           }}
           disabled={
-            loadingSections ||
-            saving ||
-            selectedVersionId === null
+            isBusy || selectedVersionId === null
           }
         >
           רענון סעיפים
@@ -705,7 +1114,10 @@ export default function RegulationManagement() {
 
             <label
               htmlFor="regulation-section-select"
-              style={{ display: "block", marginBottom: 8 }}
+              style={{
+                display: "block",
+                marginBottom: 8,
+              }}
             >
               בחרי סעיף:
             </label>
@@ -716,7 +1128,7 @@ export default function RegulationManagement() {
               onChange={(event) =>
                 selectSection(event.target.value)
               }
-              disabled={saving}
+              disabled={isBusy}
               style={{
                 width: "100%",
                 padding: 12,
@@ -741,7 +1153,10 @@ export default function RegulationManagement() {
 
             <label
               htmlFor="regulation-content"
-              style={{ display: "block", marginBottom: 8 }}
+              style={{
+                display: "block",
+                marginBottom: 8,
+              }}
             >
               תוכן הסעיף:
             </label>
@@ -754,7 +1169,7 @@ export default function RegulationManagement() {
                 setMessage("");
               }}
               readOnly={!isDraft}
-              disabled={saving}
+              disabled={isBusy}
               rows={12}
               dir="rtl"
               style={{
@@ -763,7 +1178,9 @@ export default function RegulationManagement() {
                 padding: 16,
                 borderRadius: 12,
                 border: "1px solid #cbd5e1",
-                background: isDraft ? "#fff" : "#f1f5f9",
+                background: isDraft
+                  ? "#fff"
+                  : "#f1f5f9",
                 color: "#172b4d",
                 fontSize: 15,
                 lineHeight: 1.8,
@@ -787,13 +1204,14 @@ export default function RegulationManagement() {
                   className="admin-primary"
                   onClick={() => void saveSection()}
                   disabled={
-                    saving ||
-                    loadingSections ||
+                    isBusy ||
                     !hasChanges ||
                     !editedContent.trim()
                   }
                 >
-                  {saving ? "שומר..." : "שמירת השינויים"}
+                  {saving
+                    ? "שומר..."
+                    : "שמירת השינויים"}
                 </button>
 
                 <button
@@ -802,11 +1220,13 @@ export default function RegulationManagement() {
                   onClick={() => {
                     if (!selectedSection) return;
 
-                    setEditedContent(selectedSection.content);
+                    setEditedContent(
+                      selectedSection.content
+                    );
                     setError("");
                     setMessage("");
                   }}
-                  disabled={saving || !hasChanges}
+                  disabled={isBusy || !hasChanges}
                 >
                   ביטול שינויים שלא נשמרו
                 </button>
