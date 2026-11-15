@@ -5,8 +5,8 @@ import { useAppDispatch, useAppSelector } from "../store/hooks";
 import { fetchCandidates } from "../store/candidates/candidatesThunks";
 import { castVote, fetchVoteStatus } from "../store/voting/votingThunks";
 import "./VotingPage.css";
-
-const API = "https://localhost:7227/api/Voting";
+import { API_ORIGIN } from "../config/api";
+const API = `${API_ORIGIN}/api/Voting`;
 
 
 

@@ -1,8 +1,4 @@
-
-const API_ORIGIN = (
-  import.meta.env.VITE_API_ORIGIN ||
-  "https://localhost:7227"
-).replace(/\/+$/, "");
+import { API_ORIGIN } from "../config/api";
 
 export function getMediaUrl(
   path?: string | null
