@@ -1,41 +1,60 @@
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
 
-// כתובת השרת לפי סביבת העבודה
 const API_ORIGIN = (
   import.meta.env.VITE_API_ORIGIN ||
-  "https://primerize.runasp.net"
+  "https://localhost:7227"
 ).replace(/\/+$/, "");
 
 const API_URL = `${API_ORIGIN}/api/Auth`;
 
-// הנתונים שנשלחים בשלב הראשון
 export interface LoginStep1Dto {
   idNumber: string;
   password: string;
 }
 
-// הנתונים שנשלחים באימות הקוד
 export interface VerifyCodeDto {
   idNumber: string;
   code: string;
 }
 
-// קריאת תשובה מהשרת, גם במקרה של שגיאה
+interface ApiResponse {
+  message?: string;
+  token?: string;
+  [key: string]: unknown;
+}
+
 async function readResponse(
   response: Response
-): Promise<any> {
+): Promise<ApiResponse> {
   const contentType =
     response.headers.get("content-type") || "";
 
   if (contentType.includes("application/json")) {
-    return await response.json();
+    const data: unknown = await response.json();
+
+    if (
+      typeof data === "object" &&
+      data !== null &&
+      !Array.isArray(data)
+    ) {
+      return data as ApiResponse;
+    }
   }
 
   return {};
 }
 
-// התחברות - שלב ראשון
+function connectionError(error: unknown): string {
+  console.error("Auth request failed:", error);
+
+  return (
+    `לא ניתן להתחבר לשרת (${API_ORIGIN}). ` +
+    "ודאו שהשרת פועל, שכתובת ה-API נכונה " +
+    "ושאישור HTTPS תקין."
+  );
+}
+
 export const loginStep1 = createAsyncThunk(
   "auth/loginStep1",
   async (
@@ -59,22 +78,19 @@ export const loginStep1 = createAsyncThunk(
       if (!response.ok) {
         return rejectWithValue(
           result.message ||
-            `ההתחברות נכשלה (${response.status})`
+          `ההתחברות נכשלה (${response.status})`
         );
       }
 
       return result;
     } catch (error) {
-      console.error("Login step 1 error:", error);
-
       return rejectWithValue(
-        "לא ניתן להתחבר לשרת. בדקו שהשרת פעיל ושכתובת ה-API תקינה."
+        connectionError(error)
       );
     }
   }
 );
 
-// אימות קוד - שלב שני
 export const verifyLoginCode = createAsyncThunk(
   "auth/verifyCode",
   async (
@@ -98,16 +114,14 @@ export const verifyLoginCode = createAsyncThunk(
       if (!response.ok) {
         return rejectWithValue(
           result.message ||
-            `אימות הקוד נכשל (${response.status})`
+          `אימות הקוד נכשל (${response.status})`
         );
       }
 
       return result;
     } catch (error) {
-      console.error("Login verification error:", error);
-
       return rejectWithValue(
-        "לא ניתן לאמת את הקוד מול השרת. בדקו את החיבור ונסו שוב."
+        connectionError(error)
       );
     }
   }

@@ -17,11 +17,13 @@ import "./LoginPage.css";
 interface LoginPageProps {
   onLoginSuccess: () => void;
   onRegisterClick: () => void;
+  onForgotPasswordClick: () => void;
 }
 
 export default function LoginPage({
   onLoginSuccess,
   onRegisterClick,
+  onForgotPasswordClick,
 }: LoginPageProps) {
   const dispatch = useAppDispatch();
 
@@ -36,22 +38,14 @@ export default function LoginPage({
   const [code, setCode] = useState("");
   const [error, setError] = useState("");
 
-  // בדיקת 9 ספרות בתעודת זהות
+  // בדיקת תעודת זהות - 9 ספרות
   const isValidIsraeliId = (id: string) => {
     return /^\d{9}$/.test(id);
-
-    /*
-    // בדיקת ספרת ביקורת - אפשר להחזיר בהמשך
-    const sum = id.split("").reduce((total, digit, i) => {
-      const value = Number(digit) * (i % 2 === 0 ? 1 : 2);
-      return total + (value > 9 ? value - 9 : value);
-    }, 0);
-
-    return sum % 10 === 0;
-    */
   };
 
-  // שלב ראשון: סיסמה ושליחת קוד אימות
+  // =====================================
+  // שלב ראשון - תעודת זהות וסיסמה
+  // =====================================
   const handleCredentials = async (e: FormEvent) => {
     e.preventDefault();
     setError("");
@@ -80,7 +74,9 @@ export default function LoginPage({
     }
   };
 
-  // שלב שני: אימות הקוד מול השרת
+  // =====================================
+  // שלב שני - אימות קוד
+  // =====================================
   const handleVerifyCode = async (e: FormEvent) => {
     e.preventDefault();
     setError("");
@@ -100,7 +96,10 @@ export default function LoginPage({
     if (verifyLoginCode.fulfilled.match(result)) {
       const token = result.payload?.token;
 
-      if (typeof token === "string" && token.length > 0) {
+      if (
+        typeof token === "string" &&
+        token.length > 0
+      ) {
         onLoginSuccess();
       } else {
         setError("השרת לא החזיר טוקן תקין");
@@ -109,15 +108,18 @@ export default function LoginPage({
   };
 
   return (
-    <div className="login-page">
+    <div className="login-page" dir="rtl">
       <div className="login-glow" />
 
       <div className="login-shell">
 
-        {/* צד ההסבר */}
+        {/* =====================================
+            צד ההסבר
+        ===================================== */}
         <div className="login-intro">
           <div className="login-intro-badge">
-            <span>✦</span> האזור האישי של תנופה
+            <span>✦</span>
+            {" "}האזור האישי של תנופה
           </div>
 
           <h1>
@@ -143,8 +145,11 @@ export default function LoginPage({
           </div>
         </div>
 
-        {/* כרטיס ההתחברות */}
+        {/* =====================================
+            כרטיס ההתחברות
+        ===================================== */}
         <div className="login-card">
+
           <div className="login-card-top">
             <div className="login-lock">♙</div>
             <span>כניסה מאובטחת</span>
@@ -166,9 +171,12 @@ export default function LoginPage({
             שלב {step} מתוך 2
           </div>
 
-          {/* שלב 1 - תעודת זהות וסיסמה */}
+          {/* =====================================
+              שלב 1 - פרטי התחברות
+          ===================================== */}
           {step === 1 && (
             <form onSubmit={handleCredentials}>
+
               <h2>שמחים שחזרתם!</h2>
 
               <p className="login-subtitle">
@@ -204,7 +212,11 @@ export default function LoginPage({
               <div className="login-field">
                 <input
                   id="login-password"
-                  type={showPassword ? "text" : "password"}
+                  type={
+                    showPassword
+                      ? "text"
+                      : "password"
+                  }
                   placeholder="הזינו סיסמה"
                   autoComplete="current-password"
                   value={password}
@@ -216,16 +228,37 @@ export default function LoginPage({
                 <button
                   type="button"
                   className="login-eye"
+                  aria-label={
+                    showPassword
+                      ? "הסתרת סיסמה"
+                      : "הצגת סיסמה"
+                  }
                   onClick={() =>
-                    setShowPassword(!showPassword)
+                    setShowPassword((prev) => !prev)
                   }
                 >
                   {showPassword ? "הסתר" : "הצג"}
                 </button>
               </div>
 
+              {/* =====================================
+                  שכחתי סיסמה - חדש
+              ===================================== */}
+              <div className="login-forgot-wrapper">
+                <button
+                  type="button"
+                  className="login-forgot-password"
+                  onClick={onForgotPasswordClick}
+                >
+                  שכחתי סיסמה?
+                </button>
+              </div>
+
               {(error || authError) && (
-                <div className="login-error" role="alert">
+                <div
+                  className="login-error"
+                  role="alert"
+                >
                   {error || authError}
                 </div>
               )}
@@ -238,15 +271,22 @@ export default function LoginPage({
                 {loading
                   ? "בודקים את הפרטים..."
                   : "המשך לאימות זהות"}
+
                 <span>←</span>
               </button>
+
             </form>
           )}
 
-          {/* שלב 2 - קוד אימות */}
+          {/* =====================================
+              שלב 2 - קוד אימות
+          ===================================== */}
           {step === 2 && (
             <form onSubmit={handleVerifyCode}>
-              <div className="login-code-symbol">✉</div>
+
+              <div className="login-code-symbol">
+                ✉
+              </div>
 
               <h2>רק עוד שלב קטן</h2>
 
@@ -278,7 +318,10 @@ export default function LoginPage({
               />
 
               {(error || authError) && (
-                <div className="login-error" role="alert">
+                <div
+                  className="login-error"
+                  role="alert"
+                >
                   {error || authError}
                 </div>
               )}
@@ -291,6 +334,7 @@ export default function LoginPage({
                 {loading
                   ? "מאמתים את הקוד..."
                   : "אימות וכניסה לאתר"}
+
                 <span>←</span>
               </button>
 
@@ -306,16 +350,21 @@ export default function LoginPage({
               >
                 חזרה לפרטי ההתחברות
               </button>
+
             </form>
           )}
 
-          {/* הודעת אבטחה */}
+          {/* =====================================
+              הודעת אבטחה
+          ===================================== */}
           <div className="login-card-footer">
             <span>♢</span>
             הפרטים שלכם נשמרים בסביבה מאובטחת
           </div>
 
-          {/* מעבר להרשמה - בתוך הכרטיס */}
+          {/* =====================================
+              הרשמה
+          ===================================== */}
           {step === 1 && (
             <div className="login-register-link">
               <span>עדיין אין לך חשבון?</span>
@@ -328,6 +377,7 @@ export default function LoginPage({
               </button>
             </div>
           )}
+
         </div>
       </div>
     </div>

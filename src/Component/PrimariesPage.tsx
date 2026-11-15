@@ -11,32 +11,41 @@ interface PrimariesPageProps {
 }
 
 
+
+
 const API_ORIGIN = (
   import.meta.env.VITE_API_ORIGIN ||
-  "https://primerize.runasp.net"
-).replace(/\/$/, "");
+  "https://localhost:7227"
+).replace(/\/+$/, "");
 
-
-// בניית כתובת תקינה לתמונות מהשרת
 function mediaUrl(value?: string | null): string {
   if (!value) return "";
 
-  const cleanUrl = value.trim();
+  const url = value.trim().replace(/\\/g, "/");
 
-  if (!cleanUrl) return "";
+  if (!url) return "";
 
-  if (/^https?:\/\//i.test(cleanUrl)) {
-    return cleanUrl;
+  // אם התקבלה כתובת מלאה
+  if (/^https?:\/\//i.test(url)) {
+    const parsed = new URL(url);
+
+    // תיקון כתובות שמפנות בטעות לשרת Vite
+    if (parsed.port === "5173") {
+      return `${API_ORIGIN}${parsed.pathname}`;
+    }
+
+    return url;
   }
 
-  const cleanPath = cleanUrl.replace(/^\/+/, "");
+  const path = url.replace(/^\/+/, "");
 
-  if (/^Images\//i.test(cleanPath)) {
-    return `${API_ORIGIN}/${cleanPath}`;
+  if (/^Images\//i.test(path)) {
+    return `${API_ORIGIN}/${path}`;
   }
 
-  return `${API_ORIGIN}/Images/${cleanPath}`;
+  return `${API_ORIGIN}/Images/${path}`;
 }
+
 
 export default function PrimariesPage({
   onApplyClick,

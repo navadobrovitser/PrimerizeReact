@@ -22,6 +22,7 @@ import ElectionResultsPage from "./Component/ElectionResultsPage";
 import CreatePostPage from "./Component/CreatePostPage";
 import AdminDashboard from "./Component/AdminDashboard";
 import SetPasswordPage from "./Component/SetPasswordPage";
+import ResetPasswordPage from "./Component/ResetPasswordPage";
 import NewsPage from "./Component/NewsPage";
 import LeadershipPage from "./Component/LeadershipPage";
 import ProgramPage from "./Component/ProgramPage";
@@ -138,7 +139,12 @@ export default function App() {
     () => window.location.pathname === "/set-password"
   );
 
-  const [page, setPage] = useState<Page>("home");
+  // עמוד איפוס סיסמה זמין גם ללא התחברות.
+  const [page, setPage] = useState<Page | "forgot-password">(() =>
+    new URLSearchParams(window.location.search).has("resetToken")
+      ? "forgot-password"
+      : "home"
+  );
 
   const [selectedCandidateId, setSelectedCandidateId] =
     useState<number | null>(null);
@@ -192,7 +198,7 @@ export default function App() {
   // =====================================
 
   useEffect(() => {
-    if (isLoggedIn && !isPasswordSetupPage) {
+    if (isLoggedIn && !isPasswordSetupPage && page !== "forgot-password") {
       setPage("home");
       setSelectedPostId(null);
       setSelectedCandidateId(null);
@@ -209,6 +215,9 @@ export default function App() {
       setIsPasswordSetupPage(
         window.location.pathname === "/set-password"
       );
+      if (new URLSearchParams(window.location.search).has("resetToken")) {
+        setPage("forgot-password");
+      }
     };
 
     window.addEventListener("popstate", handlePopState);
@@ -362,6 +371,25 @@ export default function App() {
   }
 
   // =====================================
+  // איפוס סיסמה מקישור במייל או ממסך ההתחברות
+  // =====================================
+  if (page === "forgot-password") {
+    return (
+      <div className="app-layout" dir="rtl">
+        <main className="app-main">
+          <ResetPasswordPage
+            onBack={() => {
+              window.history.replaceState({}, "", "/");
+              setPage(isLoggedIn ? "home" : "login");
+              window.scrollTo(0, 0);
+            }}
+          />
+        </main>
+      </div>
+    );
+  }
+
+  // =====================================
   // משתמש שלא התחבר
   // =====================================
 
@@ -383,10 +411,10 @@ export default function App() {
               onLoginSuccess={() => {
                 setShowLoginSuccess(true);
                 setPage("home");
+                
               }}
-              onRegisterClick={() =>
-                setPage("register")
-              }
+              onRegisterClick={() => setPage("register")}
+              onForgotPasswordClick={() => setPage("forgot-password")}
             />
           )}
         </main>
