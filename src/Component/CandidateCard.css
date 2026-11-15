@@ -70,3 +70,39 @@
     height: 230px;
   }
 }
+
+.candidate-card-button {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: right;
+  cursor: pointer;
+}
+
+.candidate-card-button:disabled {
+  cursor: default;
+}
+
+.candidate-card-button:focus-visible {
+  outline: 3px solid #278b8b;
+  outline-offset: 3px;
+}
+
+.candidate-profile-link {
+  display: inline-block;
+  margin-top: 16px;
+  padding: 10px 16px;
+  border-radius: 8px;
+  background: #17434a;
+  color: white;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.candidate-card.clickable:hover .candidate-profile-link {
+  background: #27636b;
+}

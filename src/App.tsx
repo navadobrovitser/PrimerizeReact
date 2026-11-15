@@ -463,7 +463,7 @@ export default function App() {
         {page === "home" && (
           <HomePage
             onJoinClick={() =>
-              navigate("candidates")
+              navigate("primaries")
             }
             onProgramClick={() =>
               navigate("program")
@@ -475,7 +475,7 @@ export default function App() {
         {page === "about" && (
           <AboutPage
             onCandidatesClick={() =>
-              navigate("candidates")
+              navigate("primaries")
             }
             onProgramClick={() =>
               navigate("program")
@@ -507,6 +507,11 @@ export default function App() {
             onApplyClick={() =>
               navigate("candidate-registration")
             }
+            onCandidateClick={(candidateId) => {
+              setSelectedCandidateId(candidateId);
+              setPage("candidate-profile");
+              window.scrollTo(0, 0);
+            }}
           />
         )}
 
@@ -576,7 +581,7 @@ export default function App() {
                 selectedCandidateId
               }
               onBack={() =>
-                navigate("candidates")
+                navigate("primaries")
               }
             />
           )}

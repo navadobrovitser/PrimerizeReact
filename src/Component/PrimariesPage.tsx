@@ -10,14 +10,20 @@ interface PrimariesPageProps {
   onCandidateClick: (candidateId: number) => void;
 }
 
+
 const API_ORIGIN = (
-  import.meta.env.VITE_API_ORIGIN || window.location.origin
+  import.meta.env.VITE_API_ORIGIN ||
+  "https://primerize.runasp.net"
 ).replace(/\/$/, "");
 
+
+// בניית כתובת תקינה לתמונות מהשרת
 function mediaUrl(value?: string | null): string {
   if (!value) return "";
 
   const cleanUrl = value.trim();
+
+  if (!cleanUrl) return "";
 
   if (/^https?:\/\//i.test(cleanUrl)) {
     return cleanUrl;
@@ -44,36 +50,61 @@ export default function PrimariesPage({
 
   const [search, setSearch] = useState("");
 
+  // טעינת המועמדים מהשרת
   useEffect(() => {
     void dispatch(fetchCandidates());
   }, [dispatch]);
 
-  const candidates = useMemo(
-    () =>
-      items
-        .filter(
-          (candidate) =>
-            typeof candidate.candidateId === "number"
-        )
-        .map((candidate) => ({
-          id: candidate.candidateId!,
-          name: candidate.name || "מועמד",
-          role: candidate.slogan || "מועמד בפריימריז",
-          imageUrl: mediaUrl(
-            candidate.profileImageUrl || candidate.imageUrl
-          ),
-        })),
-    [items]
-  );
+  // התאמת הנתונים שמגיעים מהשרת לכרטיסי המועמדים
+  const candidates = useMemo(() => {
+    return items
+      .filter(
+        (candidate) =>
+          typeof candidate.candidateId === "number"
+      )
+      .map((candidate) => ({
+        id: candidate.candidateId!,
+        name: candidate.name || "מועמד",
+        role: candidate.slogan || "מועמד בפריימריז",
+        imageUrl: mediaUrl(
+          candidate.profileImageUrl || candidate.imageUrl
+        ),
+      }));
+  }, [items]);
 
-  const filtered = candidates.filter((candidate) =>
-    candidate.name
-      .toLocaleLowerCase("he-IL")
-      .includes(search.trim().toLocaleLowerCase("he-IL"))
-  );
+  // סינון לפי שם המועמד
+  const filteredCandidates = useMemo(() => {
+    const searchValue = search
+      .trim()
+      .toLocaleLowerCase("he-IL");
+
+    if (!searchValue) return candidates;
+
+    return candidates.filter((candidate) =>
+      candidate.name
+        .toLocaleLowerCase("he-IL")
+        .includes(searchValue)
+    );
+  }, [candidates, search]);
+
+  // פתיחת הפרופיל האישי
+  const handleCandidateClick = (candidateId: number) => {
+    onCandidateClick(candidateId);
+  };
+
+  // מעבר לרשימת המועמדים
+  const scrollToCandidates = () => {
+    document
+      .getElementById("primaries-candidates")
+      ?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+  };
 
   return (
     <div className="primaries-page" dir="rtl">
+      {/* אזור פתיחה */}
       <section className="primaries-hero">
         <div className="primaries-decoration" />
 
@@ -85,26 +116,23 @@ export default function PrimariesPage({
             </div>
 
             <h1 className="primaries-title">
-              הכירו את המועמדים לפריימריז
+              הבחירה שלכם קובעת
+              <br />
+              מי יוביל את התנופה
             </h1>
 
             <p className="primaries-description">
-              היכנסו לפרופיל של כל מועמד כדי לקרוא
-              את קורות החיים, לצפות בסרטון ההיכרות
-              ולעיין בפוסטים שפרסם.
+              הכירו את המועמדים המתמודדים בפריימריז,
+              קראו על הדרך והחזון שלהם, צפו בסרטוני
+              ההיכרות והכירו את האנשים שמבקשים
+              להוביל את המפלגה קדימה.
             </p>
 
             <div className="primaries-actions">
               <button
                 type="button"
                 className="primaries-primary-btn"
-                onClick={() =>
-                  document
-                    .getElementById("primaries-candidates")
-                    ?.scrollIntoView({
-                      behavior: "smooth",
-                    })
-                }
+                onClick={scrollToCandidates}
               >
                 הכירו את המועמדים
               </button>
@@ -122,15 +150,16 @@ export default function PrimariesPage({
 
             <div className="primaries-notice">
               <p>
-                הגשת מועמדות פתוחה לחברי מפלגה
-                מאושרים בעלי ותק של ארבע שנים,
-                בהתאם לבדיקת הזכאות בשרת.
+                הגשת מועמדות מיועדת לחברי מפלגה
+                מאושרים בעלי ותק של ארבע שנים לפחות,
+                בכפוף לבדיקת הזכאות במערכת.
               </p>
             </div>
           </div>
         </div>
       </section>
 
+      {/* רשימת המועמדים */}
       <section
         id="primaries-candidates"
         className="primaries-candidates-section"
@@ -139,22 +168,23 @@ export default function PrimariesPage({
           <div className="primaries-section-header">
             <div>
               <span className="primaries-section-label">
-                הכירו את המתמודדים
+                האנשים שמאחורי החזון
               </span>
 
-              <h2>המועמדים שלנו</h2>
+              <h2>הכירו את המועמדים</h2>
 
               <p>
-                לחצו על "לפרופיל המלא" כדי לצפות
-                במידע של כל מועמד.
+                לחצו על כרטיס מועמד כדי לעבור
+                לפרופיל האישי שלו, לקרוא את קורות
+                החיים ולצפות בפוסטים שפרסם.
               </p>
             </div>
 
             <div className="primaries-search">
               <input
                 type="search"
-                aria-label="חיפוש מועמד"
-                placeholder="חיפוש לפי שם..."
+                placeholder="חיפוש מועמד לפי שם..."
+                aria-label="חיפוש מועמד לפי שם"
                 value={search}
                 onChange={(event) =>
                   setSearch(event.target.value)
@@ -163,13 +193,34 @@ export default function PrimariesPage({
             </div>
           </div>
 
-          {loading && (
-            <p role="status">טוען מועמדים...</p>
+          {/* מספר המועמדים */}
+          {!loading && !error && candidates.length > 0 && (
+            <div className="primaries-results-count">
+              {search.trim()
+                ? `נמצאו ${filteredCandidates.length} מועמדים`
+                : `${candidates.length} מועמדים בפריימריז`}
+            </div>
           )}
 
+          {/* טעינה */}
+          {loading && (
+            <div
+              className="primaries-loading"
+              role="status"
+            >
+              <p>טוענים את המועמדים...</p>
+            </div>
+          )}
+
+          {/* שגיאה */}
           {!loading && error && (
-            <div role="alert">
-              <p>לא ניתן לטעון מועמדים: {error}</p>
+            <div
+              className="primaries-error"
+              role="alert"
+            >
+              <h3>לא הצלחנו לטעון את המועמדים</h3>
+
+              <p>{error}</p>
 
               <button
                 type="button"
@@ -182,37 +233,52 @@ export default function PrimariesPage({
             </div>
           )}
 
+          {/* כרטיסי מועמדים */}
           {!loading &&
             !error &&
-            (filtered.length > 0 ? (
+            filteredCandidates.length > 0 && (
               <div className="primaries-cards-grid">
-                {filtered.map((candidate) => (
-                  <div
+                {filteredCandidates.map((candidate) => (
+                  <CandidateCard
                     key={candidate.id}
-                    className="primaries-profile-card-wrapper"
-                  >
-                    <CandidateCard candidate={candidate} />
-
-                    <button
-                      type="button"
-                      className="primaries-profile-button"
-                      onClick={() =>
-                        onCandidateClick(candidate.id)
-                      }
-                    >
-                      לצפייה בפרופיל המלא
-                      <span aria-hidden="true"> ←</span>
-                    </button>
-                  </div>
+                    candidate={candidate}
+                    onClick={(selectedCandidate) =>
+                      handleCandidateClick(
+                        selectedCandidate.id
+                      )
+                    }
+                  />
                 ))}
               </div>
-            ) : (
-              <p>
-                {search
-                  ? "לא נמצאו מועמדים שמתאימים לחיפוש."
-                  : "עדיין לא הוגשו מועמדויות."}
-              </p>
-            ))}
+            )}
+
+          {/* אין תוצאות */}
+          {!loading &&
+            !error &&
+            filteredCandidates.length === 0 && (
+              <div className="primaries-empty">
+                <h3>
+                  {search.trim()
+                    ? "לא נמצאו מועמדים"
+                    : "אין מועמדים להצגה כרגע"}
+                </h3>
+
+                <p>
+                  {search.trim()
+                    ? "נסו לחפש שם אחר."
+                    : "המועמדים יוצגו כאן לאחר הוספתם למערכת."}
+                </p>
+
+                {search.trim() && (
+                  <button
+                    type="button"
+                    onClick={() => setSearch("")}
+                  >
+                    ניקוי החיפוש
+                  </button>
+                )}
+              </div>
+            )}
         </div>
       </section>
     </div>
