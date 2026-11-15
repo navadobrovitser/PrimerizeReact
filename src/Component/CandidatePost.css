@@ -474,3 +474,916 @@
     transition: none;
   }
 }
+
+/* ======================================
+   עיצוב תגובות - עריכה ומחיקה
+   ====================================== */
+
+.candidate-comment {
+  padding: 15px 18px;
+  margin-bottom: 12px;
+  background: #f7f9fb;
+  border: 1px solid #e6edf2;
+  border-radius: 12px;
+}
+
+.candidate-comment-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.candidate-comment-header strong {
+  color: #123b53;
+  font-size: 14px;
+}
+
+.candidate-comment-header span {
+  color: #8292a2;
+  font-size: 12px;
+}
+
+.candidate-comment-text {
+  margin: 0;
+  color: #273e50;
+  font-size: 14px;
+  line-height: 1.7;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* כפתורי עריכה ומחיקה */
+
+.candidate-comment-actions {
+  display: flex;
+  justify-content: flex-start;
+  gap: 14px;
+  margin-top: 10px;
+}
+
+.candidate-comment-actions button {
+  width: auto;
+  min-width: 0;
+  padding: 4px 0;
+  border: none;
+  background: transparent;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.candidate-comment-edit-btn {
+  color: #087e80;
+}
+
+.candidate-comment-delete-btn {
+  color: #ba4444;
+}
+
+.candidate-comment-actions button:hover {
+  text-decoration: underline;
+}
+
+/* אזור עריכת תגובה */
+
+.candidate-comment-edit {
+  margin-top: 10px;
+}
+
+.candidate-comment-edit textarea {
+  width: 100%;
+  min-height: 80px;
+  padding: 12px;
+  border: 1px solid #b8cedb;
+  border-radius: 10px;
+  background: #fff;
+  font-family: inherit;
+  font-size: 14px;
+  resize: vertical;
+  box-sizing: border-box;
+}
+
+.candidate-comment-edit textarea:focus {
+  outline: none;
+  border-color: #078b83;
+  box-shadow: 0 0 0 3px rgba(7, 139, 131, 0.08);
+}
+
+.candidate-comment-edit-actions {
+  display: flex;
+  gap: 9px;
+  margin-top: 10px;
+}
+
+.candidate-comment-edit-actions button,
+.candidate-comment-delete-confirm button {
+  width: auto;
+  min-width: 0;
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.candidate-comment-save {
+  border: 1px solid #087e80;
+  background: #087e80;
+  color: white;
+}
+
+.candidate-comment-cancel {
+  border: 1px solid #d7e0e7;
+  background: white;
+  color: #526879;
+}
+
+/* אישור מחיקה */
+
+.candidate-comment-delete-confirm {
+  margin-top: 12px;
+  padding: 12px;
+  background: #fff5f4;
+  border: 1px solid #f1d2cf;
+  border-radius: 10px;
+}
+
+.candidate-comment-delete-confirm > span {
+  display: block;
+  margin-bottom: 10px;
+  color: #8e3030;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.candidate-comment-delete-confirm > div {
+  display: flex;
+  gap: 9px;
+}
+
+.candidate-comment-confirm-delete {
+  border: 1px solid #b83d3d;
+  background: #b83d3d;
+  color: #fff;
+}
+
+.candidate-comment button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+@media (max-width: 600px) {
+  .candidate-comment {
+    padding: 12px;
+  }
+
+  .candidate-comment-header {
+    flex-wrap: wrap;
+  }
+}
+
+/* ===== תגובות קומפקטיות ===== */
+
+.candidate-comments-section {
+  margin-top: 18px;
+  padding: 0;
+}
+
+.candidate-comments-section > h3 {
+  margin: 0 0 18px;
+  color: #123b53;
+  font-size: 20px;
+}
+
+.candidate-comments-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.candidate-comment-tree-item {
+  min-width: 0;
+}
+
+.candidate-comment {
+  padding: 14px 16px;
+  background: #f7f9fb;
+  border: 1px solid #e4ebf0;
+  border-radius: 12px;
+}
+
+.candidate-comment-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.candidate-comment-header strong {
+  color: #123b53;
+  font-size: 14px;
+}
+
+.candidate-comment-header span {
+  color: #7b8da0;
+  font-size: 12px;
+}
+
+.candidate-comment-text {
+  margin: 0;
+  color: #263e50;
+  font-size: 14px;
+  line-height: 1.7;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* פעולות תגובה */
+
+.candidate-comment-actions {
+  display: flex;
+  gap: 15px;
+  margin-top: 10px;
+}
+
+.candidate-comment-actions button {
+  width: auto;
+  min-width: 0;
+  padding: 3px 0;
+  border: none;
+  background: transparent;
+  color: #087e80;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.candidate-comment-actions
+.candidate-comment-delete-btn {
+  color: #b83d3d;
+}
+
+.candidate-comment-actions button:hover {
+  text-decoration: underline;
+}
+
+/* עריכה */
+
+.candidate-comment-edit,
+.candidate-comment-reply-form {
+  margin-top: 10px;
+}
+
+.candidate-comment-edit textarea,
+.candidate-comment-reply-form textarea {
+  width: 100%;
+  padding: 11px 12px;
+  border: 1px solid #b8cedb;
+  border-radius: 10px;
+  background: white;
+  font-family: inherit;
+  font-size: 14px;
+  resize: vertical;
+  box-sizing: border-box;
+}
+
+.candidate-comment-edit textarea:focus,
+.candidate-comment-reply-form textarea:focus {
+  outline: none;
+  border-color: #078b83;
+}
+
+.candidate-comment-edit-actions {
+  display: flex;
+  gap: 9px;
+  margin-top: 10px;
+}
+
+.candidate-comment-edit-actions button,
+.candidate-comment-delete-confirm button {
+  width: auto;
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.candidate-comment-save {
+  border: 1px solid #087e80;
+  background: #087e80;
+  color: white;
+}
+
+.candidate-comment-cancel {
+  border: 1px solid #d7e0e7;
+  background: white;
+  color: #526879;
+}
+
+/* אישור מחיקה */
+
+.candidate-comment-delete-confirm {
+  margin-top: 12px;
+  padding: 12px;
+  background: #fff5f4;
+  border: 1px solid #f1d2cf;
+  border-radius: 10px;
+}
+
+.candidate-comment-delete-confirm > span {
+  display: block;
+  margin-bottom: 10px;
+  color: #8e3030;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.candidate-comment-delete-confirm > div {
+  display: flex;
+  gap: 9px;
+}
+
+.candidate-comment-confirm-delete {
+  border: 1px solid #b83d3d;
+  background: #b83d3d;
+  color: white;
+}
+
+/* שרשור תגובות */
+
+.candidate-comment-children {
+  margin-top: 10px;
+  padding-right: 14px;
+  border-right: 2px solid #d8e8e8;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.candidate-comment-form {
+  margin-top: 22px;
+}
+
+.candidate-comment-form label {
+  display: block;
+  margin-bottom: 10px;
+  color: #123b53;
+  font-weight: 700;
+}
+
+.candidate-comment-form textarea {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #d7e0e7;
+  border-radius: 10px;
+  font-family: inherit;
+  box-sizing: border-box;
+  resize: vertical;
+}
+
+.candidate-comment-form > button {
+  display: block;
+  width: auto;
+  margin-top: 10px;
+  padding: 10px 22px;
+  border: none;
+  border-radius: 9px;
+  background: #078b83;
+  color: white;
+  font-family: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.candidate-comments-error {
+  margin-top: 12px;
+  color: #b42318;
+  font-size: 13px;
+}
+
+.candidate-comment button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+@media (max-width: 600px) {
+  .candidate-comment {
+    padding: 12px;
+  }
+
+  .candidate-comment-header {
+    flex-wrap: wrap;
+  }
+
+  .candidate-comment-children {
+    padding-right: 9px;
+  }
+}
+
+/* ===== אזור התגובות ===== */
+
+.candidate-comments-section {
+  margin-top: 18px;
+}
+
+.candidate-comments-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.candidate-comment-tree-item {
+  min-width: 0;
+}
+
+.candidate-comment {
+  padding: 15px 18px;
+  background: #f7f9fb;
+  border: 1px solid #e4ebf0;
+  border-radius: 12px;
+}
+
+.candidate-comment-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.candidate-comment-header strong {
+  color: #123b53;
+  font-size: 14px;
+}
+
+.candidate-comment-header span {
+  color: #8292a2;
+  font-size: 12px;
+}
+
+.candidate-comment-text {
+  margin: 0;
+  color: #263e50;
+  font-size: 14px;
+  line-height: 1.7;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* ===== ציטוט תגובה ===== */
+
+.candidate-reply-quote {
+  margin: 10px 0 12px;
+  padding: 11px 14px;
+  background: #edf5f5;
+  border-right: 3px solid #078b83;
+  border-radius: 8px;
+  text-align: right;
+}
+
+.candidate-reply-quote strong {
+  display: block;
+  margin-bottom: 5px;
+  color: #087e80;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.candidate-reply-quote p {
+  margin: 0;
+  color: #526879;
+  font-size: 13px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* ===== כפתורי פעולות ===== */
+
+.candidate-comment-actions {
+  display: flex;
+  gap: 16px;
+  margin-top: 12px;
+}
+
+.candidate-comment-actions button {
+  width: auto;
+  min-width: 0;
+  padding: 4px 0;
+  border: none;
+  background: transparent;
+  color: #087e80;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.candidate-comment-actions button:hover {
+  text-decoration: underline;
+}
+
+.candidate-comment-actions
+.candidate-comment-delete-btn {
+  color: #ba4444;
+}
+
+/* ===== עריכה ותשובה ===== */
+
+.candidate-comment-edit,
+.candidate-comment-reply-form {
+  margin-top: 12px;
+}
+
+.candidate-comment-edit textarea,
+.candidate-comment-reply-form textarea {
+  width: 100%;
+  min-height: 75px;
+  padding: 12px;
+  border: 1px solid #b8cedb;
+  border-radius: 10px;
+  background: #fff;
+  font-family: inherit;
+  font-size: 14px;
+  box-sizing: border-box;
+  resize: vertical;
+}
+
+.candidate-comment-edit textarea:focus,
+.candidate-comment-reply-form textarea:focus {
+  outline: none;
+  border-color: #078b83;
+  box-shadow: 0 0 0 3px rgba(7, 139, 131, 0.08);
+}
+
+.candidate-comment-edit-actions {
+  display: flex;
+  gap: 9px;
+  margin-top: 10px;
+}
+
+.candidate-comment-edit-actions button,
+.candidate-comment-delete-confirm button {
+  width: auto;
+  min-width: 0;
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.candidate-comment-save {
+  border: 1px solid #087e80;
+  background: #087e80;
+  color: white;
+}
+
+.candidate-comment-cancel {
+  border: 1px solid #d7e0e7;
+  background: white;
+  color: #526879;
+}
+
+/* ===== מחיקה ===== */
+
+.candidate-comment-delete-confirm {
+  margin-top: 12px;
+  padding: 12px;
+  background: #fff5f4;
+  border: 1px solid #f1d2cf;
+  border-radius: 10px;
+}
+
+.candidate-comment-delete-confirm > span {
+  display: block;
+  margin-bottom: 10px;
+  color: #8e3030;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.candidate-comment-delete-confirm > div {
+  display: flex;
+  gap: 9px;
+}
+
+.candidate-comment-confirm-delete {
+  border: 1px solid #b83d3d;
+  background: #b83d3d;
+  color: white;
+}
+
+/* ===== שרשור תגובות ===== */
+
+.candidate-comment-children {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 10px;
+  margin-right: 12px;
+  padding-right: 14px;
+  border-right: 2px solid #d8e8e8;
+}
+
+.candidate-comment-form {
+  margin-top: 24px;
+}
+
+.candidate-comment-form label {
+  display: block;
+  margin-bottom: 10px;
+  color: #123b53;
+  font-weight: 700;
+}
+
+.candidate-comment-form textarea {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #d7e0e7;
+  border-radius: 10px;
+  font-family: inherit;
+  box-sizing: border-box;
+  resize: vertical;
+}
+
+.candidate-comment-form > button {
+  display: block;
+  width: auto;
+  margin-top: 10px;
+  padding: 10px 22px;
+  border: none;
+  border-radius: 9px;
+  background: #078b83;
+  color: white;
+  font-family: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.candidate-comments-error {
+  margin-top: 12px;
+  color: #b42318;
+  font-size: 13px;
+}
+
+.candidate-comment button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+@media (max-width: 600px) {
+  .candidate-comment {
+    padding: 12px;
+  }
+
+  .candidate-comment-header {
+    flex-wrap: wrap;
+  }
+
+  .candidate-comment-children {
+    margin-right: 6px;
+    padding-right: 9px;
+  }
+}
+
+/* =====================================
+   COMMENTS
+   ===================================== */
+
+.candidate-comments-section {
+  margin-top: 20px;
+}
+
+.candidate-comments-section > h3 {
+  margin-bottom: 18px;
+  color: #123b53;
+  font-size: 20px;
+}
+
+.candidate-comment {
+  padding: 15px 18px;
+  margin-bottom: 12px;
+  background: #f7f9fb;
+  border: 1px solid #e4ebf0;
+  border-radius: 12px;
+}
+
+.candidate-comment-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.candidate-comment-header strong {
+  color: #123b53;
+  font-size: 14px;
+}
+
+.candidate-comment-header span {
+  color: #8292a2;
+  font-size: 12px;
+}
+
+.candidate-comment-text {
+  margin: 0;
+  color: #263e50;
+  font-size: 14px;
+  line-height: 1.7;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* =====================================
+   EDIT / DELETE BUTTONS
+   ===================================== */
+
+.candidate-comment-actions {
+  display: flex;
+  gap: 16px;
+  margin-top: 12px;
+}
+
+.candidate-comment-actions button {
+  width: auto;
+  min-width: 0;
+  padding: 4px 0;
+  border: none;
+  background: transparent;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.candidate-comment-edit-btn {
+  color: #087e80;
+}
+
+.candidate-comment-delete-btn {
+  color: #ba4444;
+}
+
+.candidate-comment-actions button:hover {
+  text-decoration: underline;
+}
+
+/* =====================================
+   EDIT COMMENT
+   ===================================== */
+
+.candidate-comment-edit {
+  margin-top: 12px;
+}
+
+.candidate-comment-edit textarea {
+  width: 100%;
+  min-height: 80px;
+  padding: 12px;
+  border: 1px solid #b8cedb;
+  border-radius: 10px;
+  background: white;
+  font-family: inherit;
+  font-size: 14px;
+  resize: vertical;
+  box-sizing: border-box;
+}
+
+.candidate-comment-edit textarea:focus {
+  outline: none;
+  border-color: #078b83;
+  box-shadow: 0 0 0 3px rgba(7, 139, 131, 0.08);
+}
+
+.candidate-comment-edit-actions {
+  display: flex;
+  gap: 9px;
+  margin-top: 10px;
+}
+
+.candidate-comment-edit-actions button,
+.candidate-comment-delete-confirm button {
+  width: auto;
+  min-width: 0;
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.candidate-comment-save {
+  border: 1px solid #087e80;
+  background: #087e80;
+  color: white;
+}
+
+.candidate-comment-cancel {
+  border: 1px solid #d7e0e7;
+  background: white;
+  color: #526879;
+}
+
+/* =====================================
+   DELETE CONFIRMATION
+   ===================================== */
+
+.candidate-comment-delete-confirm {
+  margin-top: 12px;
+  padding: 12px;
+  background: #fff5f4;
+  border: 1px solid #f1d2cf;
+  border-radius: 10px;
+}
+
+.candidate-comment-delete-confirm > span {
+  display: block;
+  margin-bottom: 10px;
+  color: #8e3030;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.candidate-comment-delete-confirm > div {
+  display: flex;
+  gap: 9px;
+}
+
+.candidate-comment-confirm-delete {
+  border: 1px solid #b83d3d;
+  background: #b83d3d;
+  color: white;
+}
+
+/* =====================================
+   ADD COMMENT
+   ===================================== */
+
+.candidate-comment-form {
+  margin-top: 24px;
+}
+
+.candidate-comment-form label {
+  display: block;
+  margin-bottom: 10px;
+  color: #123b53;
+  font-weight: 700;
+}
+
+.candidate-comment-form textarea {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #d7e0e7;
+  border-radius: 10px;
+  font-family: inherit;
+  font-size: 14px;
+  box-sizing: border-box;
+  resize: vertical;
+}
+
+.candidate-comment-form > button {
+  display: block;
+  width: auto;
+  margin-top: 10px;
+  padding: 10px 22px;
+  border: none;
+  border-radius: 9px;
+  background: #078b83;
+  color: white;
+  font-family: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.candidate-comments-error {
+  margin-top: 12px;
+  color: #b42318;
+  font-size: 13px;
+}
+
+.candidate-comment button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+@media (max-width: 600px) {
+  .candidate-comment {
+    padding: 12px;
+  }
+
+  .candidate-comment-header {
+    flex-wrap: wrap;
+  }
+}
