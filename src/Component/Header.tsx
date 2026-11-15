@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { useAppSelector } from "../store/hooks";
 import Logo from "./Logo";
 import "./Header.css";
-
+import { API_ORIGIN } from "../config/api";
 export type Page =
   | "home"
   | "about"
@@ -38,9 +38,8 @@ interface CandidateProfile {
   name?: string;
 }
 
-import { API_ORIGIN } from "../config/api";
 
-const API = API_ORIGIN;
+
 
 // קישורי הניווט הראשיים
 const links: { label: string; page: Page }[] = [

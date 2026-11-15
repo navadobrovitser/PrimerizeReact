@@ -1,7 +1,8 @@
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import type { RootState } from "../store";
-import { API_ORIGIN } from "../config/api";
+import { API_ORIGIN } from "../../config/api";
+
 const API_URL = `${API_ORIGIN}/api/candidate-match`;
 
 export interface MatchCandidate {

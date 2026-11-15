@@ -7,7 +7,6 @@ import "./CreatePostPage.css";
 
 import { API_ORIGIN } from "../config/api";
 
-const API = API_ORIGIN;
 
 const POSTS_API = `${API_ORIGIN}/api/Posts`;
 const CANDIDATE_API = `${API_ORIGIN}/api/Candidates/me`;
