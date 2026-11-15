@@ -40,16 +40,17 @@ interface CandidateProfile {
 
 const API_ORIGIN = (
   import.meta.env.VITE_API_ORIGIN ||
-  "https://localhost:7227"
+  "https://primerize.runasp.net"
 ).replace(/\/$/, "");
 
+// קישורי הניווט הראשיים
 const links: { label: string; page: Page }[] = [
   { label: "בית", page: "home" },
   { label: "אודות", page: "about" },
   { label: "הנהגה", page: "leadership" },
   { label: "התוכנית", page: "program" },
   { label: "חדשות", page: "news" },
-  { label: "פריימריז", page: "primaries" },
+  { label: "מועמדים", page: "primaries" },
   { label: "פוסטים", page: "posts" },
   { label: "הצבעה", page: "voting" },
   { label: "תוצאות הבחירות", page: "results" },
@@ -62,8 +63,13 @@ export default function Header({
   candidateRefreshKey = 0,
   onCandidateStatusChange,
 }: HeaderProps) {
-  const token = useAppSelector((state) => state.auth.token);
-  const role = useAppSelector((state) => state.auth.role);
+  const token = useAppSelector(
+    (state) => state.auth.token
+  );
+
+  const role = useAppSelector(
+    (state) => state.auth.role
+  );
 
   const [menuOpen, setMenuOpen] = useState(false);
   const [isCandidate, setIsCandidate] = useState(false);
@@ -72,6 +78,7 @@ export default function Header({
 
   const isAdmin = role?.toLowerCase() === "admin";
 
+  // בדיקת סטטוס מועמד
   useEffect(() => {
     const controller = new AbortController();
 
@@ -145,19 +152,21 @@ export default function Header({
     onCandidateStatusChange,
   ]);
 
+  // מעבר בין עמודים
   const navigate = (page: Page) => {
     setMenuOpen(false);
     setActivePage(page);
     onNavigate(page);
   };
 
+  // יצירת קישור בתפריט
   const navLink = (
     label: string,
     page: Page,
     className = "header-nav-link"
   ) => (
     <button
-      key={page}
+      key={`${page}-${label}`}
       type="button"
       className={`${className} ${
         activePage === page ? "is-active" : ""
@@ -174,6 +183,7 @@ export default function Header({
   return (
     <header className="site-header" dir="rtl">
       <div className="header-inner">
+        {/* לוגו */}
         <button
           type="button"
           onClick={() => navigate("home")}
@@ -183,6 +193,7 @@ export default function Header({
           <Logo />
         </button>
 
+        {/* כפתור תפריט לנייד */}
         <button
           type="button"
           className="mobile-menu-button"
@@ -202,6 +213,7 @@ export default function Header({
           </span>
         </button>
 
+        {/* תפריט ראשי */}
         <nav
           id="main-site-navigation"
           className={`site-nav ${
@@ -215,6 +227,7 @@ export default function Header({
             )}
           </div>
 
+          {/* כפתורים לפי הרשאות */}
           <div className="header-actions">
             {!checking && isCandidate && (
               <>

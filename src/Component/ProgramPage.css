@@ -562,3 +562,55 @@
     font-size: 15px;
   }
 }
+
+.primaries-profile-card-wrapper {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  height: 100%;
+}
+
+.primaries-profile-button {
+  width: 100%;
+  margin-top: 12px;
+  padding: 15px 22px;
+  border: 1px solid #17434a;
+  border-radius: 12px;
+  background: #17434a;
+  color: #ffffff;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background 0.2s ease,
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.primaries-profile-button:hover {
+  background: #235c62;
+  box-shadow: 0 8px 22px rgba(23, 67, 74, 0.16);
+  transform: translateY(-2px);
+}
+
+.primaries-profile-button:focus-visible {
+  outline: 3px solid #72aab0;
+  outline-offset: 3px;
+}
+
+.primaries-profile-button:active {
+  transform: translateY(0);
+}
+
+.primaries-profile-button span {
+  display: inline-block;
+  margin-right: 8px;
+}
+
+@media (max-width: 768px) {
+  .primaries-profile-button {
+    padding: 14px 16px;
+    font-size: 14px;
+  }
+}

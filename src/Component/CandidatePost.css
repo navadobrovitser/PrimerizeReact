@@ -1,125 +1,476 @@
 
-/* Comments */
+/* ========================================
+   PRIMERIZE — CANDIDATE POST CARD
+   ======================================== */
+
+.candidate-post {
+  --post-primary: #173b58;
+  --post-dark: #102b43;
+  --post-text: #25394c;
+  --post-muted: #778596;
+  --post-border: #e4e9ee;
+  --post-accent: #c4a36c;
+
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-width: 0;
+  height: auto;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  background: #fff;
+  border: 1px solid var(--post-border);
+  border-radius: 15px;
+  box-shadow: 0 5px 22px rgba(20, 45, 65, 0.045);
+  transition:
+    box-shadow 0.25s ease,
+    border-color 0.25s ease;
+}
+
+.candidate-post:hover {
+  border-color: #d5dfe7;
+  box-shadow: 0 10px 30px rgba(20, 45, 65, 0.085);
+}
+
+.candidate-post--expanded {
+  border-color: #cbd9e3;
+}
+
+/* ========================================
+   תוכן הכרטיסייה
+   ======================================== */
+
+.candidate-post-content {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: 25px;
+}
+
+/* ========================================
+   פרטי מועמד
+   ======================================== */
+
+.candidate-post-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 5px;
+  min-width: 0;
+  padding-bottom: 19px;
+  margin-bottom: 20px;
+  border-bottom: 1px solid #edf0f3;
+}
+
+.candidate-post-info h2 {
+  margin: 0;
+  color: var(--post-dark);
+  font-size: 19px;
+  font-weight: 800;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.candidate-post-role {
+  color: #9a7a4e;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.6;
+}
+
+.candidate-post-city {
+  display: block;
+  color: var(--post-muted);
+  font-size: 11px;
+  margin-top: 4px;
+}
+
+/* ========================================
+   כותרת ותוכן
+   ======================================== */
+
+.candidate-post-title {
+  margin: 0 0 13px;
+  color: var(--post-dark);
+  font-size: 19px;
+  font-weight: 800;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.candidate-post-description {
+  margin: 0 0 19px;
+  color: var(--post-text);
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.95;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* ========================================
+   תמונה וסרטון
+   ======================================== */
+
+.candidate-post-image {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-width: 0;
+  margin: 0 0 19px;
+  overflow: hidden;
+  border-radius: 11px;
+  background: #edf1f5;
+}
+
+.candidate-post-image img,
+.candidate-post-image video {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  border: 0;
+  background: #edf1f5;
+}
+
+/* תצוגה מקדימה */
+
+.candidate-post-image.preview-media {
+  height: 205px;
+}
+
+.candidate-post-image.preview-media img {
+  height: 100%;
+  object-fit: cover;
+}
+
+.candidate-post-image.preview-media video {
+  height: 100%;
+  object-fit: contain;
+}
+
+/* תצוגה מלאה */
+
+.candidate-post-image.expanded-media {
+  height: auto;
+  max-height: none;
+}
+
+.candidate-post-image.expanded-media img {
+  height: auto;
+  max-height: 560px;
+  object-fit: contain;
+}
+
+.candidate-post-image.expanded-media video {
+  height: auto;
+  max-height: 560px;
+  object-fit: contain;
+}
+
+/* שגיאת טעינת מדיה */
+
+.candidate-media-error {
+  margin: 0 0 18px;
+  padding: 12px;
+  border-radius: 8px;
+  background: #fff4f4;
+  color: #a13a3a;
+  font-size: 12px;
+  text-align: center;
+}
+
+/* ========================================
+   כפתור הרחבה
+   ======================================== */
+
+.candidate-post-expand-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 43px;
+  margin-top: 4px;
+  padding: 10px 16px;
+  border: 1px solid #d5e0e8;
+  border-radius: 8px;
+  background: #f4f7fa;
+  color: var(--post-primary);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.candidate-post-expand-button:hover {
+  background: #e9f0f5;
+  border-color: #b7cbd9;
+}
+
+.candidate-post-expand-button:focus-visible {
+  outline: 3px solid var(--post-accent);
+  outline-offset: 3px;
+}
+
+/* ========================================
+   לייקים ותגובות
+   ======================================== */
+
+.candidate-post-interactions {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  margin-top: 20px;
+  padding-top: 18px;
+  border-top: 1px solid var(--post-border);
+}
+
+.candidate-post-divider {
+  width: 100%;
+  height: 1px;
+  background: var(--post-border);
+}
 
 .candidate-comments-toggle {
-  border: none;
-  background: #eaf6f5;
-  color: #087f83;
-  padding: 10px 19px;
-  border-radius: 25px;
-  font-family: inherit;
-  font-size: 14px;
-  font-weight: 800;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  min-height: 40px;
+  padding: 10px 15px;
+  border: 1px solid #d7e0e7;
+  border-radius: 8px;
+  background: #fff;
+  color: var(--post-primary);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
   cursor: pointer;
-  transition: background 0.2s ease;
 }
 
 .candidate-comments-toggle:hover {
-  background: #d6eeec;
+  background: #f5f8fa;
 }
 
+/* ========================================
+   אזור תגובות
+   ======================================== */
+
 .candidate-comments-section {
-  margin-top: 26px;
-  padding-top: 20px;
-  border-top: 1px solid #e9eef1;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding-top: 8px;
 }
 
 .candidate-comments-section h3 {
-  margin: 0 0 20px;
-  color: #123b53;
-  font-size: 19px;
+  margin: 0 0 4px;
+  color: var(--post-dark);
+  font-size: 16px;
+  font-weight: 800;
 }
 
+.candidate-comments-section > p {
+  margin: 0;
+  color: var(--post-muted);
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+/* תגובה בודדת */
+
 .candidate-comment {
-  padding: 18px 20px;
-  background: #f7fafb;
-  border: 1px solid #e8eef0;
-  border-radius: 16px;
-  margin-bottom: 12px;
+  padding: 14px;
+  border: 1px solid #e8edf1;
+  border-radius: 10px;
+  background: #f8fafc;
 }
 
 .candidate-comment-header {
   display: flex;
+  align-items: flex-start;
   justify-content: space-between;
-  align-items: center;
-  gap: 12px;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 9px;
 }
 
 .candidate-comment-header strong {
-  color: #123b53;
-  font-size: 14px;
+  color: var(--post-dark);
+  font-size: 13px;
+  font-weight: 800;
 }
 
-.candidate-comment-header time {
-  color: #8b9ca5;
-  font-size: 12px;
+.candidate-comment-header span {
+  color: var(--post-muted);
+  font-size: 11px;
 }
 
 .candidate-comment p {
-  margin: 10px 0 0;
-  color: #526f80;
+  margin: 0;
+  color: var(--post-text);
+  font-size: 13px;
   line-height: 1.8;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
 
+/* ========================================
+   טופס הוספת תגובה
+   ======================================== */
+
 .candidate-comment-form {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  margin-top: 25px;
+  gap: 10px;
+  padding-top: 8px;
 }
 
 .candidate-comment-form label {
-  color: #123b53;
-  font-weight: 800;
-  font-size: 14px;
+  color: var(--post-dark);
+  font-size: 13px;
+  font-weight: 700;
 }
 
 .candidate-comment-form textarea {
-  border: 1px solid #d8e7eb;
-  border-radius: 14px;
-  padding: 15px;
-  font: inherit;
-  color: #123b53;
-  background: white;
+  width: 100%;
+  min-height: 90px;
+  padding: 13px 14px;
   resize: vertical;
+  border: 1px solid #d8e1e8;
+  border-radius: 9px;
+  outline: none;
+  background: #fff;
+  color: var(--post-text);
+  font: inherit;
+  font-size: 13px;
+  line-height: 1.7;
 }
 
 .candidate-comment-form textarea:focus {
-  outline: 2px solid #a9d9d7;
-  border-color: #078b83;
+  border-color: #7a9cb4;
+  box-shadow: 0 0 0 3px rgba(23, 59, 88, 0.08);
 }
 
 .candidate-comment-form button {
   align-self: flex-start;
+  min-height: 40px;
+  padding: 10px 22px;
   border: none;
-  border-radius: 25px;
-  background: #078b83;
-  color: white;
-  padding: 11px 24px;
+  border-radius: 8px;
+  background: var(--post-primary);
+  color: #fff;
   font: inherit;
-  font-weight: 800;
+  font-size: 13px;
+  font-weight: 700;
   cursor: pointer;
 }
 
-.candidate-comment-form button:hover {
-  background: #066e69;
+.candidate-comment-form button:hover:not(:disabled) {
+  background: var(--post-dark);
 }
 
 .candidate-comment-form button:disabled {
-  opacity: 0.6;
+  opacity: 0.55;
   cursor: not-allowed;
 }
 
-.candidate-comments-message {
-  color: #8296a1;
-  font-size: 14px;
-  line-height: 1.8;
-}
+/* ========================================
+   הודעות שגיאה
+   ======================================== */
 
 .candidate-comments-error {
-  color: #b42318;
-  font-size: 14px;
-  margin-top: 12px;
+  margin: 0;
+  padding: 12px;
+  border-radius: 8px;
+  background: #fff1f1;
+  color: #a73535;
+  font-size: 12px;
+  line-height: 1.7;
+}
+
+/* ========================================
+   פוסט בודד פתוח
+   ======================================== */
+
+.single-post-list .candidate-post-content {
+  padding: 32px;
+}
+
+.single-post-list .candidate-post-description {
+  font-size: 15px;
+  line-height: 2;
+}
+
+.single-post-list .candidate-post-image.preview-media {
+  height: 320px;
+}
+
+/* ========================================
+   מובייל
+   ======================================== */
+
+@media (max-width: 650px) {
+  .candidate-post {
+    border-radius: 12px;
+  }
+
+  .candidate-post-content {
+    padding: 18px;
+  }
+
+  .candidate-post-info {
+    margin-bottom: 16px;
+    padding-bottom: 15px;
+  }
+
+  .candidate-post-info h2 {
+    font-size: 17px;
+  }
+
+  .candidate-post-title {
+    font-size: 17px;
+  }
+
+  .candidate-post-description {
+    font-size: 13px;
+  }
+
+  .candidate-post-image.preview-media {
+    height: 185px;
+  }
+
+  .candidate-post-image.expanded-media img,
+  .candidate-post-image.expanded-media video {
+    max-height: 400px;
+  }
+
+  .single-post-list .candidate-post-content {
+    padding: 19px;
+  }
+
+  .candidate-comment-header {
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  .candidate-comment-form button {
+    width: 100%;
+  }
+}
+
+/* ========================================
+   נגישות
+   ======================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  .candidate-post,
+  .candidate-post button {
+    transition: none;
+  }
 }
