@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useAppSelector } from "../store/hooks";
 import "./AdminDashboard.css";
-
+import RegulationManagement from "./RegulationManagement";
 const API =
   (import.meta.env.VITE_API_ORIGIN || "https://localhost:7227")
     .replace(/\/$/, "") + "/api";
@@ -1374,7 +1374,12 @@ export default function AdminDashboard({
             </>
           )}
         </article>
-      </div>
+        {/* ==========================================
+    ניהול תקנון האתר
+    מוצג למנהל בלבד בתוך לוח הבקרה
+========================================== */}
+
+<RegulationManagement />      </div>
     </section>
   );
 }

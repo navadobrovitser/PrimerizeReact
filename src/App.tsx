@@ -24,7 +24,9 @@ import SetPasswordPage from "./Component/SetPasswordPage";
 import NewsPage from "./Component/NewsPage";
 import LeadershipPage from "./Component/LeadershipPage";
 import ProgramPage from "./Component/ProgramPage";
-import SecureVotingGate from "./Component/SecureVotingGate";
+
+// עמוד צ'אט התקנון החכם - RAG
+import RegulationChatPage from "./Component/RegulationChatPage";import SecureVotingGate from "./Component/SecureVotingGate";
 import "./App.css";
 import { useAppDispatch } from "./store/hooks";
 import { logout } from "./store/Auth/authSlice";
@@ -311,20 +313,41 @@ const hideSiteNavigation =
     });
   };
 
-  // =====================================
-  // מועמד חדש
-  // =====================================
+ // =====================================
+// מועמד חדש
+// =====================================
 
-  const handleCandidateCreated = () => {
-    setCandidateRefreshKey(
-      (previous) => previous + 1
-    );
+const handleCandidateCreated = () => {
+  // מעדכנים את מפתח הרענון כדי לבדוק
+  // מחדש את הרשאות המועמד בתפריט.
+  setCandidateRefreshKey(
+    (previous) => previous + 1
+  );
+
+  setCandidateStatus(null);
+  setPage("primaries");
+};
+
+// =====================================
+// עדכון פרטי מועמד
+// =====================================
+
+const handleCandidateSaved = () => {
+  // רענון נתוני המועמד לאחר שמירה.
+  setCandidateRefreshKey(
+    (previous) => previous + 1
+  );
+};
+
 // =====================================
 // חזרה לאתר לאחר הצבעה
 // =====================================
 
 const handleReturnFromVoting = () => {
+  // יוצאים ממצב ההצבעה במסך מלא.
   setVotingFullscreenActive(false);
+
+  // חוזרים לעמוד הבית.
   setPage("home");
   window.scrollTo(0, 0);
 };
@@ -334,47 +357,15 @@ const handleReturnFromVoting = () => {
 // =====================================
 
 const handleLogoutFromVoting = () => {
+  // מסיימים את מצב ההצבעה.
   setVotingFullscreenActive(false);
 
+  // מאפסים את מצב ההצבעה המקומי
+  // ומנתקים את המשתמש מהמערכת.
   dispatch(resetVoting());
   dispatch(logout());
 
-  setPage("login");
-  window.scrollTo(0, 0);
-};
-    setCandidateStatus(null);
-    setPage("primaries");
-  };
-
-  // =====================================
-  // עדכון מועמד
-  // =====================================
-
-  const handleCandidateSaved = () => {
-    setCandidateRefreshKey(
-      (previous) => previous + 1
-    );
-  };
-// =====================================
-// חזרה לאתר לאחר הצבעה
-// =====================================
-
-const handleReturnFromVoting = () => {
-  setVotingFullscreenActive(false);
-  setPage("home");
-  window.scrollTo(0, 0);
-};
-
-// =====================================
-// התנתקות לאחר הצבעה
-// =====================================
-
-const handleLogoutFromVoting = () => {
-  setVotingFullscreenActive(false);
-
-  dispatch(resetVoting());
-  dispatch(logout());
-
+  // מחזירים למסך ההתחברות.
   setPage("login");
   window.scrollTo(0, 0);
 };
@@ -664,6 +655,10 @@ const handleLogoutFromVoting = () => {
         {page === "match" && (
           <CandidateMatchPage />
         )}
+        {/* צ'אט התקנון - זמין לכל משתמש מחובר */}
+{page === "regulation-chat" && (
+  <RegulationChatPage />
+)}
 
    {/* הצבעה */}
 {page === "voting" && (

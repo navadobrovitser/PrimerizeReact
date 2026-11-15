@@ -22,7 +22,9 @@ export type Page =
   | "candidate-registration"
   | "candidate-personal-area"
   | "create-post"
+  | "regulation-chat"
   | "admin";
+  
 
 interface HeaderProps {
   onNavigate: (page: Page) => void;
@@ -52,6 +54,7 @@ const links: { label: string; page: Page }[] = [
   { label: "הצבעה", page: "voting" },
   { label: "תוצאות הבחירות", page: "results" },
   { label: "התאמה חכמה", page: "match" },
+  { label: "צ'אט התקנון", page: "regulation-chat" },
 ];
 
 export default function Header({
