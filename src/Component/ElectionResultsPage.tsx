@@ -3,7 +3,9 @@ import { useEffect, useState } from "react";
 import { useAppSelector } from "../store/hooks";
 import "./ElectionResultsPage.css";
 
-const API_URL = "https://localhost:7227/api/Voting";
+import { API_ORIGIN } from "../config/api";
+
+const API_URL = `${API_ORIGIN}/api/Voting`;
 
 interface CandidateResult {
   candidateId: number;

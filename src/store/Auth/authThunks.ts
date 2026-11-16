@@ -1,12 +1,12 @@
-
 import { createAsyncThunk } from "@reduxjs/toolkit";
-
-const API_ORIGIN = (
-  import.meta.env.VITE_API_ORIGIN ||
-  "https://localhost:7227"
-).replace(/\/+$/, "");
+import { API_ORIGIN } from "../../config/api";
 
 const API_URL = `${API_ORIGIN}/api/Auth`;
+if (!API_ORIGIN) {
+  throw new Error("VITE_API_ORIGIN is not configured");
+}
+
+
 
 export interface LoginStep1Dto {
   idNumber: string;

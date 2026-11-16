@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { useAppSelector } from "../store/hooks";
 import Logo from "./Logo";
 import "./Header.css";
-
+import { API_ORIGIN } from "../config/api";
 export type Page =
   | "home"
   | "about"
@@ -38,10 +38,8 @@ interface CandidateProfile {
   name?: string;
 }
 
-const API_ORIGIN = (
-  import.meta.env.VITE_API_ORIGIN ||
-  "https://primerize.runasp.net"
-).replace(/\/$/, "");
+
+
 
 // קישורי הניווט הראשיים
 const links: { label: string; page: Page }[] = [

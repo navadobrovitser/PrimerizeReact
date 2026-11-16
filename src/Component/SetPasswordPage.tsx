@@ -1,7 +1,7 @@
 
 import { useState, type FormEvent } from "react";
 import "./SetPasswordPage.css";
-
+import { API_ORIGIN } from "../config/api";
 interface SetPasswordPageProps {
   onGoToLogin: () => void;
 }
@@ -42,19 +42,21 @@ export default function SetPasswordPage({
     setLoading(true);
 
     try {
-      const response = await fetch(
-        "https://localhost:7227/api/Users/set-password",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            token,
-            password,
-          }),
-        }
-      );
+     const response = await fetch(
+  `${API_ORIGIN}/api/Users/set-password`,
+  {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      token,
+      password,
+    }),
+  }
+);
+       
+
 
       if (!response.ok) {
         const result = await response.json().catch(() => null);

@@ -1,10 +1,11 @@
 
 import { useEffect, useState } from "react";
-import { ThumbsUp, ThumbsDown } from "lucide-react";
 import { useAppSelector } from "../store/hooks";
 import "./PostLikes.css";
 
-const API = "https://localhost:7227/api/PostLikes";
+import { API_ORIGIN } from "../config/api";
+
+const API = `${API_ORIGIN}/api/PostLikes`;
 
 type Reaction = "Like" | "Dislike";
 
@@ -19,6 +20,7 @@ interface PostLikesProps {
   postId: number;
 }
 
+// זיהוי סוג התגובה
 function parseReaction(
   type: string | number
 ): Reaction | null {
@@ -30,11 +32,13 @@ function parseReaction(
   return null;
 }
 
+// חילוץ מזהה המשתמש מהטוקן
 function getUserIdFromToken(
   token: string
 ): number | null {
   try {
     const payload = token.split(".")[1];
+
     const base64 = payload
       .replace(/-/g, "+")
       .replace(/_/g, "/");
@@ -79,7 +83,10 @@ export default function PostLikes({
     (state) => state.auth.token
   );
 
-  const [likes, setLikes] = useState<PostLikeDto[]>([]);
+  const [likes, setLikes] = useState<
+    PostLikeDto[]
+  >([]);
+
   const [currentReaction, setCurrentReaction] =
     useState<Reaction | null>(null);
 
@@ -91,6 +98,7 @@ export default function PostLikes({
     ? getUserIdFromToken(token)
     : null;
 
+  // טעינת כל התגובות לפוסט
   useEffect(() => {
     const controller = new AbortController();
 
@@ -120,11 +128,14 @@ export default function PostLikes({
         setLikes(data);
 
         const myLike = data.find(
-          (item) => item.userId === currentUserId
+          (item) =>
+            item.userId === currentUserId
         );
 
         setCurrentReaction(
-          myLike ? parseReaction(myLike.type) : null
+          myLike
+            ? parseReaction(myLike.type)
+            : null
         );
       } catch (err) {
         if (!controller.signal.aborted) {
@@ -146,6 +157,7 @@ export default function PostLikes({
     return () => controller.abort();
   }, [postId, token, currentUserId]);
 
+  // עדכון תגובה
   const handleReaction = async (
     type: Reaction
   ) => {
@@ -154,7 +166,8 @@ export default function PostLikes({
     setSaving(true);
     setError("");
 
-    const isRemoving = currentReaction === type;
+    const isRemoving =
+      currentReaction === type;
 
     try {
       const response = await fetch(
@@ -162,11 +175,16 @@ export default function PostLikes({
           ? `${API}?postId=${postId}`
           : API,
         {
-          method: isRemoving ? "DELETE" : "POST",
+          method: isRemoving
+            ? "DELETE"
+            : "POST",
           headers: {
             Authorization: `Bearer ${token}`,
             ...(!isRemoving
-              ? { "Content-Type": "application/json" }
+              ? {
+                  "Content-Type":
+                    "application/json",
+                }
               : {}),
           },
           ...(!isRemoving
@@ -186,6 +204,7 @@ export default function PostLikes({
         );
       }
 
+      // רענון התגובות אחרי השמירה
       const updatedResponse = await fetch(
         `${API}/post/${postId}`
       );
@@ -202,11 +221,14 @@ export default function PostLikes({
       setLikes(updatedLikes);
 
       const myLike = updatedLikes.find(
-        (item) => item.userId === currentUserId
+        (item) =>
+          item.userId === currentUserId
       );
 
       setCurrentReaction(
-        myLike ? parseReaction(myLike.type) : null
+        myLike
+          ? parseReaction(myLike.type)
+          : null
       );
     } catch (err) {
       setError(
@@ -220,76 +242,86 @@ export default function PostLikes({
   };
 
   const likeCount = likes.filter(
-    (item) => parseReaction(item.type) === "Like"
+    (item) =>
+      parseReaction(item.type) === "Like"
   ).length;
 
   const dislikeCount = likes.filter(
-    (item) => parseReaction(item.type) === "Dislike"
+    (item) =>
+      parseReaction(item.type) === "Dislike"
   ).length;
 
   return (
     <div className="post-likes" dir="rtl">
-      <div
-        className="post-likes-pill"
-        role="group"
-        aria-label="דירוג הפוסט"
-      >
+      <div className="post-likes-buttons">
         <button
           type="button"
-          className={`post-likes-action ${
-            currentReaction === "Like" ? "selected" : ""
+          className={`post-like-button ${
+            currentReaction === "Like"
+              ? "active"
+              : ""
           }`}
-          onClick={() => void handleReaction("Like")}
-          disabled={!token || loading || saving}
-          aria-pressed={currentReaction === "Like"}
-          title="אהבתי"
+          onClick={() =>
+            void handleReaction("Like")
+          }
+          disabled={
+            !token || loading || saving
+          }
+          aria-pressed={
+            currentReaction === "Like"
+          }
         >
-          <ThumbsUp
-            size={19}
-            strokeWidth={1.8}
-            fill={
-              currentReaction === "Like"
-                ? "currentColor"
-                : "none"
-            }
-          />
-          <span className="post-likes-number">
-            {loading ? "..." : likeCount}
+          <span className="post-like-symbol">
+            👍
           </span>
+
+          <span>לייק</span>
+
+          <strong>
+            {loading ? "..." : likeCount}
+          </strong>
         </button>
 
-        <span
-          className="post-likes-separator"
-          aria-hidden="true"
-        />
-
         <button
           type="button"
-          className={`post-likes-action ${
-            currentReaction === "Dislike" ? "selected" : ""
+          className={`post-like-button ${
+            currentReaction === "Dislike"
+              ? "active dislike-active"
+              : ""
           }`}
-          onClick={() => void handleReaction("Dislike")}
-          disabled={!token || loading || saving}
-          aria-pressed={currentReaction === "Dislike"}
-          title="לא אהבתי"
+          onClick={() =>
+            void handleReaction("Dislike")
+          }
+          disabled={
+            !token || loading || saving
+          }
+          aria-pressed={
+            currentReaction === "Dislike"
+          }
         >
-          <ThumbsDown
-            size={19}
-            strokeWidth={1.8}
-            fill={
-              currentReaction === "Dislike"
-                ? "currentColor"
-                : "none"
-            }
-          />
-          <span className="post-likes-number">
-            {loading ? "..." : dislikeCount}
+          <span className="post-like-symbol">
+            👎
           </span>
+
+          <span>דיסלייק</span>
+
+          <strong>
+            {loading ? "..." : dislikeCount}
+          </strong>
         </button>
       </div>
 
+      {saving && (
+        <p className="post-likes-status">
+          מעדכן תגובה...
+        </p>
+      )}
+
       {error && (
-        <p className="post-likes-error" role="alert">
+        <p
+          className="post-likes-error"
+          role="alert"
+        >
           {error}
         </p>
       )}

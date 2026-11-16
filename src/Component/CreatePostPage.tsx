@@ -5,10 +5,8 @@ import type { FormEvent, ChangeEvent } from "react";
 import { useAppSelector } from "../store/hooks";
 import "./CreatePostPage.css";
 
-const API_ORIGIN = (
-  import.meta.env.VITE_API_ORIGIN ||
-  "https://localhost:7227"
-).replace(/\/+$/, "");
+import { API_ORIGIN } from "../config/api";
+
 
 const POSTS_API = `${API_ORIGIN}/api/Posts`;
 const CANDIDATE_API = `${API_ORIGIN}/api/Candidates/me`;

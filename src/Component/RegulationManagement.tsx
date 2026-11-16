@@ -6,9 +6,9 @@ import { useAppSelector } from "../store/hooks";
 // כתובת שרת ה-API
 // =====================================================
 
-const API =
-  (import.meta.env.VITE_API_ORIGIN || "https://localhost:7227")
-    .replace(/\/$/, "") + "/api";
+import { API_ORIGIN } from "../config/api";
+
+const API = `${API_ORIGIN}/api`;
 
 // =====================================================
 // טיפוסים

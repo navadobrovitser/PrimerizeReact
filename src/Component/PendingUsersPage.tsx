@@ -33,9 +33,10 @@ type Props = {
   onNavigateToVoting: () => void;
 };
 
-const API = "https://localhost:7227/api/Voting";
-const USERS_API = "https://localhost:7227/api/Users";
+import { API_ORIGIN } from "../config/api";
 
+const API = `${API_ORIGIN}/api/Voting`;
+const USERS_API = `${API_ORIGIN}/api/Users`;
 export default function AdminDashboard({
   onNavigateToVoting,
 }: Props) {

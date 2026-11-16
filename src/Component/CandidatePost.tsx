@@ -6,12 +6,8 @@ import { useAppSelector } from "../store/hooks";
 import PostLikes from "./PostLikes";
 import "./CandidatePost.css";
 
-const API_ORIGIN = (
-  import.meta.env.VITE_API_ORIGIN ||
-  (import.meta.env.DEV
-    ? "https://localhost:7227"
-    : "https://primerize.runasp.net")
-).replace(/\/+$/, "");
+import { API_ORIGIN } from "../config/api";
+
 
 const PREVIEW_LENGTH = 170;
 
