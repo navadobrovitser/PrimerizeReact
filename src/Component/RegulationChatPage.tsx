@@ -1,11 +1,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useAppSelector } from "../store/hooks";
+import { API_ORIGIN } from "../config/api";
 import "./RegulationChatPage.css";
-
-// =====================================================
-// מבנה הנתונים שמגיעים מהשרת
-// =====================================================
 
 interface RegulationSource {
   sectionNumber: string;
@@ -20,23 +17,16 @@ interface RegulationResponse {
   sources: RegulationSource[];
 }
 
-// הודעה אחת בשיחה
 interface ChatMessage {
   role: "user" | "assistant";
   text: string;
   sources?: RegulationSource[];
 }
 
-// כתובת השרת הקיים
-import { API_ORIGIN } from "../config/api";
+const CHAT_URL = `${API_ORIGIN}/api/regulation-chat/ask`;
 
 export default function RegulationChatPage() {
-  // הטוקן של המשתמש שכבר התחבר לאתר
   const token = useAppSelector((state) => state.auth.token);
-
-  // =====================================================
-  // ניהול מצב השיחה
-  // =====================================================
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [question, setQuestion] = useState("");
@@ -44,11 +34,9 @@ export default function RegulationChatPage() {
   const [error, setError] = useState("");
   const [version, setVersion] = useState("");
 
-  // זיהוי הבקשה הפעילה כדי למנוע תשובות משיחה קודמת
   const requestController = useRef<AbortController | null>(null);
-
-  // גלילה אוטומטית לתחתית השיחה
   const bottomRef = useRef<HTMLDivElement | null>(null);
+  const sendingRef = useRef(false);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({
@@ -57,21 +45,16 @@ export default function RegulationChatPage() {
     });
   }, [messages, loading]);
 
-  // ביטול בקשה אם המשתמש יוצא מהעמוד
   useEffect(() => {
     return () => {
       requestController.current?.abort();
     };
   }, []);
 
-  // =====================================================
-  // שליחת שאלה לשרת RAG
-  // =====================================================
-
   const sendQuestion = async () => {
     const currentQuestion = question.trim();
 
-    if (!currentQuestion || loading) return;
+    if (!currentQuestion || sendingRef.current) return;
 
     if (!token) {
       setError("יש להתחבר לאתר כדי להשתמש בצ'אט.");
@@ -83,8 +66,6 @@ export default function RegulationChatPage() {
       return;
     }
 
-    // השרת מקבל עד 10 הודעות קודמות.
-    // שולחים את ההיסטוריה הקצרה ביותר הדרושה להקשר.
     const previousMessages = messages
       .slice(-10)
       .map((message) => ({
@@ -94,10 +75,14 @@ export default function RegulationChatPage() {
 
     const controller = new AbortController();
     requestController.current = controller;
+    sendingRef.current = true;
 
     setMessages((previous) => [
       ...previous,
-      { role: "user", text: currentQuestion },
+      {
+        role: "user",
+        text: currentQuestion,
+      },
     ]);
 
     setQuestion("");
@@ -105,79 +90,116 @@ export default function RegulationChatPage() {
     setLoading(true);
 
     try {
-      const response = await fetch(
-        `${API_ORIGIN}/api/regulation-chat/ask`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            question: currentQuestion,
-            previousMessages,
-          }),
-          signal: controller.signal,
-        }
-      );
+      console.log("Regulation Chat request:", {
+        url: CHAT_URL,
+        question: currentQuestion,
+        historyCount: previousMessages.length,
+      });
 
-      if (response.status === 401) {
-        throw new Error(
-          "פג תוקף ההתחברות. יש להתחבר מחדש."
-        );
-      }
+      const response = await fetch(CHAT_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          question: currentQuestion,
+          previousMessages,
+        }),
+        signal: controller.signal,
+      });
 
-      if (response.status === 403) {
-        throw new Error(
-          "אין לך הרשאה להשתמש בצ'אט התקנון."
-        );
-      }
+      if (controller.signal.aborted) return;
 
       if (!response.ok) {
-        throw new Error(
-          "אירעה שגיאה בקבלת תשובה. נסי שוב."
-        );
+        const responseText = await response.text();
+
+        console.error("Regulation Chat API Error:", {
+          status: response.status,
+          url: response.url,
+          response: responseText,
+        });
+
+        let message = `שגיאת שרת (${response.status}).`;
+
+        if (response.status === 400) {
+          message = "הבקשה שנשלחה לשרת אינה תקינה (400).";
+        } else if (response.status === 401) {
+          message = "פג תוקף ההתחברות. יש להתחבר מחדש.";
+        } else if (response.status === 403) {
+          message = "אין הרשאה להשתמש בצ'אט התקנון.";
+        } else if (response.status === 404) {
+          message = "שירות הצ'אט לא נמצא בשרת (404).";
+        } else if (response.status === 429) {
+          message = "נשלחו יותר מדי בקשות. נסי שוב מאוחר יותר.";
+        } else if (response.status === 500) {
+          message = "שגיאה פנימית בשרת הצ'אט (500).";
+        } else if (
+          response.status === 502 ||
+          response.status === 503 ||
+          response.status === 504
+        ) {
+          message = "שירות הצ'אט אינו זמין כרגע.";
+        }
+
+        throw new Error(message);
       }
 
       const data: RegulationResponse = await response.json();
 
-      // אם הבקשה בוטלה, לא מעדכנים את השיחה
       if (controller.signal.aborted) return;
+
+      if (
+        !data ||
+        typeof data.answer !== "string" ||
+        !data.answer.trim()
+      ) {
+        throw new Error(
+          "השרת החזיר תשובה ריקה או לא תקינה."
+        );
+      }
 
       setMessages((previous) => [
         ...previous,
         {
           role: "assistant",
           text: data.answer,
-          sources: data.sources,
+          sources: Array.isArray(data.sources)
+            ? data.sources
+            : [],
         },
       ]);
 
-      setVersion(data.versionNumber);
+      setVersion(data.versionNumber ?? "");
     } catch (err) {
       if (controller.signal.aborted) return;
 
-      setError(
-        err instanceof Error
-          ? err.message
-          : "לא ניתן להתחבר לשרת כרגע."
-      );
+      console.error("Regulation Chat Error:", err);
+
+      if (err instanceof TypeError) {
+        setError(
+          "לא ניתן להתחבר לשרת. בדקי את כתובת השרת ואת החיבור."
+        );
+      } else {
+        setError(
+          err instanceof Error
+            ? err.message
+            : "אירעה שגיאה לא צפויה."
+        );
+      }
     } finally {
       if (requestController.current === controller) {
         requestController.current = null;
+        sendingRef.current = false;
         setLoading(false);
       }
     }
   };
 
-  // =====================================================
-  // התחלת שיחה חדשה
-  // ההיסטוריה נמחקת מהדפדפן בלבד.
-  // =====================================================
-
   const startNewChat = () => {
     requestController.current?.abort();
     requestController.current = null;
+    sendingRef.current = false;
 
     setMessages([]);
     setQuestion("");
@@ -188,10 +210,10 @@ export default function RegulationChatPage() {
 
   return (
     <section className="regulation-chat-page" dir="rtl">
-      {/* כותרת הצ'אט */}
       <div className="regulation-chat-header">
         <div>
           <h1>צ'אט התקנון החכם</h1>
+
           <p>
             שאלו שאלות וקבלו תשובות המבוססות על
             התקנון הרשמי של האתר.
@@ -213,7 +235,6 @@ export default function RegulationChatPage() {
         </button>
       </div>
 
-      {/* אזור ההודעות */}
       <div
         className="regulation-chat-messages"
         aria-live="polite"
@@ -221,6 +242,7 @@ export default function RegulationChatPage() {
         {messages.length === 0 && (
           <div className="regulation-chat-welcome">
             <h2>במה אפשר לעזור?</h2>
+
             <p>
               אפשר לשאול על הרשמה, מועמדות,
               הצבעה, תוצאות הבחירות וכל נושא
@@ -248,7 +270,6 @@ export default function RegulationChatPage() {
               {message.text}
             </div>
 
-            {/* מקורות נפתחים לקריאה */}
             {message.role === "assistant" &&
               message.sources &&
               message.sources.length > 0 && (
@@ -259,14 +280,15 @@ export default function RegulationChatPage() {
                   </summary>
 
                   <div className="regulation-sources-list">
-                    {message.sources.map((source) => (
+                    {message.sources.map((source, index) => (
                       <div
-                        key={source.sectionNumber}
+                        key={`${source.sectionNumber}-${index}`}
                         className="regulation-source"
                       >
                         <strong>
                           סעיף {source.sectionNumber}
                         </strong>
+
                         <p>{source.content}</p>
                       </div>
                     ))}
@@ -285,14 +307,12 @@ export default function RegulationChatPage() {
         <div ref={bottomRef} />
       </div>
 
-      {/* שגיאה ידידותית */}
       {error && (
         <div className="regulation-chat-error" role="alert">
           {error}
         </div>
       )}
 
-      {/* אזור כתיבת השאלה */}
       <form
         className="regulation-chat-input-area"
         onSubmit={(event) => {
@@ -310,7 +330,11 @@ export default function RegulationChatPage() {
           rows={3}
           disabled={loading}
           onKeyDown={(event) => {
-            if (event.key === "Enter" && !event.shiftKey) {
+            if (
+              event.key === "Enter" &&
+              !event.shiftKey &&
+              !event.nativeEvent.isComposing
+            ) {
               event.preventDefault();
               void sendQuestion();
             }

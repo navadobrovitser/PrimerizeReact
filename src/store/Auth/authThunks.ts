@@ -1,12 +1,12 @@
+
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import { API_ORIGIN } from "../../config/api";
 
 const API_URL = `${API_ORIGIN}/api/Auth`;
-if (!API_ORIGIN) {
-  throw new Error("VITE_API_ORIGIN is not configured");
-}
 
-
+// =====================================
+// DTOs
+// =====================================
 
 export interface LoginStep1Dto {
   idNumber: string;
@@ -23,6 +23,10 @@ interface ApiResponse {
   token?: string;
   [key: string]: unknown;
 }
+
+// =====================================
+// קריאת תשובת שרת
+// =====================================
 
 async function readResponse(
   response: Response
@@ -45,6 +49,10 @@ async function readResponse(
   return {};
 }
 
+// =====================================
+// טיפול בשגיאת חיבור
+// =====================================
+
 function connectionError(error: unknown): string {
   console.error("Auth request failed:", error);
 
@@ -54,6 +62,10 @@ function connectionError(error: unknown): string {
     "ושאישור HTTPS תקין."
   );
 }
+
+// =====================================
+// שלב 1 - התחברות ושליחת קוד אימות
+// =====================================
 
 export const loginStep1 = createAsyncThunk(
   "auth/loginStep1",
@@ -78,7 +90,7 @@ export const loginStep1 = createAsyncThunk(
       if (!response.ok) {
         return rejectWithValue(
           result.message ||
-          `ההתחברות נכשלה (${response.status})`
+            `ההתחברות נכשלה (${response.status})`
         );
       }
 
@@ -90,6 +102,10 @@ export const loginStep1 = createAsyncThunk(
     }
   }
 );
+
+// =====================================
+// שלב 2 - אימות קוד וקבלת JWT
+// =====================================
 
 export const verifyLoginCode = createAsyncThunk(
   "auth/verifyCode",
@@ -114,7 +130,7 @@ export const verifyLoginCode = createAsyncThunk(
       if (!response.ok) {
         return rejectWithValue(
           result.message ||
-          `אימות הקוד נכשל (${response.status})`
+            `אימות הקוד נכשל (${response.status})`
         );
       }
 

@@ -1,15 +1,8 @@
 
 import { useState } from "react";
 import type { FormEvent } from "react";
+import { API_ORIGIN } from "../config/api";
 import "./ResetPasswordPage.css";
-
-const API_ORIGIN = (
-  import.meta.env.VITE_API_ORIGIN || ""
-).replace(/\/+$/, "");
-
-if (!API_ORIGIN) {
-  throw new Error("VITE_API_ORIGIN is not configured");
-}
 
 interface Props {
   onBack: () => void;
@@ -37,7 +30,7 @@ export default function ResetPasswordPage({
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
-  // קריאת תשובה בטוחה - גם אם השרת מחזיר גוף ריק
+  // קריאת תשובה בטוחה גם כשהשרת מחזיר גוף ריק
   const readResponse = async (
     response: Response
   ): Promise<ApiResponse> => {
@@ -55,7 +48,7 @@ export default function ResetPasswordPage({
   };
 
   // =====================================
-  // שליחת קישור איפוס
+  // שליחת קישור לאיפוס סיסמה
   // =====================================
   const sendResetLink = async (e: FormEvent) => {
     e.preventDefault();
@@ -95,13 +88,13 @@ export default function ResetPasswordPage({
       if (!response.ok) {
         throw new Error(
           data.message ||
-          `הבקשה נכשלה (שגיאה ${response.status})`
+            `הבקשה נכשלה (שגיאה ${response.status})`
         );
       }
 
       setSuccess(
         data.message ||
-        "אם הפרטים תואמים לחשבון פעיל, יישלח קישור לאיפוס הסיסמה למייל."
+          "אם הפרטים תואמים לחשבון פעיל, יישלח קישור לאיפוס הסיסמה למייל."
       );
     } catch (err) {
       setError(
@@ -162,7 +155,7 @@ export default function ResetPasswordPage({
       if (!response.ok) {
         throw new Error(
           data.message ||
-          `איפוס הסיסמה נכשל (שגיאה ${response.status})`
+            `איפוס הסיסמה נכשל (שגיאה ${response.status})`
         );
       }
 
@@ -191,7 +184,6 @@ export default function ResetPasswordPage({
   return (
     <main className="reset-page" dir="rtl">
       <section className="reset-card">
-
         <div className="reset-brand">
           תנופה
         </div>
@@ -208,10 +200,9 @@ export default function ResetPasswordPage({
             : "הזינו תעודת זהות וכתובת מייל הרשומה במערכת, ונשלח קישור לאיפוס הסיסמה"}
         </p>
 
-        {/* בקשת קישור */}
+        {/* בקשת קישור לאיפוס */}
         {!token && !success && (
           <form onSubmit={sendResetLink}>
-
             <label htmlFor="reset-id">
               מספר תעודת זהות
             </label>
@@ -263,7 +254,6 @@ export default function ResetPasswordPage({
         {/* הגדרת סיסמה חדשה */}
         {token && !success && (
           <form onSubmit={saveNewPassword}>
-
             <label htmlFor="new-password">
               סיסמה חדשה
             </label>
@@ -329,7 +319,6 @@ export default function ResetPasswordPage({
         >
           חזרה להתחברות
         </button>
-
       </section>
     </main>
   );
