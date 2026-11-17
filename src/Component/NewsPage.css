@@ -296,3 +296,74 @@
 .single-post-all-button:hover {
   background: #24556b;
 }
+
+/* כרטיס חדשות */
+.news-card {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  width: 100%;
+  text-align: right;
+  cursor: default;
+}
+
+/* אזור המדיה */
+.news-card-media {
+  width: 100%;
+  margin-top: 16px;
+  overflow: hidden;
+  border-radius: 12px;
+  background: #f3f5f7;
+}
+
+/* תמונות */
+.news-card-media img {
+  display: block;
+  width: 100%;
+  max-height: 390px;
+  object-fit: contain;
+  margin: 0 auto;
+}
+
+/* סרטונים */
+.news-card-media video {
+  display: block;
+  width: 100%;
+  max-height: 390px;
+  object-fit: contain;
+  background: #111;
+}
+
+/* תחתית הכרטיס */
+.news-card-bottom {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  margin-top: 18px;
+}
+
+/* כפתור מעבר לפוסט */
+.news-read-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: none;
+  background: transparent;
+  color: #175b94;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+}
+
+.news-read-link:hover {
+  text-decoration: underline;
+}
+
+/* התאמה לטלפונים */
+@media (max-width: 600px) {
+  .news-card-media img,
+  .news-card-media video {
+    max-height: 260px;
+  }
+}
