@@ -153,9 +153,7 @@ const [electionStatusError, setElectionStatusError] = useState("");
   const [selectedPostId, setSelectedPostId] =
     useState<number | null>(null);
 
-  const [showLoginSuccess, setShowLoginSuccess] =
-    useState(false);
-
+ 
   const [candidateRefreshKey, setCandidateRefreshKey] =
     useState(0);
 

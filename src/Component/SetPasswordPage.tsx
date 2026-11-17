@@ -2,6 +2,7 @@
 import { useState, type FormEvent } from "react";
 import "./SetPasswordPage.css";
 import { API_ORIGIN } from "../config/api";
+import { usePasswordVisibility } from "../hooks/usePasswordVisibility";
 interface SetPasswordPageProps {
   onGoToLogin: () => void;
 }
@@ -11,8 +12,11 @@ export default function SetPasswordPage({
 }: SetPasswordPageProps) {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
+const {
+  isVisible: showPassword,
+  toggleVisibility,
+  inputType,
+} = usePasswordVisibility();  const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
 
@@ -113,8 +117,7 @@ export default function SetPasswordPage({
 
               <input
                 id="new-password"
-                type={showPassword ? "text" : "password"}
-                value={password}
+type={inputType}                value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="לפחות 8 תווים"
                 autoComplete="new-password"
@@ -138,16 +141,14 @@ export default function SetPasswordPage({
                 required
               />
 
-              <label className="set-password-show">
-                <input
-                  type="checkbox"
-                  checked={showPassword}
-                  onChange={(e) =>
-                    setShowPassword(e.target.checked)
-                  }
-                />
-                הצגת הסיסמאות
-              </label>
+             <label className="set-password-show">
+  <input
+    type="checkbox"
+    checked={showPassword}
+    onChange={toggleVisibility}
+  />
+  הצגת הסיסמאות
+</label>
 
               {error && (
                 <p className="set-password-error" role="alert">

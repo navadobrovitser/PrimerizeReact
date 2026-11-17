@@ -3,7 +3,7 @@ import { useState } from "react";
 import type { FormEvent } from "react";
 import { API_ORIGIN } from "../config/api";
 import "./ResetPasswordPage.css";
-
+import { usePasswordVisibility } from "../hooks/usePasswordVisibility";
 interface Props {
   onBack: () => void;
 }
@@ -25,7 +25,11 @@ export default function ResetPasswordPage({
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] =
     useState("");
-
+const {
+  isVisible: showPassword,
+  toggleVisibility,
+  inputType,
+} = usePasswordVisibility();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -260,7 +264,7 @@ export default function ResetPasswordPage({
 
             <input
               id="new-password"
-              type="password"
+              type={inputType}
               minLength={8}
               autoComplete="new-password"
               placeholder="לפחות 8 תווים"
@@ -277,7 +281,7 @@ export default function ResetPasswordPage({
 
             <input
               id="confirm-password"
-              type="password"
+              type={inputType}
               minLength={8}
               autoComplete="new-password"
               placeholder="הקלידו שוב את הסיסמה"
@@ -287,7 +291,22 @@ export default function ResetPasswordPage({
               }
               required
             />
-
+            <button
+  type="button"
+  onClick={toggleVisibility}
+  aria-pressed={showPassword}
+  style={{
+    background: "transparent",
+    border: "none",
+    color: "#2563eb",
+    cursor: "pointer",
+    marginTop: "8px",
+    marginBottom: "16px",
+    fontWeight: 600,
+  }}
+>
+  {showPassword ? "הסתרת הסיסמאות" : "הצגת הסיסמאות"}
+</button>
             <button
               type="submit"
               className="reset-submit"

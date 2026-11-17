@@ -13,7 +13,7 @@ import {
 } from "../store/Auth/authThunks";
 
 import "./LoginPage.css";
-
+import { usePasswordVisibility } from "../hooks/usePasswordVisibility";
 interface LoginPageProps {
   onLoginSuccess: () => void;
   onRegisterClick: () => void;
@@ -34,8 +34,11 @@ export default function LoginPage({
   const [step, setStep] = useState<1 | 2>(1);
   const [identity, setIdentity] = useState("");
   const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
-  const [code, setCode] = useState("");
+const {
+  isVisible: showPassword,
+  toggleVisibility,
+  inputType,
+} = usePasswordVisibility();  const [code, setCode] = useState("");
   const [error, setError] = useState("");
 
   // בדיקת תעודת זהות - 9 ספרות
@@ -213,9 +216,7 @@ export default function LoginPage({
                 <input
                   id="login-password"
                   type={
-                    showPassword
-                      ? "text"
-                      : "password"
+                    inputType
                   }
                   placeholder="הזינו סיסמה"
                   autoComplete="current-password"
@@ -233,9 +234,7 @@ export default function LoginPage({
                       ? "הסתרת סיסמה"
                       : "הצגת סיסמה"
                   }
-                  onClick={() =>
-                    setShowPassword((prev) => !prev)
-                  }
+                 onClick={toggleVisibility}
                 >
                   {showPassword ? "הסתר" : "הצג"}
                 </button>
