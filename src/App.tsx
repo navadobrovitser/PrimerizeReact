@@ -67,7 +67,8 @@ function AccessDenied({
 
 export default function App() {
   const dispatch = useAppDispatch();
-
+const [electionClosed, setElectionClosed] = useState<boolean | null>(null);
+const [electionStatusError, setElectionStatusError] = useState("");
   // =====================================
   // משתמש מחובר והרשאות
   // =====================================
@@ -175,13 +176,52 @@ export default function App() {
   // =====================================
 
   useEffect(() => {
-    if (page !== "voting" || !token) {
-      return;
+  if (page !== "voting" || !token) {
+    return;
+  }
+
+  let cancelled = false;
+
+  setElectionClosed(null);
+  setElectionStatusError("");
+
+  void dispatch(fetchVoteStatus());
+
+  const checkElectionStatus = async () => {
+    try {
+      const response = await fetch(
+        "https://localhost:7227/api/Voting/election-status",
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("לא ניתן לבדוק את מצב הבחירות.");
+      }
+
+      const data = await response.json();
+
+      if (!cancelled) {
+        setElectionClosed(data.isClosed);
+      }
+    } catch {
+      if (!cancelled) {
+        setElectionStatusError(
+          "אירעה שגיאה בבדיקת מצב הבחירות. נסי שוב."
+        );
+      }
     }
+  };
 
-    void dispatch(fetchVoteStatus());
-  }, [page, token, dispatch]);
+  void checkElectionStatus();
 
+  return () => {
+    cancelled = true;
+  };
+}, [page, token, dispatch]);
   // =====================================
   // עדכון סטטוס מועמד
   // =====================================
@@ -648,46 +688,54 @@ export default function App() {
             מערכת הצבעה מאובטחת
            ===================================== */}
 
-        {page === "voting" &&
-          (!voteStatusChecked ||
-          checkingVoteStatus ? (
-            <div
-              className="placeholder-page"
-              role="status"
-              dir="rtl"
-            >
-              <h2>
-                בודקים את סטטוס ההצבעה שלך...
-              </h2>
-              <p>
-                נא להמתין מספר רגעים.
-              </p>
-            </div>
-          ) : hasVoted ? (
-            <VotingSuccessPage
-              onReturnHome={
-                handleReturnFromVoting
-              }
-              onLogout={
-                handleLogoutFromVoting
-              }
-            />
-          ) : (
-            <SecureVotingGate
-              onActiveChange={
-                handleVotingActiveChange
-              }
-              onSessionReset={
-                handleVotingSessionReset
-              }
-              completed={hasVoted}
-              submitting={voteSubmitting}
-            >
-              <VotingPage
-                key={votingSessionKey}
-              />
-            </SecureVotingGate>
-          ))}
+  {page === "voting" &&
+  (!voteStatusChecked ||
+  checkingVoteStatus ||
+  (electionClosed === null && !electionStatusError) ? (
+    <div className="placeholder-page" dir="rtl">
+      <h2>בודקים את מצב ההצבעה...</h2>
+      <p>נא להמתין מספר רגעים.</p>
+    </div>
+  ) : electionStatusError ? (
+    <div className="placeholder-page" dir="rtl">
+      <h2>לא ניתן לבדוק את מצב הבחירות</h2>
+      <p>{electionStatusError}</p>
+      <button onClick={() => navigate("home")}>
+        חזרה לאתר
+      </button>
+    </div>
+  ) : electionClosed ? (
+    <div className="placeholder-page" dir="rtl">
+      <h1>הבחירות הסתיימו</h1>
+      <p>
+        ההצבעה נסגרה ולא ניתן להצביע כעת.
+      </p>
+      <p>
+        ניתן לצפות בתוצאות הבחירות באתר.
+      </p>
+      <button onClick={() => navigate("results")}>
+        צפייה בתוצאות הבחירות
+      </button>
+      <button onClick={() => navigate("home")}>
+        חזרה לעמוד הבית
+      </button>
+    </div>
+  ) : hasVoted ? (
+    <VotingSuccessPage
+      onReturnHome={handleReturnFromVoting}
+      onLogout={handleLogoutFromVoting}
+    />
+  ) : (
+    <SecureVotingGate
+      onActiveChange={handleVotingActiveChange}
+      onSessionReset={handleVotingSessionReset}
+      completed={hasVoted}
+      submitting={voteSubmitting}
+    >
+      <VotingPage key={votingSessionKey} />
+    </SecureVotingGate>
+  ))}
+          
 
         {/* תוצאות הבחירות */}
         {page === "results" && (
