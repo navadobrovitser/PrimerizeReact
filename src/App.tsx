@@ -294,9 +294,7 @@ const [electionStatusError, setElectionStatusError] = useState("");
   // =====================================
 
   const navigate = (next: Page) => {
-    setShowLoginSuccess(false);
-
-    if (!isLoggedIn) {
+  if (!isLoggedIn) {
       setPage(
         next === "register" ? "register" : "login"
       );
@@ -448,14 +446,12 @@ const [electionStatusError, setElectionStatusError] = useState("");
             />
           ) : (
             <LoginPage
-              onLoginSuccess={() => {
-                setShowLoginSuccess(true);
-                setPage("home");
-                
-              }}
-              onRegisterClick={() => setPage("register")}
-              onForgotPasswordClick={() => setPage("forgot-password")}
-            />
+  onLoginSuccess={() => {
+    setPage("home");
+  }}
+  onRegisterClick={() => setPage("register")}
+  onForgotPasswordClick={() => setPage("forgot-password")}
+/>
           )}
         </main>
       </div>
@@ -482,51 +478,7 @@ const [electionStatusError, setElectionStatusError] = useState("");
 
       <main className="app-main">
 
-        {/* הודעת התחברות מוצלחת */}
-        {showLoginSuccess && (
-          <div
-            role="status"
-            style={{
-              backgroundColor: "#e7f7ed",
-              color: "#17653a",
-              padding: "16px 24px",
-              margin: "20px auto",
-              maxWidth: "600px",
-              borderRadius: "12px",
-              textAlign: "center",
-              fontWeight: "bold",
-              border: "1px solid #a8dfba",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              gap: "16px",
-              direction: "rtl",
-            }}
-          >
-            <span>
-              ✓ התחברת בהצלחה! כעת אפשר להמשיך
-              לאזור האישי ולהצבעה.
-            </span>
-
-            <button
-              type="button"
-              onClick={() =>
-                setShowLoginSuccess(false)
-              }
-              aria-label="סגירת הודעת הצלחה"
-              style={{
-                background: "transparent",
-                border: "none",
-                color: "#17653a",
-                cursor: "pointer",
-                fontSize: "22px",
-                fontWeight: "bold",
-              }}
-            >
-              ×
-            </button>
-          </div>
-        )}
+       
 
         {/* דף הבית */}
         {page === "home" && (
