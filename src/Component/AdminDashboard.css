@@ -401,3 +401,169 @@
     min-width: 45%;
   }
 }
+
+/* ==========================================
+   HEADER RESPONSIVE FIX
+   תיקון חפיפות בתפריט הניווט
+========================================== */
+
+/* שמירה על רוחב תקין */
+.site-header,
+.site-header * {
+  box-sizing: border-box;
+}
+
+.header-inner {
+  width: 100%;
+  max-width: 1600px;
+  margin: 0 auto;
+}
+
+/* תפריט במחשב רחב */
+.site-nav {
+  min-width: 0;
+}
+
+.header-main-links {
+  min-width: 0;
+}
+
+.header-actions {
+  flex-shrink: 0;
+}
+
+/* מעבר לתפריט נפתח לפני שנוצרות חפיפות */
+@media (max-width: 1650px) {
+
+  .site-header {
+    min-height: 74px;
+  }
+
+  .header-inner {
+    min-height: 74px;
+    padding: 0 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  /* כפתור פתיחת התפריט */
+  .mobile-menu-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* התפריט סגור כברירת מחדל */
+  .site-nav {
+    display: none;
+    position: absolute;
+    top: 100%;
+    right: 0;
+    left: 0;
+    width: 100%;
+    max-height: calc(100vh - 74px);
+    overflow-y: auto;
+    padding: 24px;
+    background: #ffffff;
+    border-bottom: 1px solid #e5edf0;
+    box-shadow: 0 15px 30px rgba(18, 60, 86, 0.1);
+    z-index: 1001;
+  }
+
+  /* התפריט פתוח */
+  .site-nav.open {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 20px;
+  }
+
+  /* קישורי הניווט */
+  .header-main-links {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    width: 100%;
+    gap: 8px;
+  }
+
+  .site-nav .header-nav-link {
+    width: 100%;
+    min-height: 46px;
+    padding: 12px 15px;
+    justify-content: flex-start;
+    text-align: right;
+    white-space: normal;
+    border-radius: 8px;
+    font-size: 15px;
+  }
+
+  .site-nav .header-nav-link:hover,
+  .site-nav .header-nav-link.is-active {
+    background: #eef8f8;
+    color: #067679;
+  }
+
+  .site-nav .header-nav-link::after {
+    display: none;
+  }
+
+  /* כפתורי מועמד ומנהל */
+  .header-actions {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-start;
+    width: 100%;
+    gap: 12px;
+    padding-top: 18px;
+    border-top: 1px solid #e5edf0;
+  }
+
+  .site-nav .candidate-nav-button {
+    width: auto;
+    min-height: 46px;
+    padding: 12px 20px;
+    font-size: 14px;
+  }
+}
+
+/* טאבלטים */
+@media (max-width: 900px) {
+
+  .header-main-links {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .header-inner {
+    padding: 0 20px;
+  }
+}
+
+/* טלפונים */
+@media (max-width: 600px) {
+
+  .header-inner {
+    padding: 0 15px;
+  }
+
+  .site-nav {
+    padding: 16px;
+  }
+
+  .header-main-links {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .header-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .site-nav .candidate-nav-button {
+    width: 100%;
+  }
+}

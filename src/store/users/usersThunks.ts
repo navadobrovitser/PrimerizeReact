@@ -1,3 +1,4 @@
+
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import type { RegisterUserDto } from "./usersState";
 
@@ -5,6 +6,13 @@ interface RegisterResponse {
   message: string;
 }
 
+interface ApiError {
+  message?: string;
+  detail?: string;
+  title?: string;
+  errors?: Record<string, string[]>;
+}
+import { API_ORIGIN } from "../../config/api";
 export const registerUser = createAsyncThunk<
   RegisterResponse,
   RegisterUserDto,
@@ -14,7 +22,7 @@ export const registerUser = createAsyncThunk<
   async (user, { rejectWithValue }) => {
     try {
       const response = await fetch(
-        "https://localhost:7227/api/Users/register",
+        `${API_ORIGIN}/api/Users/register`,
         {
           method: "POST",
           headers: {
@@ -24,24 +32,40 @@ export const registerUser = createAsyncThunk<
         }
       );
 
-      if (!response.ok) {
-        const errorData = await response
-          .json()
-          .catch(() => null);
+      const responseText = await response.text();
 
-        const message = errorData?.errors
-          ? Object.values(errorData.errors)
+      let data: ApiError = {};
+
+      if (responseText.trim()) {
+        try {
+          data = JSON.parse(responseText) as ApiError;
+        } catch {
+          // טיפול בתשובה שאינה JSON
+        }
+      }
+
+      if (!response.ok) {
+        const validationErrors = data.errors
+          ? Object.values(data.errors)
               .flat()
               .join(" ")
-          : errorData?.message ||
-            errorData?.detail ||
-            errorData?.title ||
-            "שגיאה בהרשמת המשתמש";
+          : "";
+
+        const message =
+          data.message ||
+          validationErrors ||
+          data.detail ||
+          data.title ||
+          `שגיאה בהרשמת המשתמש (${response.status})`;
 
         return rejectWithValue(message);
       }
 
-      return (await response.json()) as RegisterResponse;
+      return {
+        message:
+          data.message ||
+          "בקשת ההצטרפות נשלחה בהצלחה וממתינה לאישור מנהל.",
+      };
     } catch {
       return rejectWithValue(
         "לא ניתן להתחבר לשרת. ודאי שהשרת פועל."

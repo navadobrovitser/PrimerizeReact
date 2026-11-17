@@ -1,10 +1,10 @@
 
 import { useEffect, useState } from "react";
-import { ThumbsUp, ThumbsDown } from "lucide-react";
 import { useAppSelector } from "../store/hooks";
+import { API_ORIGIN } from "../config/api";
 import "./PostLikes.css";
 
-const API = "https://localhost:7227/api/PostLikes";
+const API = `${API_ORIGIN}/api/PostLikes`;
 
 type Reaction = "Like" | "Dislike";
 
@@ -19,20 +19,16 @@ interface PostLikesProps {
   postId: number;
 }
 
-function parseReaction(
-  type: string | number
-): Reaction | null {
+function parseReaction(type: string | number): Reaction | null {
   const value = String(type).toLowerCase();
 
-  if (value === "like") return "Like";
-  if (value === "dislike") return "Dislike";
+  if (value === "like" || value === "0") return "Like";
+  if (value === "dislike" || value === "1") return "Dislike";
 
   return null;
 }
 
-function getUserIdFromToken(
-  token: string
-): number | null {
+function getUserIdFromToken(token: string): number | null {
   try {
     const payload = token.split(".")[1];
     const base64 = payload
@@ -49,21 +45,14 @@ function getUserIdFromToken(
       ];
 
     const parsed = Number(id);
-
-    return Number.isFinite(parsed)
-      ? parsed
-      : null;
+    return Number.isFinite(parsed) ? parsed : null;
   } catch {
     return null;
   }
 }
 
-async function getErrorMessage(
-  response: Response
-): Promise<string> {
-  const data = await response
-    .json()
-    .catch(() => null);
+async function getErrorMessage(response: Response): Promise<string> {
+  const data = await response.json().catch(() => null);
 
   return (
     data?.message ||
@@ -72,17 +61,32 @@ async function getErrorMessage(
   );
 }
 
-export default function PostLikes({
-  postId,
-}: PostLikesProps) {
-  const token = useAppSelector(
-    (state) => state.auth.token
+function ThumbIcon({ down = false }: { down?: boolean }) {
+  return (
+    <svg
+      width="19"
+      height="19"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      style={down ? { transform: "rotate(180deg)" } : undefined}
+    >
+      <path d="M7 10v12" />
+      <path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H5a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12.5 3a3.13 3.13 0 0 1 3 2.88Z" />
+    </svg>
   );
+}
+
+export default function PostLikes({ postId }: PostLikesProps) {
+  const token = useAppSelector((state) => state.auth.token);
 
   const [likes, setLikes] = useState<PostLikeDto[]>([]);
   const [currentReaction, setCurrentReaction] =
     useState<Reaction | null>(null);
-
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -94,37 +98,34 @@ export default function PostLikes({
   useEffect(() => {
     const controller = new AbortController();
 
-    const load = async () => {
+    async function load() {
       setLoading(true);
       setError("");
       setLikes([]);
       setCurrentReaction(null);
 
       try {
-        const response = await fetch(
-          `${API}/post/${postId}`,
-          { signal: controller.signal }
-        );
+        const response = await fetch(`${API}/post/${postId}`, {
+          signal: controller.signal,
+        });
 
         if (!response.ok) {
-          throw new Error(
-            await getErrorMessage(response)
-          );
+          throw new Error(await getErrorMessage(response));
         }
 
-        const data: PostLikeDto[] =
-          await response.json();
+        const data: PostLikeDto[] = await response.json();
 
         if (controller.signal.aborted) return;
 
-        setLikes(data);
+        const items = Array.isArray(data) ? data : [];
+        setLikes(items);
 
-        const myLike = data.find(
+        const mine = items.find(
           (item) => item.userId === currentUserId
         );
 
         setCurrentReaction(
-          myLike ? parseReaction(myLike.type) : null
+          mine ? parseReaction(mine.type) : null
         );
       } catch (err) {
         if (!controller.signal.aborted) {
@@ -139,16 +140,14 @@ export default function PostLikes({
           setLoading(false);
         }
       }
-    };
+    }
 
     void load();
 
     return () => controller.abort();
   }, [postId, token, currentUserId]);
 
-  const handleReaction = async (
-    type: Reaction
-  ) => {
+  const handleReaction = async (type: Reaction) => {
     if (!token || saving || loading) return;
 
     setSaving(true);
@@ -158,9 +157,7 @@ export default function PostLikes({
 
     try {
       const response = await fetch(
-        isRemoving
-          ? `${API}?postId=${postId}`
-          : API,
+        isRemoving ? `${API}?postId=${postId}` : API,
         {
           method: isRemoving ? "DELETE" : "POST",
           headers: {
@@ -170,20 +167,13 @@ export default function PostLikes({
               : {}),
           },
           ...(!isRemoving
-            ? {
-                body: JSON.stringify({
-                  postId,
-                  type,
-                }),
-              }
+            ? { body: JSON.stringify({ postId, type }) }
             : {}),
         }
       );
 
       if (!response.ok) {
-        throw new Error(
-          await getErrorMessage(response)
-        );
+        throw new Error(await getErrorMessage(response));
       }
 
       const updatedResponse = await fetch(
@@ -196,17 +186,18 @@ export default function PostLikes({
         );
       }
 
-      const updatedLikes: PostLikeDto[] =
+      const data: PostLikeDto[] =
         await updatedResponse.json();
 
+      const updatedLikes = Array.isArray(data) ? data : [];
       setLikes(updatedLikes);
 
-      const myLike = updatedLikes.find(
+      const mine = updatedLikes.find(
         (item) => item.userId === currentUserId
       );
 
       setCurrentReaction(
-        myLike ? parseReaction(myLike.type) : null
+        mine ? parseReaction(mine.type) : null
       );
     } catch (err) {
       setError(
@@ -229,11 +220,7 @@ export default function PostLikes({
 
   return (
     <div className="post-likes" dir="rtl">
-      <div
-        className="post-likes-pill"
-        role="group"
-        aria-label="דירוג הפוסט"
-      >
+      <div className="post-likes-pill">
         <button
           type="button"
           className={`post-likes-action ${
@@ -242,17 +229,10 @@ export default function PostLikes({
           onClick={() => void handleReaction("Like")}
           disabled={!token || loading || saving}
           aria-pressed={currentReaction === "Like"}
+          aria-label={`לייק, ${likeCount}`}
           title="אהבתי"
         >
-          <ThumbsUp
-            size={19}
-            strokeWidth={1.8}
-            fill={
-              currentReaction === "Like"
-                ? "currentColor"
-                : "none"
-            }
-          />
+          <ThumbIcon />
           <span className="post-likes-number">
             {loading ? "..." : likeCount}
           </span>
@@ -271,22 +251,21 @@ export default function PostLikes({
           onClick={() => void handleReaction("Dislike")}
           disabled={!token || loading || saving}
           aria-pressed={currentReaction === "Dislike"}
+          aria-label={`דיסלייק, ${dislikeCount}`}
           title="לא אהבתי"
         >
-          <ThumbsDown
-            size={19}
-            strokeWidth={1.8}
-            fill={
-              currentReaction === "Dislike"
-                ? "currentColor"
-                : "none"
-            }
-          />
+          <ThumbIcon down />
           <span className="post-likes-number">
             {loading ? "..." : dislikeCount}
           </span>
         </button>
       </div>
+
+      {saving && (
+        <p className="post-likes-status" role="status">
+          מעדכן תגובה...
+        </p>
+      )}
 
       {error && (
         <p className="post-likes-error" role="alert">

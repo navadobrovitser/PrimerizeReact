@@ -22,10 +22,13 @@ import ElectionResultsPage from "./Component/ElectionResultsPage";
 import CreatePostPage from "./Component/CreatePostPage";
 import AdminDashboard from "./Component/AdminDashboard";
 import SetPasswordPage from "./Component/SetPasswordPage";
+import ResetPasswordPage from "./Component/ResetPasswordPage";
 import NewsPage from "./Component/NewsPage";
 import LeadershipPage from "./Component/LeadershipPage";
 import ProgramPage from "./Component/ProgramPage";
 
+// עמוד צ'אט התקנון החכם - RAG
+import RegulationChatPage from "./Component/RegulationChatPage";
 import { logout } from "./store/Auth/authSlice";
 import { resetVoting } from "./store/voting/votingSlice";
 import { fetchVoteStatus } from "./store/voting/votingThunks";
@@ -64,7 +67,8 @@ function AccessDenied({
 
 export default function App() {
   const dispatch = useAppDispatch();
-
+const [electionClosed, setElectionClosed] = useState<boolean | null>(null);
+const [electionStatusError, setElectionStatusError] = useState("");
   // =====================================
   // משתמש מחובר והרשאות
   // =====================================
@@ -136,7 +140,12 @@ export default function App() {
     () => window.location.pathname === "/set-password"
   );
 
-  const [page, setPage] = useState<Page>("home");
+  // עמוד איפוס סיסמה זמין גם ללא התחברות.
+  const [page, setPage] = useState<Page | "forgot-password">(() =>
+    new URLSearchParams(window.location.search).has("resetToken")
+      ? "forgot-password"
+      : "home"
+  );
 
   const [selectedCandidateId, setSelectedCandidateId] =
     useState<number | null>(null);
@@ -144,9 +153,7 @@ export default function App() {
   const [selectedPostId, setSelectedPostId] =
     useState<number | null>(null);
 
-  const [showLoginSuccess, setShowLoginSuccess] =
-    useState(false);
-
+ 
   const [candidateRefreshKey, setCandidateRefreshKey] =
     useState(0);
 
@@ -167,13 +174,52 @@ export default function App() {
   // =====================================
 
   useEffect(() => {
-    if (page !== "voting" || !token) {
-      return;
+  if (page !== "voting" || !token) {
+    return;
+  }
+
+  let cancelled = false;
+
+  setElectionClosed(null);
+  setElectionStatusError("");
+
+  void dispatch(fetchVoteStatus());
+
+  const checkElectionStatus = async () => {
+    try {
+      const response = await fetch(
+        "https://localhost:7227/api/Voting/election-status",
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("לא ניתן לבדוק את מצב הבחירות.");
+      }
+
+      const data = await response.json();
+
+      if (!cancelled) {
+        setElectionClosed(data.isClosed);
+      }
+    } catch {
+      if (!cancelled) {
+        setElectionStatusError(
+          "אירעה שגיאה בבדיקת מצב הבחירות. נסי שוב."
+        );
+      }
     }
+  };
 
-    void dispatch(fetchVoteStatus());
-  }, [page, token, dispatch]);
+  void checkElectionStatus();
 
+  return () => {
+    cancelled = true;
+  };
+}, [page, token, dispatch]);
   // =====================================
   // עדכון סטטוס מועמד
   // =====================================
@@ -190,7 +236,7 @@ export default function App() {
   // =====================================
 
   useEffect(() => {
-    if (isLoggedIn && !isPasswordSetupPage) {
+    if (isLoggedIn && !isPasswordSetupPage && page !== "forgot-password") {
       setPage("home");
       setSelectedPostId(null);
       setSelectedCandidateId(null);
@@ -207,6 +253,9 @@ export default function App() {
       setIsPasswordSetupPage(
         window.location.pathname === "/set-password"
       );
+      if (new URLSearchParams(window.location.search).has("resetToken")) {
+        setPage("forgot-password");
+      }
     };
 
     window.addEventListener("popstate", handlePopState);
@@ -243,9 +292,7 @@ export default function App() {
   // =====================================
 
   const navigate = (next: Page) => {
-    setShowLoginSuccess(false);
-
-    if (!isLoggedIn) {
+  if (!isLoggedIn) {
       setPage(
         next === "register" ? "register" : "login"
       );
@@ -343,7 +390,6 @@ export default function App() {
     setPage("login");
     window.scrollTo(0, 0);
   };
-
   // =====================================
   // עמוד הגדרת סיסמה
   // =====================================
@@ -354,6 +400,25 @@ export default function App() {
         <main className="app-main">
           <SetPasswordPage
             onGoToLogin={goToLoginFromPasswordSetup}
+          />
+        </main>
+      </div>
+    );
+  }
+
+  // =====================================
+  // איפוס סיסמה מקישור במייל או ממסך ההתחברות
+  // =====================================
+  if (page === "forgot-password") {
+    return (
+      <div className="app-layout" dir="rtl">
+        <main className="app-main">
+          <ResetPasswordPage
+            onBack={() => {
+              window.history.replaceState({}, "", "/");
+              setPage(isLoggedIn ? "home" : "login");
+              window.scrollTo(0, 0);
+            }}
           />
         </main>
       </div>
@@ -379,14 +444,12 @@ export default function App() {
             />
           ) : (
             <LoginPage
-              onLoginSuccess={() => {
-                setShowLoginSuccess(true);
-                setPage("home");
-              }}
-              onRegisterClick={() =>
-                setPage("register")
-              }
-            />
+  onLoginSuccess={() => {
+    setPage("home");
+  }}
+  onRegisterClick={() => setPage("register")}
+  onForgotPasswordClick={() => setPage("forgot-password")}
+/>
           )}
         </main>
       </div>
@@ -413,57 +476,13 @@ export default function App() {
 
       <main className="app-main">
 
-        {/* הודעת התחברות מוצלחת */}
-        {showLoginSuccess && (
-          <div
-            role="status"
-            style={{
-              backgroundColor: "#e7f7ed",
-              color: "#17653a",
-              padding: "16px 24px",
-              margin: "20px auto",
-              maxWidth: "600px",
-              borderRadius: "12px",
-              textAlign: "center",
-              fontWeight: "bold",
-              border: "1px solid #a8dfba",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              gap: "16px",
-              direction: "rtl",
-            }}
-          >
-            <span>
-              ✓ התחברת בהצלחה! כעת אפשר להמשיך
-              לאזור האישי ולהצבעה.
-            </span>
-
-            <button
-              type="button"
-              onClick={() =>
-                setShowLoginSuccess(false)
-              }
-              aria-label="סגירת הודעת הצלחה"
-              style={{
-                background: "transparent",
-                border: "none",
-                color: "#17653a",
-                cursor: "pointer",
-                fontSize: "22px",
-                fontWeight: "bold",
-              }}
-            >
-              ×
-            </button>
-          </div>
-        )}
+       
 
         {/* דף הבית */}
         {page === "home" && (
           <HomePage
             onJoinClick={() =>
-              navigate("candidates")
+              navigate("primaries")
             }
             onProgramClick={() =>
               navigate("program")
@@ -475,7 +494,7 @@ export default function App() {
         {page === "about" && (
           <AboutPage
             onCandidatesClick={() =>
-              navigate("candidates")
+              navigate("primaries")
             }
             onProgramClick={() =>
               navigate("program")
@@ -507,6 +526,11 @@ export default function App() {
             onApplyClick={() =>
               navigate("candidate-registration")
             }
+            onCandidateClick={(candidateId) => {
+              setSelectedCandidateId(candidateId);
+              setPage("candidate-profile");
+              window.scrollTo(0, 0);
+            }}
           />
         )}
 
@@ -576,7 +600,7 @@ export default function App() {
                 selectedCandidateId
               }
               onBack={() =>
-                navigate("candidates")
+                navigate("primaries")
               }
             />
           )}
@@ -605,51 +629,63 @@ export default function App() {
         {page === "match" && (
           <CandidateMatchPage />
         )}
+        {/* צ'אט התקנון - זמין לכל משתמש מחובר */}
+{page === "regulation-chat" && (
+  <RegulationChatPage />
+)}
 
         {/* =====================================
             מערכת הצבעה מאובטחת
            ===================================== */}
 
-        {page === "voting" &&
-          (!voteStatusChecked ||
-          checkingVoteStatus ? (
-            <div
-              className="placeholder-page"
-              role="status"
-              dir="rtl"
-            >
-              <h2>
-                בודקים את סטטוס ההצבעה שלך...
-              </h2>
-              <p>
-                נא להמתין מספר רגעים.
-              </p>
-            </div>
-          ) : hasVoted ? (
-            <VotingSuccessPage
-              onReturnHome={
-                handleReturnFromVoting
-              }
-              onLogout={
-                handleLogoutFromVoting
-              }
-            />
-          ) : (
-            <SecureVotingGate
-              onActiveChange={
-                handleVotingActiveChange
-              }
-              onSessionReset={
-                handleVotingSessionReset
-              }
-              completed={hasVoted}
-              submitting={voteSubmitting}
-            >
-              <VotingPage
-                key={votingSessionKey}
-              />
-            </SecureVotingGate>
-          ))}
+  {page === "voting" &&
+  (!voteStatusChecked ||
+  checkingVoteStatus ||
+  (electionClosed === null && !electionStatusError) ? (
+    <div className="placeholder-page" dir="rtl">
+      <h2>בודקים את מצב ההצבעה...</h2>
+      <p>נא להמתין מספר רגעים.</p>
+    </div>
+  ) : electionStatusError ? (
+    <div className="placeholder-page" dir="rtl">
+      <h2>לא ניתן לבדוק את מצב הבחירות</h2>
+      <p>{electionStatusError}</p>
+      <button onClick={() => navigate("home")}>
+        חזרה לאתר
+      </button>
+    </div>
+  ) : electionClosed ? (
+    <div className="placeholder-page" dir="rtl">
+      <h1>הבחירות הסתיימו</h1>
+      <p>
+        ההצבעה נסגרה ולא ניתן להצביע כעת.
+      </p>
+      <p>
+        ניתן לצפות בתוצאות הבחירות באתר.
+      </p>
+      <button onClick={() => navigate("results")}>
+        צפייה בתוצאות הבחירות
+      </button>
+      <button onClick={() => navigate("home")}>
+        חזרה לעמוד הבית
+      </button>
+    </div>
+  ) : hasVoted ? (
+    <VotingSuccessPage
+      onReturnHome={handleReturnFromVoting}
+      onLogout={handleLogoutFromVoting}
+    />
+  ) : (
+    <SecureVotingGate
+      onActiveChange={handleVotingActiveChange}
+      onSessionReset={handleVotingSessionReset}
+      completed={hasVoted}
+      submitting={voteSubmitting}
+    >
+      <VotingPage key={votingSessionKey} />
+    </SecureVotingGate>
+  ))}
+          
 
         {/* תוצאות הבחירות */}
         {page === "results" && (

@@ -1,10 +1,10 @@
 
 import { useEffect, useMemo, useState } from "react";
 import "./NewsPage.css";
+import { API_ORIGIN } from "../config/api";
 
-const API =
-  import.meta.env.VITE_API_ORIGIN ||
-  "https://localhost:7227";
+const API = API_ORIGIN;
+const PAGE_SIZE = 10;
 
 interface PostDto {
   postId: number;
@@ -23,8 +23,6 @@ interface NewsPageProps {
   onOpenPost: (postId: number) => void;
   onBack?: () => void;
 }
-
-const PAGE_SIZE = 10;
 
 function getFirstLine(content: string): string {
   if (!content?.trim()) {
@@ -54,6 +52,48 @@ function formatDate(dateString: string): string {
   }).format(date);
 }
 
+// בניית כתובת מלאה למדיה
+function getMediaUrl(url: string | null): string | null {
+  if (!url?.trim()) return null;
+
+  const value = url.trim();
+
+  if (/^https?:\/\//i.test(value)) {
+    return value;
+  }
+
+  if (value.startsWith("//")) {
+    return `${window.location.protocol}${value}`;
+  }
+
+  return `${API.replace(/\/$/, "")}/${value.replace(/^\//, "")}`;
+}
+
+// זיהוי תמונה או סרטון
+function getMediaType(post: PostDto): "image" | "video" | null {
+  if (!post.mediaUrl) return null;
+
+  const type = (post.contentType || "").toLowerCase();
+  const url = post.mediaUrl.split("?")[0].toLowerCase();
+
+  if (
+    type.includes("video") ||
+    /\.(mp4|webm|ogg|mov|m4v)$/.test(url)
+  ) {
+    return "video";
+  }
+
+  if (
+    type.includes("image") ||
+    /\.(jpg|jpeg|png|gif|webp|bmp|svg)$/.test(url)
+  ) {
+    return "image";
+  }
+
+  // במקרה שאין סוג מפורש, ננסה להציג כתמונה
+  return "image";
+}
+
 export default function NewsPage({
   onOpenPost,
   onBack,
@@ -61,8 +101,7 @@ export default function NewsPage({
   const [posts, setPosts] = useState<PostDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [visibleCount, setVisibleCount] =
-    useState(PAGE_SIZE);
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -72,13 +111,10 @@ export default function NewsPage({
         setLoading(true);
         setError("");
 
-        const response = await fetch(
-          `${API}/api/Posts`,
-          {
-            method: "GET",
-            signal: controller.signal,
-          }
-        );
+        const response = await fetch(`${API}/api/Posts`, {
+          method: "GET",
+          signal: controller.signal,
+        });
 
         if (!response.ok) {
           throw new Error(
@@ -86,8 +122,7 @@ export default function NewsPage({
           );
         }
 
-        const data: PostDto[] =
-          await response.json();
+        const data: PostDto[] = await response.json();
 
         if (!controller.signal.aborted) {
           setPosts(Array.isArray(data) ? data : []);
@@ -117,10 +152,7 @@ export default function NewsPage({
       const dateA = new Date(a.createdAt).getTime();
       const dateB = new Date(b.createdAt).getTime();
 
-      if (
-        Number.isNaN(dateA) ||
-        Number.isNaN(dateB)
-      ) {
+      if (Number.isNaN(dateA) || Number.isNaN(dateB)) {
         return b.postId - a.postId;
       }
 
@@ -128,15 +160,11 @@ export default function NewsPage({
     });
   }, [posts]);
 
-  const visiblePosts = sortedPosts.slice(
-    0,
-    visibleCount
-  );
+  const visiblePosts = sortedPosts.slice(0, visibleCount);
 
   return (
     <main className="news-page" dir="rtl">
       <div className="news-container">
-
         <div className="news-heading">
           <span className="news-label">
             הפרסומים האחרונים
@@ -155,9 +183,7 @@ export default function NewsPage({
           <h2>עדכונים אחרונים</h2>
 
           {!loading && !error && (
-            <span>
-              {sortedPosts.length} פרסומים
-            </span>
+            <span>{sortedPosts.length} פרסומים</span>
           )}
         </div>
 
@@ -168,74 +194,103 @@ export default function NewsPage({
         )}
 
         {error && (
-          <div
-            className="news-state news-error"
-            role="alert"
-          >
+          <div className="news-state news-error" role="alert">
             {error}
           </div>
         )}
 
-        {!loading &&
-          !error &&
-          sortedPosts.length === 0 && (
-            <div className="news-state">
-              עדיין לא פורסמו עדכונים.
-            </div>
-          )}
+        {!loading && !error && sortedPosts.length === 0 && (
+          <div className="news-state">
+            עדיין לא פורסמו עדכונים.
+          </div>
+        )}
 
         {!loading && !error && (
           <div className="news-list">
-            {visiblePosts.map((post) => (
-              <button
-                type="button"
-                key={post.postId}
-                className="news-card"
-                onClick={() =>
-                  onOpenPost(post.postId)
-                }
-              >
-                <div className="news-card-top">
-                  <div className="news-author">
-                    <span className="news-author-avatar">
-                      {post.candidateName
-                        ?.charAt(0) || "מ"}
-                    </span>
+            {visiblePosts.map((post) => {
+              const mediaUrl = getMediaUrl(post.mediaUrl);
+              const mediaType = getMediaType(post);
 
-                    <div className="news-author-details">
-                      <strong>
-                        {post.candidateName ||
-                          "מועמד"}
-                      </strong>
+              return (
+                <article
+                  key={post.postId}
+                  className="news-card"
+                >
+                  <div className="news-card-top">
+                    <div className="news-author">
+                      <span className="news-author-avatar">
+                        {post.candidateName?.charAt(0) || "מ"}
+                      </span>
 
-                      <span>פרסום חדש</span>
+                      <div className="news-author-details">
+                        <strong>
+                          {post.candidateName || "מועמד"}
+                        </strong>
+                        <span>פרסום חדש</span>
+                      </div>
                     </div>
+
+                    <time
+                      className="news-date"
+                      dateTime={post.createdAt}
+                    >
+                      {formatDate(post.createdAt)}
+                    </time>
                   </div>
 
-                  <time
-                    className="news-date"
-                    dateTime={post.createdAt}
-                  >
-                    {formatDate(post.createdAt)}
-                  </time>
-                </div>
+                  <div className="news-card-content">
+                    <p>{getFirstLine(post.content)}</p>
+                  </div>
 
-                <div className="news-card-content">
-                  <p>
-                    {getFirstLine(post.content)}
-                  </p>
-                </div>
+                  {mediaUrl && mediaType === "image" && (
+                    <div className="news-card-media">
+                      <img
+                        src={mediaUrl}
+                        alt={`תמונה מתוך הפרסום של ${post.candidateName || "המועמד"}`}
+                        loading="lazy"
+                      />
+                    </div>
+                  )}
 
-                <div className="news-card-bottom">
-                  <span className="news-read-link">
-                    לקריאת הפוסט המלא
-                    <span aria-hidden="true">
-                      {" "}←
-                    </span>
-                  </span>
-                </div>
-              </button>
-            ))}
+                  {mediaUrl && mediaType === "video" && (
+                    <div className="news-card-media">
+                      <video
+                        src={mediaUrl}
+                        controls
+                        preload="metadata"
+                        playsInline
+                        onPlay={(event) => {
+                          const current = event.currentTarget;
+
+                          document
+                            .querySelectorAll<HTMLVideoElement>(
+                              ".news-card-media video"
+                            )
+                            .forEach((video) => {
+                              if (video !== current) {
+                                video.pause();
+                              }
+                            });
+                        }}
+                      >
+                        הדפדפן שלך אינו תומך בהצגת סרטונים.
+                      </video>
+                    </div>
+                  )}
+
+                  <div className="news-card-bottom">
+                    <button
+                      type="button"
+                      className="news-read-link"
+                      onClick={() => onOpenPost(post.postId)}
+                    >
+                      לקריאת הפוסט המלא
+                      <span aria-hidden="true"> ←</span>
+                    </button>
+                  </div>
+                </article>
+              );
+            })}
           </div>
         )}
 
@@ -246,10 +301,7 @@ export default function NewsPage({
               type="button"
               className="news-more-button"
               onClick={() =>
-                setVisibleCount(
-                  (current) =>
-                    current + PAGE_SIZE
-                )
+                setVisibleCount((current) => current + PAGE_SIZE)
               }
             >
               הצגת עדכונים נוספים

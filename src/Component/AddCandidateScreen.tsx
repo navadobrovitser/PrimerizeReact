@@ -1,6 +1,6 @@
 // ייבוא ספריית React וההוק useState לניהול מצבים (State) ברכיב
 import React, { useState } from 'react';
-
+import { API_ORIGIN } from '../config/api';
 // הגדרת הממשק (Interface) המגדיר את טיפוסי ה-Props שהרכיב מקבל מ-App.tsx
 interface AddCandidateScreenProps {
   onCandidateAdded: () => void; // פונקציה לביצוע בעת הצלחת הוספת מועמד (מעבר חזרה לפיד)
@@ -37,11 +37,14 @@ export function AddCandidateScreen({ onCandidateAdded, onCancel }: AddCandidateS
     
     try {
       // שליחת בקשת HTTP POST אסינכרונית לשרת עם נתוני המועמד בפורמט JSON
-      const response = await fetch('http://localhost:5000/api/candidates', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, role, description }),
-      });
+     const response = await fetch(`${API_ORIGIN}/api/candidates`, {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({ name, role, description }),
+});
+  
 
       // בדיקה האם תשובת השרת תקינה, ואם לא - זריקת שגיאה
       if (!response.ok) throw new Error('שגיאה בשמירת הנתונים בשרת');

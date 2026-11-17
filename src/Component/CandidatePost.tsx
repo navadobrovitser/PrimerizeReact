@@ -1,24 +1,15 @@
 
 import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
-
 import type { Post } from "../store/posts/postsThunks";
 import { useAppSelector } from "../store/hooks";
-
 import PostLikes from "./PostLikes";
-
 import "./CandidatePost.css";
 
-const API_ORIGIN = (
-  import.meta.env.VITE_API_ORIGIN ||
-  "https://localhost:7227"
-).replace(/\/+$/, "");
+import { API_ORIGIN } from "../config/api";
+
 
 const PREVIEW_LENGTH = 170;
-
-// =====================================
-// TYPES
-// =====================================
 
 interface CandidatePostProps {
   post: Post;
@@ -28,7 +19,7 @@ interface CandidatePostProps {
 interface PostComment {
   commentId: number;
   postId: number;
-  userId?: number;
+  userId: number;
   userName?: string;
   content: string;
   createdAt?: string;
@@ -37,7 +28,51 @@ interface PostComment {
 type MediaKind = "image" | "video" | "none";
 
 // =====================================
-// URL
+// זיהוי המשתמש המחובר לפי JWT
+// =====================================
+
+function getCurrentUserId(
+  token: string | null | undefined
+): number | null {
+  if (!token) return null;
+
+  try {
+    const part = token.split(".")[1];
+
+    if (!part) return null;
+
+    const normalized = part
+      .replace(/-/g, "+")
+      .replace(/_/g, "/");
+
+    const padded = normalized.padEnd(
+      Math.ceil(normalized.length / 4) * 4,
+      "="
+    );
+
+    const payload = JSON.parse(atob(padded));
+
+    const rawId =
+      payload[
+        "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier"
+      ] ??
+      payload.nameid ??
+      payload.sub ??
+      payload.userId ??
+      payload.UserId;
+
+    const id = Number(rawId);
+
+    return Number.isInteger(id) && id > 0
+      ? id
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+// =====================================
+// כתובת מדיה
 // =====================================
 
 function getMediaUrl(
@@ -96,16 +131,11 @@ function detectMediaKind(
     .split("#")[0]
     .toLowerCase();
 
-  // הסיומת קובעת לפני ContentType
-  if (
-    /\.(jpg|jpeg|png|webp)$/.test(cleanUrl)
-  ) {
+  if (/\.(jpg|jpeg|png|webp)$/.test(cleanUrl)) {
     return "image";
   }
 
-  if (
-    /\.(mp4|webm|mov|avi)$/.test(cleanUrl)
-  ) {
+  if (/\.(mp4|webm|mov|avi)$/.test(cleanUrl)) {
     return "video";
   }
 
@@ -120,7 +150,7 @@ function detectMediaKind(
 }
 
 // =====================================
-// DATE
+// תאריך
 // =====================================
 
 function formatDate(
@@ -144,6 +174,28 @@ function formatDate(
 }
 
 // =====================================
+// קריאת הודעת שגיאה מהשרת
+// =====================================
+
+async function getApiError(
+  response: Response,
+  fallback: string
+): Promise<string> {
+  try {
+    const data = await response.json();
+
+    return (
+      data.message ||
+      data.detail ||
+      data.title ||
+      fallback
+    );
+  } catch {
+    return fallback;
+  }
+}
+
+// =====================================
 // COMPONENT
 // =====================================
 
@@ -155,6 +207,8 @@ export default function CandidatePost({
     (state) => state.auth.token
   );
 
+  const currentUserId = getCurrentUserId(token);
+
   const [expanded, setExpanded] =
     useState(initiallyExpanded);
 
@@ -164,20 +218,34 @@ export default function CandidatePost({
   const [comments, setComments] =
     useState<PostComment[]>([]);
 
+  const [commentsLoaded, setCommentsLoaded] =
+    useState(false);
+
   const [loadingComments, setLoadingComments] =
     useState(false);
-
-  const [savingComment, setSavingComment] =
-    useState(false);
-
-  const [commentText, setCommentText] =
-    useState("");
 
   const [commentsError, setCommentsError] =
     useState("");
 
-  const [commentsLoaded, setCommentsLoaded] =
+  const [commentText, setCommentText] =
+    useState("");
+
+  const [savingComment, setSavingComment] =
     useState(false);
+
+  // עריכת תגובה
+  const [editingCommentId, setEditingCommentId] =
+    useState<number | null>(null);
+
+  const [editingText, setEditingText] =
+    useState("");
+
+  // מחיקת תגובה
+  const [deletingCommentId, setDeletingCommentId] =
+    useState<number | null>(null);
+
+  const [busyCommentId, setBusyCommentId] =
+    useState<number | null>(null);
 
   const [mediaError, setMediaError] =
     useState(false);
@@ -222,7 +290,7 @@ export default function CandidatePost({
     : post.commentsCount ?? 0;
 
   // =====================================
-  // איפוס שגיאת מדיה בפוסט חדש
+  // איפוס שגיאת מדיה
   // =====================================
 
   useEffect(() => {
@@ -230,8 +298,39 @@ export default function CandidatePost({
   }, [mediaUrl]);
 
   // =====================================
-  // LOAD COMMENTS
+  // טעינת תגובות
   // =====================================
+
+  const loadComments = async (
+    signal?: AbortSignal
+  ) => {
+    const response = await fetch(
+      `${API_ORIGIN}/api/Comments/post/${postId}`,
+      { signal }
+    );
+
+    if (!response.ok) {
+      throw new Error(
+        await getApiError(
+          response,
+          "לא ניתן לטעון את התגובות"
+        )
+      );
+    }
+
+    const data: unknown = await response.json();
+
+    if (signal?.aborted) return;
+
+    if (!Array.isArray(data)) {
+      throw new Error(
+        "השרת החזיר מבנה תגובות לא תקין"
+      );
+    }
+
+    setComments(data as PostComment[]);
+    setCommentsLoaded(true);
+  };
 
   useEffect(() => {
     if (!expanded || !showComments) {
@@ -240,35 +339,12 @@ export default function CandidatePost({
 
     const controller = new AbortController();
 
-    const loadComments = async () => {
+    const run = async () => {
       setLoadingComments(true);
       setCommentsError("");
 
       try {
-        const response = await fetch(
-          `${API_ORIGIN}/api/Comments/post/${postId}`,
-          {
-            signal: controller.signal,
-          }
-        );
-
-        if (!response.ok) {
-          throw new Error(
-            "לא ניתן לטעון את התגובות"
-          );
-        }
-
-        const data = await response.json();
-
-        if (controller.signal.aborted) {
-          return;
-        }
-
-        setComments(
-          Array.isArray(data) ? data : []
-        );
-
-        setCommentsLoaded(true);
+        await loadComments(controller.signal);
       } catch (error) {
         if (!controller.signal.aborted) {
           setCommentsError(
@@ -284,7 +360,7 @@ export default function CandidatePost({
       }
     };
 
-    void loadComments();
+    void run();
 
     return () => {
       controller.abort();
@@ -292,7 +368,7 @@ export default function CandidatePost({
   }, [expanded, showComments, postId]);
 
   // =====================================
-  // CREATE COMMENT
+  // הוספת תגובה
   // =====================================
 
   const handleAddComment = async (
@@ -300,9 +376,12 @@ export default function CandidatePost({
   ) => {
     event.preventDefault();
 
+    const text = commentText.trim();
+
     if (
       !token ||
-      !commentText.trim() ||
+      !text ||
+      text.length > 1000 ||
       savingComment
     ) {
       return;
@@ -322,32 +401,23 @@ export default function CandidatePost({
           },
           body: JSON.stringify({
             postId,
-            content: commentText.trim(),
+            content: text,
           }),
         }
       );
 
       if (!response.ok) {
         throw new Error(
-          "לא ניתן לפרסם את התגובה"
+          await getApiError(
+            response,
+            "לא ניתן לפרסם את התגובה"
+          )
         );
       }
 
       setCommentText("");
 
-      const refreshResponse = await fetch(
-        `${API_ORIGIN}/api/Comments/post/${postId}`
-      );
-
-      if (refreshResponse.ok) {
-        const data = await refreshResponse.json();
-
-        setComments(
-          Array.isArray(data) ? data : []
-        );
-
-        setCommentsLoaded(true);
-      }
+      await loadComments();
     } catch (error) {
       setCommentsError(
         error instanceof Error
@@ -360,7 +430,165 @@ export default function CandidatePost({
   };
 
   // =====================================
-  // EXPAND / COLLAPSE
+  // התחלת עריכה
+  // =====================================
+
+  const startEditing = (
+    comment: PostComment
+  ) => {
+    if (
+      !token ||
+      currentUserId === null ||
+      Number(comment.userId) !== currentUserId
+    ) {
+      return;
+    }
+
+    setEditingCommentId(comment.commentId);
+    setEditingText(comment.content);
+    setDeletingCommentId(null);
+    setCommentsError("");
+  };
+
+  // =====================================
+  // ביטול עריכה
+  // =====================================
+
+  const cancelEditing = () => {
+    setEditingCommentId(null);
+    setEditingText("");
+  };
+
+  // =====================================
+  // שמירת עריכה
+  // =====================================
+
+  const handleSaveEdit = async (
+    commentId: number
+  ) => {
+    const text = editingText.trim();
+
+    if (
+      !token ||
+      !text ||
+      text.length > 1000 ||
+      busyCommentId !== null
+    ) {
+      return;
+    }
+
+    setBusyCommentId(commentId);
+    setCommentsError("");
+
+    try {
+      const response = await fetch(
+        `${API_ORIGIN}/api/Comments/${commentId}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            content: text,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(
+          await getApiError(
+            response,
+            "לא ניתן לערוך את התגובה"
+          )
+        );
+      }
+
+      setComments((previous) =>
+        previous.map((comment) =>
+          comment.commentId === commentId
+            ? {
+                ...comment,
+                content: text,
+              }
+            : comment
+        )
+      );
+
+      cancelEditing();
+    } catch (error) {
+      setCommentsError(
+        error instanceof Error
+          ? error.message
+          : "שגיאה בעריכת התגובה"
+      );
+    } finally {
+      setBusyCommentId(null);
+    }
+  };
+
+  // =====================================
+  // מחיקת תגובה
+  // =====================================
+
+  const handleDeleteComment = async (
+    commentId: number
+  ) => {
+    if (
+      !token ||
+      busyCommentId !== null
+    ) {
+      return;
+    }
+
+    setBusyCommentId(commentId);
+    setCommentsError("");
+
+    try {
+      const response = await fetch(
+        `${API_ORIGIN}/api/Comments/${commentId}`,
+        {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(
+          await getApiError(
+            response,
+            "לא ניתן למחוק את התגובה"
+          )
+        );
+      }
+
+      setComments((previous) =>
+        previous.filter(
+          (comment) =>
+            comment.commentId !== commentId
+        )
+      );
+
+      setDeletingCommentId(null);
+
+      if (editingCommentId === commentId) {
+        cancelEditing();
+      }
+    } catch (error) {
+      setCommentsError(
+        error instanceof Error
+          ? error.message
+          : "שגיאה במחיקת התגובה"
+      );
+    } finally {
+      setBusyCommentId(null);
+    }
+  };
+
+  // =====================================
+  // פתיחה וסגירה של פוסט
   // =====================================
 
   const toggleExpanded = () => {
@@ -368,6 +596,8 @@ export default function CandidatePost({
 
     if (expanded) {
       setShowComments(false);
+      cancelEditing();
+      setDeletingCommentId(null);
     }
   };
 
@@ -403,14 +633,14 @@ export default function CandidatePost({
           )}
         </div>
 
-        {/* כותרת */}
+        {/* כותרת הפוסט */}
         {post.title && (
           <h3 className="candidate-post-title">
             {post.title}
           </h3>
         )}
 
-        {/* תוכן */}
+        {/* תוכן הפוסט */}
         <p className="candidate-post-description">
           {previewText}
         </p>
@@ -431,9 +661,9 @@ export default function CandidatePost({
                   src={mediaUrl}
                   alt={`תמונה מהפוסט של ${candidateName}`}
                   loading="lazy"
-                  onError={() => {
-                    setMediaError(true);
-                  }}
+                  onError={() =>
+                    setMediaError(true)
+                  }
                 />
               ) : (
                 <video
@@ -447,9 +677,9 @@ export default function CandidatePost({
                       setExpanded(true);
                     }
                   }}
-                  onError={() => {
-                    setMediaError(true);
-                  }}
+                  onError={() =>
+                    setMediaError(true)
+                  }
                 >
                   הדפדפן אינו תומך בסרטון.
                 </video>
@@ -457,14 +687,13 @@ export default function CandidatePost({
             </div>
           )}
 
-        {/* שגיאת טעינה */}
         {mediaError && (
           <p className="candidate-media-error">
             לא ניתן לטעון את הקובץ המצורף.
           </p>
         )}
 
-        {/* כפתור הרחבה */}
+        {/* הרחבת הפוסט */}
         {!initiallyExpanded && (
           <button
             type="button"
@@ -490,7 +719,9 @@ export default function CandidatePost({
               type="button"
               className="candidate-comments-toggle"
               onClick={() =>
-                setShowComments((prev) => !prev)
+                setShowComments(
+                  (previous) => !previous
+                )
               }
             >
               {showComments
@@ -500,6 +731,7 @@ export default function CandidatePost({
 
             {showComments && (
               <section className="candidate-comments-section">
+
                 <h3>תגובות לפוסט</h3>
 
                 {loadingComments && (
@@ -512,25 +744,175 @@ export default function CandidatePost({
                     <p>עדיין אין תגובות.</p>
                   )}
 
-                {comments.map((comment) => (
-                  <div
-                    key={comment.commentId}
-                    className="candidate-comment"
-                  >
-                    <div className="candidate-comment-header">
-                      <strong>
-                        {comment.userName || "משתמש"}
-                      </strong>
+                {/* רשימת התגובות */}
+                {comments.map((comment) => {
+                  const isOwner =
+                    !!token &&
+                    currentUserId !== null &&
+                    Number(comment.userId) ===
+                      currentUserId;
 
-                      <span>
-                        {formatDate(comment.createdAt)}
-                      </span>
+                  const isEditing =
+                    editingCommentId ===
+                    comment.commentId;
+
+                  const isDeleting =
+                    deletingCommentId ===
+                    comment.commentId;
+
+                  const isBusy =
+                    busyCommentId ===
+                    comment.commentId;
+
+                  return (
+                    <div
+                      key={comment.commentId}
+                      className="candidate-comment"
+                    >
+                      <div className="candidate-comment-header">
+                        <strong>
+                          {comment.userName ||
+                            "משתמש"}
+                        </strong>
+
+                        <span>
+                          {formatDate(
+                            comment.createdAt
+                          )}
+                        </span>
+                      </div>
+
+                      {/* תוכן או עריכה */}
+                      {isEditing ? (
+                        <div className="candidate-comment-edit">
+                          <textarea
+                            value={editingText}
+                            onChange={(event) =>
+                              setEditingText(
+                                event.target.value
+                              )
+                            }
+                            maxLength={1000}
+                            rows={3}
+                            disabled={isBusy}
+                          />
+
+                          <div className="candidate-comment-edit-actions">
+                            <button
+                              type="button"
+                              className="candidate-comment-save"
+                              disabled={
+                                !editingText.trim() ||
+                                busyCommentId !== null
+                              }
+                              onClick={() =>
+                                void handleSaveEdit(
+                                  comment.commentId
+                                )
+                              }
+                            >
+                              {isBusy
+                                ? "שומר..."
+                                : "שמירת שינויים"}
+                            </button>
+
+                            <button
+                              type="button"
+                              className="candidate-comment-cancel"
+                              disabled={isBusy}
+                              onClick={cancelEditing}
+                            >
+                              ביטול
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <p className="candidate-comment-text">
+                          {comment.content}
+                        </p>
+                      )}
+
+                      {/* כפתורים לבעל התגובה */}
+                      {isOwner &&
+                        !isEditing &&
+                        !isDeleting && (
+                          <div className="candidate-comment-actions">
+                            <button
+                              type="button"
+                              className="candidate-comment-edit-btn"
+                              disabled={
+                                busyCommentId !== null
+                              }
+                              onClick={() =>
+                                startEditing(comment)
+                              }
+                            >
+                              עריכה
+                            </button>
+
+                            <button
+                              type="button"
+                              className="candidate-comment-delete-btn"
+                              disabled={
+                                busyCommentId !== null
+                              }
+                              onClick={() => {
+                                cancelEditing();
+                                setDeletingCommentId(
+                                  comment.commentId
+                                );
+                              }}
+                            >
+                              מחיקה
+                            </button>
+                          </div>
+                        )}
+
+                      {/* אישור מחיקה */}
+                      {isOwner && isDeleting && (
+                        <div className="candidate-comment-delete-confirm">
+                          <span>
+                            האם למחוק את התגובה?
+                          </span>
+
+                          <div>
+                            <button
+                              type="button"
+                              className="candidate-comment-confirm-delete"
+                              disabled={
+                                busyCommentId !== null
+                              }
+                              onClick={() =>
+                                void handleDeleteComment(
+                                  comment.commentId
+                                )
+                              }
+                            >
+                              {isBusy
+                                ? "מוחק..."
+                                : "כן, למחוק"}
+                            </button>
+
+                            <button
+                              type="button"
+                              className="candidate-comment-cancel"
+                              disabled={isBusy}
+                              onClick={() =>
+                                setDeletingCommentId(
+                                  null
+                                )
+                              }
+                            >
+                              ביטול
+                            </button>
+                          </div>
+                        </div>
+                      )}
                     </div>
+                  );
+                })}
 
-                    <p>{comment.content}</p>
-                  </div>
-                ))}
-
+                {/* הוספת תגובה רגילה */}
                 {token ? (
                   <form
                     className="candidate-comment-form"
@@ -551,6 +933,7 @@ export default function CandidatePost({
                         )
                       }
                       rows={3}
+                      maxLength={1000}
                       placeholder="כתבו תגובה..."
                       required
                       disabled={savingComment}

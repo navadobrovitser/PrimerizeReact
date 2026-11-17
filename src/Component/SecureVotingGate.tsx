@@ -63,10 +63,13 @@ export default function SecureVotingGate({
     };
 
     const handleBlur = () => {
-      if (statusRef.current === "active") {
-        interrupt();
-      }
-    };
+  console.log("BLUR DETECTED", {
+    status: statusRef.current,
+    fullscreen: document.fullscreenElement === gateRef.current,
+  });
+
+  // interrupt(); // מבוטל זמנית לצורך בדיקה
+};
 
     const handleVisibilityChange = () => {
       if (document.hidden) {
@@ -122,23 +125,33 @@ export default function SecureVotingGate({
   }, []);
 
   const enterVoting = async () => {
-    setError("");
+  setError("");
 
-    if (!gateRef.current) {
-      return;
-    }
+  console.log("STEP 1: Button clicked");
 
-    try {
-      await gateRef.current.requestFullscreen();
+  if (!gateRef.current) {
+    console.log("ERROR: gateRef is null");
+    return;
+  }
 
-      updateStatus("active");
-    } catch {
-      setError(
-        "לא ניתן להפעיל מסך מלא. בדקי שהדפדפן מאפשר זאת ונסי שוב."
-      );
-    }
-  };
+  try {
+    console.log("STEP 2: Requesting fullscreen");
 
+    await gateRef.current.requestFullscreen();
+
+    console.log("STEP 3: Fullscreen succeeded");
+
+    updateStatus("active");
+
+    console.log("STEP 4: Status changed to active");
+  } catch (err) {
+    console.error("FULLSCREEN ERROR:", err);
+
+    setError(
+      "לא ניתן להפעיל מסך מלא. בדקי שהדפדפן מאפשר זאת."
+    );
+  }
+};
   const returnToWelcome = () => {
     updateStatus("welcome");
     setError("");

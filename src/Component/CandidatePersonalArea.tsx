@@ -5,10 +5,9 @@ import { useAppSelector } from "../store/hooks";
 import { getMediaUrl } from "../utils/mediaUrl";
 import "./CandidatePersonalArea.css";
 import MyPostsManager from "./MyPostsManager";
-const API =
-  import.meta.env.VITE_API_ORIGIN ||
-  "https://localhost:7227";
 
+import { API_ORIGIN } from "../config/api";
+const API = API_ORIGIN;
 interface CandidateProfile {
   candidateId: number;
   name: string;

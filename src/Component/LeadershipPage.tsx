@@ -13,11 +13,9 @@ interface LeadershipPageProps {
   onCandidatesClick: () => void;
 }
 
-const API = (
-  import.meta.env.VITE_API_ORIGIN ||
-  "https://localhost:7227"
-).replace(/\/$/, "");
+import { API_ORIGIN } from "../config/api";
 
+const API = API_ORIGIN;
 export default function LeadershipPage({
   onCandidatesClick,
 }: LeadershipPageProps) {

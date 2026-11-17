@@ -1,49 +1,71 @@
 
+/* ===== עמוד פרופיל מועמד ===== */
+
 .candidate-profile-page {
-  background: #f7fafb;
   min-height: 85vh;
-  padding: 45px 22px 90px;
+  padding: 36px 20px 80px;
+  background: #f7fafb;
   font-family: "Heebo", Arial, sans-serif;
+  direction: rtl;
+}
+
+.candidate-profile-page *,
+.candidate-profile-page *::before,
+.candidate-profile-page *::after {
+  box-sizing: border-box;
 }
 
 .candidate-profile-container {
+  width: 100%;
   max-width: 1100px;
-  margin: auto;
+  margin: 0 auto;
 }
 
+/* כפתור חזרה */
+
 .candidate-profile-back {
+  display: inline-flex;
+  align-items: center;
   border: none;
   background: transparent;
   color: #078b83;
   font-size: 15px;
-  font-weight: 800;
+  font-weight: 700;
   cursor: pointer;
-  margin-bottom: 30px;
+  margin-bottom: 24px;
+  padding: 6px 0;
 }
+
+.candidate-profile-back:hover {
+  color: #056e68;
+}
+
+/* כרטיס ראשי */
 
 .candidate-profile-hero {
   display: flex;
-  gap: 38px;
   align-items: center;
-  background: white;
-  border-radius: 26px;
-  padding: 35px;
+  gap: 30px;
+  padding: 30px;
+  background: #fff;
   border: 1px solid #e5ecef;
-  box-shadow: 0 12px 35px rgba(13, 48, 65, 0.06);
+  border-radius: 22px;
+  box-shadow: 0 8px 28px rgba(13, 48, 65, 0.045);
 }
 
 .candidate-profile-photo {
-  width: 220px;
-  height: 220px;
-  border-radius: 22px;
-  overflow: hidden;
-  background: #dcebed;
+  width: 190px;
+  height: 190px;
   flex-shrink: 0;
   display: flex;
-  justify-content: center;
   align-items: center;
-  font-size: 80px;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: 18px;
+  background: #dcebed;
   color: #078b83;
+  font-size: 72px;
+  font-weight: 700;
 }
 
 .candidate-profile-photo img {
@@ -52,73 +74,226 @@
   object-fit: cover;
 }
 
-.candidate-profile-intro > span {
+.candidate-profile-intro {
+  flex: 1;
+  min-width: 0;
+}
+
+.candidate-profile-eyebrow {
   color: #078b83;
+  font-size: 14px;
   font-weight: 700;
 }
 
 .candidate-profile-intro h1 {
-  font-size: 42px;
+  margin: 10px 0;
   color: #123b53;
-  margin: 12px 0;
+  font-size: 38px;
+  font-weight: 800;
+  line-height: 1.3;
 }
 
 .candidate-profile-intro h2 {
+  margin: 0;
   color: #597484;
-  font-size: 21px;
+  font-size: 19px;
   font-weight: 500;
+  line-height: 1.6;
 }
+
+/* קורות חיים וסרטון */
 
 .candidate-profile-resume,
 .candidate-profile-video {
-  background: white;
+  margin-top: 22px;
+  padding: 28px 30px;
+  background: #fff;
   border: 1px solid #e5ecef;
-  border-radius: 22px;
-  padding: 32px;
-  margin-top: 28px;
+  border-radius: 20px;
 }
 
 .candidate-profile-resume h2,
-.candidate-profile-video h2,
-.candidate-profile-posts > h2 {
+.candidate-profile-video h2 {
+  margin: 0 0 16px;
   color: #123b53;
-  font-size: 26px;
-  margin: 0 0 20px;
+  font-size: 23px;
+  font-weight: 800;
 }
 
 .candidate-profile-resume p {
+  margin: 0;
   color: #526f80;
-  line-height: 2;
+  font-size: 16px;
+  line-height: 1.85;
   white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 
 .candidate-profile-video video {
+  display: block;
   width: 100%;
-  max-height: 500px;
-  border-radius: 15px;
+  max-height: 480px;
+  border-radius: 14px;
   background: #123b53;
 }
 
+/* ===== פוסטים בפרופיל בלבד ===== */
+
 .candidate-profile-posts {
-  margin-top: 55px;
+  width: 100%;
+  max-width: 800px;
+  margin: 44px auto 0;
+}
+
+.candidate-profile-posts-heading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.candidate-profile-section-label {
+  display: block;
+  margin-bottom: 7px;
+  color: #078b83;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.candidate-profile-posts-heading h2 {
+  margin: 0;
+  color: #123b53;
+  font-size: 24px;
+  font-weight: 800;
+}
+
+.candidate-profile-post-count {
+  flex-shrink: 0;
+  padding: 7px 13px;
+  border-radius: 999px;
+  background: #e9f3f3;
+  color: #087d76;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.candidate-profile-posts-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.candidate-profile-post-item {
+  width: 100%;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.candidate-profile-post-item > * {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.candidate-profile-post-item > :first-child {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+.candidate-profile-empty {
+  padding: 28px;
+  border: 1px solid #e5ecef;
+  border-radius: 16px;
+  background: #fff;
+  color: #597484;
+  text-align: center;
+}
+
+/* טעינה ושגיאות */
+
+.candidate-profile-loading {
+  padding: 28px;
+  color: #597484;
+  text-align: center;
 }
 
 .candidate-profile-error {
+  padding: 14px 18px;
+  border: 1px solid #f3c5c5;
+  border-radius: 12px;
+  background: #fff5f5;
   color: #b42318;
+  line-height: 1.7;
+  overflow-wrap: anywhere;
 }
 
-@media (max-width: 650px) {
-  .candidate-profile-hero {
-    flex-direction: column;
-    text-align: center;
+/* התאמה למסכים קטנים */
+
+@media (max-width: 768px) {
+  .candidate-profile-page {
+    padding: 24px 14px 60px;
   }
 
-  .candidate-profile-intro h1 {
-    font-size: 32px;
+  .candidate-profile-hero {
+    gap: 22px;
+    padding: 24px;
   }
 
   .candidate-profile-photo {
-    width: 180px;
-    height: 180px;
+    width: 145px;
+    height: 145px;
+    font-size: 55px;
+  }
+
+  .candidate-profile-intro h1 {
+    font-size: 30px;
+  }
+
+  .candidate-profile-posts {
+    max-width: 100%;
+    margin-top: 32px;
+  }
+}
+
+@media (max-width: 600px) {
+  .candidate-profile-page {
+    padding: 18px 10px 45px;
+  }
+
+  .candidate-profile-hero {
+    flex-direction: column;
+    text-align: center;
+    gap: 18px;
+    padding: 22px 18px;
+  }
+
+  .candidate-profile-photo {
+    width: 150px;
+    height: 150px;
+  }
+
+  .candidate-profile-intro h1 {
+    font-size: 28px;
+  }
+
+  .candidate-profile-resume,
+  .candidate-profile-video {
+    padding: 20px;
+    margin-top: 16px;
+  }
+
+  .candidate-profile-posts-heading h2 {
+    font-size: 20px;
+  }
+
+  .candidate-profile-post-count {
+    font-size: 12px;
+    padding: 6px 10px;
+  }
+
+  .candidate-profile-posts-list {
+    gap: 12px;
   }
 }

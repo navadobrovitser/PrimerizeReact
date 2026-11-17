@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useState } from "react";
 import { useAppSelector } from "../store/hooks";
 import "./AdminDashboard.css";
+import RegulationManagement from "./RegulationManagement";
+import { API_ORIGIN } from "../config/api";
 
-const API =
-  (import.meta.env.VITE_API_ORIGIN || "https://localhost:7227")
-    .replace(/\/$/, "") + "/api";
+const API = `${API_ORIGIN}/api`;
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -1374,7 +1374,12 @@ export default function AdminDashboard({
             </>
           )}
         </article>
-      </div>
+        {/* ==========================================
+    ניהול תקנון האתר
+    מוצג למנהל בלבד בתוך לוח הבקרה
+========================================== */}
+
+<RegulationManagement />      </div>
     </section>
   );
 }
