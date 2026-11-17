@@ -54,12 +54,12 @@ export default function VotingPage() {
     void dispatch(fetchCandidates());
   }, [dispatch]);
 
-  useEffect(() => {
+ {/*} useEffect(() => {
     if (!isAuthenticated || !token) return;
 
     void dispatch(fetchVoteStatus());
   }, [dispatch, isAuthenticated, token]);
-
+*/}
   useEffect(() => {
     let active = true;
 
