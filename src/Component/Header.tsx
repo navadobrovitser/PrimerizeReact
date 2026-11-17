@@ -4,6 +4,7 @@ import { useAppSelector } from "../store/hooks";
 import Logo from "./Logo";
 import "./Header.css";
 import { API_ORIGIN } from "../config/api";
+
 export type Page =
   | "home"
   | "about"
@@ -24,7 +25,6 @@ export type Page =
   | "create-post"
   | "regulation-chat"
   | "admin";
-  
 
 interface HeaderProps {
   onNavigate: (page: Page) => void;
@@ -38,11 +38,12 @@ interface CandidateProfile {
   name?: string;
 }
 
+interface NavItem {
+  label: string;
+  page: Page;
+}
 
-
-
-// קישורי הניווט הראשיים
-const links: { label: string; page: Page }[] = [
+const navigationLinks: NavItem[] = [
   { label: "בית", page: "home" },
   { label: "אודות", page: "about" },
   { label: "הנהגה", page: "leadership" },
@@ -69,14 +70,14 @@ export default function Header({
     (state) => state.auth.role
   );
 
-  const [menuOpen, setMenuOpen] = useState(false);
   const [isCandidate, setIsCandidate] = useState(false);
   const [checking, setChecking] = useState(true);
-  const [activePage, setActivePage] = useState<Page>("home");
+  const [activePage, setActivePage] =
+    useState<Page>("home");
 
   const isAdmin = role?.toLowerCase() === "admin";
 
-  // בדיקת סטטוס מועמד
+  // בדיקה אם המשתמש המחובר הוא מועמד
   useEffect(() => {
     const controller = new AbortController();
 
@@ -122,16 +123,20 @@ export default function Header({
 
         if (controller.signal.aborted) return;
 
-        const candidateExists =
+        const exists =
           candidate !== null &&
           Number(candidate.candidateId) > 0;
 
-        setIsCandidate(candidateExists);
-        onCandidateStatusChange?.(candidateExists);
+        setIsCandidate(exists);
+        onCandidateStatusChange?.(exists);
       } catch (error) {
         if (controller.signal.aborted) return;
 
-        console.error("Candidate status error:", error);
+        console.error(
+          "Candidate status error:",
+          error
+        );
+
         setIsCandidate(false);
         onCandidateStatusChange?.(false);
       } finally {
@@ -150,21 +155,18 @@ export default function Header({
     onCandidateStatusChange,
   ]);
 
-  // מעבר בין עמודים
   const navigate = (page: Page) => {
-    setMenuOpen(false);
     setActivePage(page);
     onNavigate(page);
   };
 
-  // יצירת קישור בתפריט
   const navLink = (
     label: string,
     page: Page,
     className = "header-nav-link"
   ) => (
     <button
-      key={`${page}-${label}`}
+      key={page}
       type="button"
       className={`${className} ${
         activePage === page ? "is-active" : ""
@@ -181,51 +183,29 @@ export default function Header({
   return (
     <header className="site-header" dir="rtl">
       <div className="header-inner">
+
         {/* לוגו */}
         <button
           type="button"
-          onClick={() => navigate("home")}
-          aria-label="מעבר לעמוד הבית"
           className="header-logo-button"
+          aria-label="מעבר לעמוד הבית"
+          onClick={() => navigate("home")}
         >
           <Logo />
         </button>
 
-        {/* כפתור תפריט לנייד */}
-        <button
-          type="button"
-          className="mobile-menu-button"
-          aria-expanded={menuOpen}
-          aria-controls="main-site-navigation"
-          aria-label={
-            menuOpen
-              ? "סגירת תפריט"
-              : "פתיחת תפריט"
-          }
-          onClick={() =>
-            setMenuOpen((previous) => !previous)
-          }
-        >
-          <span className="mobile-menu-lines">
-            {menuOpen ? "✕" : "☰"}
-          </span>
-        </button>
-
-        {/* תפריט ראשי */}
+        {/* כל הקישורים בסרגל אחד */}
         <nav
-          id="main-site-navigation"
-          className={`site-nav ${
-            menuOpen ? "open" : ""
-          }`}
+          className="site-nav"
           aria-label="ניווט ראשי"
         >
           <div className="header-main-links">
-            {links.map((item) =>
+            {navigationLinks.map((item) =>
               navLink(item.label, item.page)
             )}
           </div>
 
-          {/* כפתורים לפי הרשאות */}
+          {/* כפתורים בהתאם להרשאות */}
           <div className="header-actions">
             {!checking && isCandidate && (
               <>
@@ -251,6 +231,7 @@ export default function Header({
               )}
           </div>
         </nav>
+
       </div>
     </header>
   );
