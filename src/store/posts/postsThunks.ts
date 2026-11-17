@@ -2,10 +2,7 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import type { RootState } from "../store";
 
-const API_ORIGIN = (
-  import.meta.env.VITE_API_ORIGIN ||
-  "https://localhost:7227"
-).replace(/\/+$/, "");
+import { API_ORIGIN } from "../../config/api";
 
 const API_URL = `${API_ORIGIN}/api/Posts`;
 
