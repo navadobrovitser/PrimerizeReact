@@ -1,7 +1,6 @@
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import type { Candidate } from "../../types";
-import type { RootState } from "../store";
 import { API_ORIGIN } from "../../config/api";
 
 const API_URL = `${API_ORIGIN}/api/Candidates`;
@@ -9,22 +8,13 @@ const API_URL = `${API_ORIGIN}/api/Candidates`;
 export const fetchCandidates = createAsyncThunk<
   Candidate[],
   void,
-  {
-    state: RootState;
-    rejectValue: string;
-  }
+  { rejectValue: string }
 >(
   "candidates/fetchCandidates",
-  async (_, { getState, rejectWithValue }) => {
+  async (_, { rejectWithValue }) => {
     try {
-      const token = getState().auth.token;
-
       const response = await fetch(API_URL, {
-        headers: token
-          ? {
-              Authorization: `Bearer ${token}`,
-            }
-          : {},
+        method: "GET",
       });
 
       if (!response.ok) {
@@ -38,10 +28,10 @@ export const fetchCandidates = createAsyncThunk<
 
       return candidates;
     } catch (error) {
+      console.error("Fetch candidates error:", error);
+
       return rejectWithValue(
-        error instanceof Error
-          ? error.message
-          : "לא ניתן להתחבר לשרת"
+        "לא ניתן להתחבר לשרת לצורך טעינת המועמדים."
       );
     }
   }
