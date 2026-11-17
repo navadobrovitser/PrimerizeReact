@@ -1,18 +1,31 @@
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import type { Candidate } from "../../types";
+import type { RootState } from "../store";
+import { API_ORIGIN } from "../../config/api";
 
-const API_URL = "https://localhost:7227/api/Candidates";
+const API_URL = `${API_ORIGIN}/api/Candidates`;
 
 export const fetchCandidates = createAsyncThunk<
   Candidate[],
   void,
-  { rejectValue: string }
+  {
+    state: RootState;
+    rejectValue: string;
+  }
 >(
   "candidates/fetchCandidates",
-  async (_, { rejectWithValue }) => {
+  async (_, { getState, rejectWithValue }) => {
     try {
-      const response = await fetch(API_URL);
+      const token = getState().auth.token;
+
+      const response = await fetch(API_URL, {
+        headers: token
+          ? {
+              Authorization: `Bearer ${token}`,
+            }
+          : {},
+      });
 
       if (!response.ok) {
         return rejectWithValue(
