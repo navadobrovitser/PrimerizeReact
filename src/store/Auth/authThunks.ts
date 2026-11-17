@@ -1,7 +1,7 @@
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
 
-const API_URL = "https://primerizeserver.runasp.net/api/Auth";
+const API_URL = "http://primerizeserver.runasp.net/api/Auth";
 
 // הנתונים שנשלחים בשלב הראשון
 export interface LoginStep1Dto {
