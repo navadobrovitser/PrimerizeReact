@@ -1,9 +1,8 @@
 
 import { useEffect, useState } from "react";
 import { useAppSelector } from "../store/hooks";
-import "./PostLikes.css";
-
 import { API_ORIGIN } from "../config/api";
+import "./PostLikes.css";
 
 const API = `${API_ORIGIN}/api/PostLikes`;
 
@@ -20,25 +19,18 @@ interface PostLikesProps {
   postId: number;
 }
 
-// זיהוי סוג התגובה
-function parseReaction(
-  type: string | number
-): Reaction | null {
+function parseReaction(type: string | number): Reaction | null {
   const value = String(type).toLowerCase();
 
-  if (value === "like") return "Like";
-  if (value === "dislike") return "Dislike";
+  if (value === "like" || value === "0") return "Like";
+  if (value === "dislike" || value === "1") return "Dislike";
 
   return null;
 }
 
-// חילוץ מזהה המשתמש מהטוקן
-function getUserIdFromToken(
-  token: string
-): number | null {
+function getUserIdFromToken(token: string): number | null {
   try {
     const payload = token.split(".")[1];
-
     const base64 = payload
       .replace(/-/g, "+")
       .replace(/_/g, "/");
@@ -53,21 +45,14 @@ function getUserIdFromToken(
       ];
 
     const parsed = Number(id);
-
-    return Number.isFinite(parsed)
-      ? parsed
-      : null;
+    return Number.isFinite(parsed) ? parsed : null;
   } catch {
     return null;
   }
 }
 
-async function getErrorMessage(
-  response: Response
-): Promise<string> {
-  const data = await response
-    .json()
-    .catch(() => null);
+async function getErrorMessage(response: Response): Promise<string> {
+  const data = await response.json().catch(() => null);
 
   return (
     data?.message ||
@@ -76,20 +61,32 @@ async function getErrorMessage(
   );
 }
 
-export default function PostLikes({
-  postId,
-}: PostLikesProps) {
-  const token = useAppSelector(
-    (state) => state.auth.token
+function ThumbIcon({ down = false }: { down?: boolean }) {
+  return (
+    <svg
+      width="19"
+      height="19"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      style={down ? { transform: "rotate(180deg)" } : undefined}
+    >
+      <path d="M7 10v12" />
+      <path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H5a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12.5 3a3.13 3.13 0 0 1 3 2.88Z" />
+    </svg>
   );
+}
 
-  const [likes, setLikes] = useState<
-    PostLikeDto[]
-  >([]);
+export default function PostLikes({ postId }: PostLikesProps) {
+  const token = useAppSelector((state) => state.auth.token);
 
+  const [likes, setLikes] = useState<PostLikeDto[]>([]);
   const [currentReaction, setCurrentReaction] =
     useState<Reaction | null>(null);
-
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -98,44 +95,37 @@ export default function PostLikes({
     ? getUserIdFromToken(token)
     : null;
 
-  // טעינת כל התגובות לפוסט
   useEffect(() => {
     const controller = new AbortController();
 
-    const load = async () => {
+    async function load() {
       setLoading(true);
       setError("");
       setLikes([]);
       setCurrentReaction(null);
 
       try {
-        const response = await fetch(
-          `${API}/post/${postId}`,
-          { signal: controller.signal }
-        );
+        const response = await fetch(`${API}/post/${postId}`, {
+          signal: controller.signal,
+        });
 
         if (!response.ok) {
-          throw new Error(
-            await getErrorMessage(response)
-          );
+          throw new Error(await getErrorMessage(response));
         }
 
-        const data: PostLikeDto[] =
-          await response.json();
+        const data: PostLikeDto[] = await response.json();
 
         if (controller.signal.aborted) return;
 
-        setLikes(data);
+        const items = Array.isArray(data) ? data : [];
+        setLikes(items);
 
-        const myLike = data.find(
-          (item) =>
-            item.userId === currentUserId
+        const mine = items.find(
+          (item) => item.userId === currentUserId
         );
 
         setCurrentReaction(
-          myLike
-            ? parseReaction(myLike.type)
-            : null
+          mine ? parseReaction(mine.type) : null
         );
       } catch (err) {
         if (!controller.signal.aborted) {
@@ -150,61 +140,42 @@ export default function PostLikes({
           setLoading(false);
         }
       }
-    };
+    }
 
     void load();
 
     return () => controller.abort();
   }, [postId, token, currentUserId]);
 
-  // עדכון תגובה
-  const handleReaction = async (
-    type: Reaction
-  ) => {
+  const handleReaction = async (type: Reaction) => {
     if (!token || saving || loading) return;
 
     setSaving(true);
     setError("");
 
-    const isRemoving =
-      currentReaction === type;
+    const isRemoving = currentReaction === type;
 
     try {
       const response = await fetch(
-        isRemoving
-          ? `${API}?postId=${postId}`
-          : API,
+        isRemoving ? `${API}?postId=${postId}` : API,
         {
-          method: isRemoving
-            ? "DELETE"
-            : "POST",
+          method: isRemoving ? "DELETE" : "POST",
           headers: {
             Authorization: `Bearer ${token}`,
             ...(!isRemoving
-              ? {
-                  "Content-Type":
-                    "application/json",
-                }
+              ? { "Content-Type": "application/json" }
               : {}),
           },
           ...(!isRemoving
-            ? {
-                body: JSON.stringify({
-                  postId,
-                  type,
-                }),
-              }
+            ? { body: JSON.stringify({ postId, type }) }
             : {}),
         }
       );
 
       if (!response.ok) {
-        throw new Error(
-          await getErrorMessage(response)
-        );
+        throw new Error(await getErrorMessage(response));
       }
 
-      // רענון התגובות אחרי השמירה
       const updatedResponse = await fetch(
         `${API}/post/${postId}`
       );
@@ -215,20 +186,18 @@ export default function PostLikes({
         );
       }
 
-      const updatedLikes: PostLikeDto[] =
+      const data: PostLikeDto[] =
         await updatedResponse.json();
 
+      const updatedLikes = Array.isArray(data) ? data : [];
       setLikes(updatedLikes);
 
-      const myLike = updatedLikes.find(
-        (item) =>
-          item.userId === currentUserId
+      const mine = updatedLikes.find(
+        (item) => item.userId === currentUserId
       );
 
       setCurrentReaction(
-        myLike
-          ? parseReaction(myLike.type)
-          : null
+        mine ? parseReaction(mine.type) : null
       );
     } catch (err) {
       setError(
@@ -242,86 +211,64 @@ export default function PostLikes({
   };
 
   const likeCount = likes.filter(
-    (item) =>
-      parseReaction(item.type) === "Like"
+    (item) => parseReaction(item.type) === "Like"
   ).length;
 
   const dislikeCount = likes.filter(
-    (item) =>
-      parseReaction(item.type) === "Dislike"
+    (item) => parseReaction(item.type) === "Dislike"
   ).length;
 
   return (
     <div className="post-likes" dir="rtl">
-      <div className="post-likes-buttons">
+      <div className="post-likes-pill">
         <button
           type="button"
-          className={`post-like-button ${
-            currentReaction === "Like"
-              ? "active"
-              : ""
+          className={`post-likes-action ${
+            currentReaction === "Like" ? "selected" : ""
           }`}
-          onClick={() =>
-            void handleReaction("Like")
-          }
-          disabled={
-            !token || loading || saving
-          }
-          aria-pressed={
-            currentReaction === "Like"
-          }
+          onClick={() => void handleReaction("Like")}
+          disabled={!token || loading || saving}
+          aria-pressed={currentReaction === "Like"}
+          aria-label={`לייק, ${likeCount}`}
+          title="אהבתי"
         >
-          <span className="post-like-symbol">
-            👍
-          </span>
-
-          <span>לייק</span>
-
-          <strong>
+          <ThumbIcon />
+          <span className="post-likes-number">
             {loading ? "..." : likeCount}
-          </strong>
+          </span>
         </button>
 
+        <span
+          className="post-likes-separator"
+          aria-hidden="true"
+        />
+
         <button
           type="button"
-          className={`post-like-button ${
-            currentReaction === "Dislike"
-              ? "active dislike-active"
-              : ""
+          className={`post-likes-action ${
+            currentReaction === "Dislike" ? "selected" : ""
           }`}
-          onClick={() =>
-            void handleReaction("Dislike")
-          }
-          disabled={
-            !token || loading || saving
-          }
-          aria-pressed={
-            currentReaction === "Dislike"
-          }
+          onClick={() => void handleReaction("Dislike")}
+          disabled={!token || loading || saving}
+          aria-pressed={currentReaction === "Dislike"}
+          aria-label={`דיסלייק, ${dislikeCount}`}
+          title="לא אהבתי"
         >
-          <span className="post-like-symbol">
-            👎
-          </span>
-
-          <span>דיסלייק</span>
-
-          <strong>
+          <ThumbIcon down />
+          <span className="post-likes-number">
             {loading ? "..." : dislikeCount}
-          </strong>
+          </span>
         </button>
       </div>
 
       {saving && (
-        <p className="post-likes-status">
+        <p className="post-likes-status" role="status">
           מעדכן תגובה...
         </p>
       )}
 
       {error && (
-        <p
-          className="post-likes-error"
-          role="alert"
-        >
+        <p className="post-likes-error" role="alert">
           {error}
         </p>
       )}
