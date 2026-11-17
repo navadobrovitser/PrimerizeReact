@@ -1,11 +1,13 @@
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import type { RootState } from "../store";
+import { API_ORIGIN } from "../../config/api";
 
-const API_URL = "https://localhost:7227/api/Voting";
+const API_URL = `${API_ORIGIN}/api/Voting`;
 
 export interface VoteStatus {
   hasVoted: boolean;
+  voteDate?: string | null;
 }
 
 interface CastVoteRequest {
@@ -30,22 +32,30 @@ export const fetchVoteStatus = createAsyncThunk<
 
     try {
       const response = await fetch(`${API_URL}/status`, {
+        method: "GET",
         headers: {
           Authorization: `Bearer ${token}`,
         },
       });
 
+      if (response.status === 401) {
+        return rejectWithValue(
+          "פג תוקף ההתחברות. יש להתחבר מחדש."
+        );
+      }
+
       if (!response.ok) {
         return rejectWithValue(
-          response.status === 401
-            ? "פג תוקף ההתחברות. יש להתחבר מחדש."
-            : "לא ניתן לבדוק את סטטוס ההצבעה"
+          `לא ניתן לבדוק את סטטוס ההצבעה (${response.status})`
         );
       }
 
       return (await response.json()) as VoteStatus;
-    } catch {
-      return rejectWithValue("שגיאה בחיבור לשרת");
+    } catch (error) {
+      console.error("Vote status error:", error);
+      return rejectWithValue(
+        "לא ניתן להתחבר לשרת לבדיקת סטטוס ההצבעה."
+      );
     }
   }
 );
@@ -63,8 +73,14 @@ export const castVote = createAsyncThunk<
       return rejectWithValue("יש להתחבר כדי להצביע");
     }
 
-    if (candidateIds.length < 1 || candidateIds.length > 5) {
-      return rejectWithValue("יש לבחור בין מועמד אחד לחמישה");
+    if (
+      candidateIds.length < 1 ||
+      candidateIds.length > 5 ||
+      new Set(candidateIds).size !== candidateIds.length
+    ) {
+      return rejectWithValue(
+        "יש לבחור בין מועמד אחד לחמישה, ללא כפילויות."
+      );
     }
 
     const body: CastVoteRequest = {
@@ -84,20 +100,28 @@ export const castVote = createAsyncThunk<
         body: JSON.stringify(body),
       });
 
-      if (!response.ok) {
-        if (response.status === 401) {
-          return rejectWithValue(
-            "פג תוקף ההתחברות. יש להתחבר מחדש."
-          );
-        }
-
+      if (response.status === 401) {
         return rejectWithValue(
-          "ההצבעה לא אושרה על ידי השרת. בדקי אם כבר הצבעת או אם הדירוג תקין."
+          "פג תוקף ההתחברות. יש להתחבר מחדש."
         );
       }
-    } catch {
+
+      if (response.status === 409) {
+        return rejectWithValue(
+          "ההצבעה נדחתה. ייתכן שהבחירות הסתיימו או שכבר הצבעת."
+        );
+      }
+
+      if (!response.ok) {
+        return rejectWithValue(
+          `השרת לא אישר את ההצבעה (${response.status}).`
+        );
+      }
+    } catch (error) {
+      console.error("Cast vote error:", error);
+
       return rejectWithValue(
-        "לא התקבל אישור מהשרת. בדקי את סטטוס ההצבעה לפני ניסיון חוזר."
+        "לא התקבל אישור מהשרת. בדקי אם ההצבעה נקלטה לפני ניסיון חוזר."
       );
     }
   }
