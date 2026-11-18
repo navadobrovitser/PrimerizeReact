@@ -3,24 +3,16 @@ import { useEffect, useRef } from "react";
 import type { FormEvent } from "react";
 
 import { useAppDispatch, useAppSelector } from "../store/hooks";
-
-import {
-  searchCandidateMatches,
-} from "../store/candidateMatch/candidateMatchThunks";
-
+import { searchCandidateMatches } from "../store/candidateMatch/candidateMatchThunks";
 import {
   setMatchQuery,
   resetCandidateMatch,
 } from "../store/candidateMatch/candidateMatchSlice";
 
+import { API_ORIGIN } from "../config/api";
 import "./CandidateMatchPage.css";
 
-// =====================================
-// Types
-// =====================================
-
 type MatchType = "exact" | "keyword" | "semantic";
-
 type SourceType = "resume" | "slogan" | "post";
 
 type MatchSource = {
@@ -35,17 +27,10 @@ type CandidateResult = {
   name: string;
   slogan: string;
   profileImageUrl?: string | null;
+  score?: number;
   explanation?: string | null;
   sources?: MatchSource[];
 };
-
-// =====================================
-// API
-// =====================================
-
-import { API_ORIGIN } from "../config/api";
-
-
 
 function getImageUrl(
   url: string | null | undefined
@@ -59,21 +44,14 @@ function getImageUrl(
   return `${API_ORIGIN}${url.startsWith("/") ? "" : "/"}${url}`;
 }
 
-// =====================================
-// Helpers
-// =====================================
-
 function getSourceTitle(source: MatchSource): string {
   switch (source.sourceType) {
     case "resume":
       return "קורות החיים";
-
     case "slogan":
       return "סלוגן";
-
     case "post":
       return `פוסט #${source.postId ?? ""}`;
-
     default:
       return "מקור";
   }
@@ -83,13 +61,10 @@ function getMatchLabel(type: MatchType): string {
   switch (type) {
     case "exact":
       return "התאמה מדויקת";
-
     case "keyword":
       return "התאמה למילת מפתח";
-
     case "semantic":
       return "התאמה סמנטית";
-
     default:
       return "התאמה";
   }
@@ -99,13 +74,10 @@ function getMatchDescription(type: MatchType): string {
   switch (type) {
     case "exact":
       return "ביטוי החיפוש נמצא במקור.";
-
     case "keyword":
       return "נמצאה מילה משמעותית מתוך החיפוש.";
-
     case "semantic":
-      return "נמצא קשר אפשרי במשמעות, בעזרת AI.";
-
+      return "נמצא קשר במשמעות בעזרת AI.";
     default:
       return "";
   }
@@ -119,14 +91,12 @@ function getMatchStyle(type: MatchType) {
         color: "#216747",
         border: "1px solid #b9dfc8",
       };
-
     case "keyword":
       return {
         background: "#fff4df",
         color: "#966014",
         border: "1px solid #f0d8a5",
       };
-
     case "semantic":
       return {
         background: "#eaf0ff",
@@ -141,9 +111,7 @@ function getSources(result: CandidateResult): MatchSource[] {
     const unique = new Set<string>();
 
     return result.sources.filter((source) => {
-      if (!source || !source.quote?.trim()) {
-        return false;
-      }
+      if (!source || !source.quote?.trim()) return false;
 
       const key = [
         source.sourceType,
@@ -152,16 +120,12 @@ function getSources(result: CandidateResult): MatchSource[] {
         source.quote.trim(),
       ].join("|");
 
-      if (unique.has(key)) {
-        return false;
-      }
-
+      if (unique.has(key)) return false;
       unique.add(key);
       return true;
     });
   }
 
-  // תאימות זמנית לשרת הישן
   if (!result.explanation) return [];
 
   return result.explanation
@@ -180,21 +144,14 @@ function getPriority(type: MatchType): number {
   switch (type) {
     case "exact":
       return 0;
-
     case "keyword":
       return 1;
-
     case "semantic":
       return 2;
-
     default:
       return 3;
   }
 }
-
-// =====================================
-// Component
-// =====================================
 
 export default function CandidateMatchPage() {
   const dispatch = useAppDispatch();
@@ -218,14 +175,9 @@ export default function CandidateMatchPage() {
     };
   }, []);
 
-  // =====================================
-  // Events
-  // =====================================
-
   const updateQuery = (value: string) => {
     activeRequest.current?.abort();
     activeRequest.current = null;
-
     dispatch(setMatchQuery(value));
   };
 
@@ -246,21 +198,12 @@ export default function CandidateMatchPage() {
   const handleReset = () => {
     activeRequest.current?.abort();
     activeRequest.current = null;
-
     dispatch(resetCandidateMatch());
   };
-
-  // =====================================
-  // Render
-  // =====================================
 
   return (
     <div className="match-page" dir="rtl">
       <div className="match-container">
-
-        {/* =====================================
-            HERO
-        ===================================== */}
 
         <section className="match-hero">
           <div className="match-hero-glow" />
@@ -281,8 +224,6 @@ export default function CandidateMatchPage() {
               המערכת תאתר מידע מתוך קורות החיים,
               הסלוגנים והפוסטים של המועמדים.
             </p>
-
-            {/* SEARCH FORM */}
 
             <form
               className="match-search-form"
@@ -319,8 +260,6 @@ export default function CandidateMatchPage() {
               </div>
             </form>
 
-            {/* SUGGESTIONS */}
-
             <div className="match-suggestions">
               <span>אפשר לנסות:</span>
 
@@ -328,7 +267,7 @@ export default function CandidateMatchPage() {
                 "חינוך",
                 "דיור לצעירים",
                 "תחבורה ציבורית",
-                "ילדים",
+                "ניהול פרויקטים",
               ].map((suggestion) => (
                 <button
                   key={suggestion}
@@ -341,10 +280,6 @@ export default function CandidateMatchPage() {
             </div>
           </div>
         </section>
-
-        {/* =====================================
-            ERROR
-        ===================================== */}
 
         {error && (
           <p
@@ -359,10 +294,6 @@ export default function CandidateMatchPage() {
           </p>
         )}
 
-        {/* =====================================
-            LOADING
-        ===================================== */}
-
         {loading && (
           <section
             className="match-intro"
@@ -375,15 +306,10 @@ export default function CandidateMatchPage() {
             <p>
               המערכת בודקת קורות חיים,
               סלוגנים ופוסטים ומאתרת
-              התאמות מדויקות, מילות מפתח
-              וקשרים סמנטיים.
+              התאמות מדויקות וקשרים סמנטיים.
             </p>
           </section>
         )}
-
-        {/* =====================================
-            INITIAL STATE
-        ===================================== */}
 
         {!loading && !searched && (
           <section className="match-intro">
@@ -404,14 +330,8 @@ export default function CandidateMatchPage() {
           </section>
         )}
 
-        {/* =====================================
-            RESULTS
-        ===================================== */}
-
         {!loading && searched && (
           <section className="match-results">
-
-            {/* RESULTS HEADER */}
 
             <div className="match-results-header">
               <div>
@@ -437,8 +357,6 @@ export default function CandidateMatchPage() {
               </button>
             </div>
 
-            {/* SEARCH TOPICS */}
-
             {detectedTopics.length > 0 && (
               <div className="match-detected-topics">
                 <strong>מונח החיפוש:</strong>
@@ -448,8 +366,6 @@ export default function CandidateMatchPage() {
                 ))}
               </div>
             )}
-
-            {/* LEGEND */}
 
             <div
               style={{
@@ -478,205 +394,262 @@ export default function CandidateMatchPage() {
               ))}
             </div>
 
-            {/* NO RESULTS */}
-
             {results.length === 0 ? (
               <div className="match-no-results">
                 <div>⌕</div>
-
                 <h3>לא נמצאו מקורות</h3>
-
                 <p>
                   נסו לנסח את החיפוש מחדש
                   או להשתמש במונחים אחרים.
                 </p>
               </div>
             ) : (
-
-              /* CANDIDATE CARDS */
-
               <div className="match-results-grid">
-                {results.map((result) => {
-                  const sources = getSources(result)
-                    .sort(
-                      (a, b) =>
-                        getPriority(a.matchType) -
-                        getPriority(b.matchType)
-                    );
+                {results
+                  .slice()
+                  .sort((a, b) =>
+                    (b.score ?? 0) - (a.score ?? 0)
+                  )
+                  .map((result) => {
+                    const candidate = result as CandidateResult;
 
-                  return (
-                    <article
-                      className="match-candidate-card"
-                      key={result.candidateId}
-                    >
+                    const sources = getSources(candidate)
+                      .sort(
+                        (a, b) =>
+                          getPriority(a.matchType) -
+                          getPriority(b.matchType)
+                      );
 
-                      {/* CANDIDATE HEADER */}
+                    const score =
+                      typeof candidate.score === "number"
+                        ? Math.max(
+                            0,
+                            Math.min(100, candidate.score)
+                          )
+                        : null;
 
-                      <div className="match-card-top">
-                        <div className="match-avatar">
-                          {result.profileImageUrl && (
-                            <img
-                              src={getImageUrl(
-                                result.profileImageUrl
-                              )}
-                              alt={result.name}
-                              onError={(event) => {
-                                event.currentTarget.style.display =
-                                  "none";
-                              }}
-                            />
-                          )}
+                    return (
+                      <article
+                        className="match-candidate-card"
+                        key={candidate.candidateId}
+                      >
+                        <div className="match-card-top">
+                          <div className="match-avatar">
+                            {candidate.profileImageUrl && (
+                              <img
+                                src={getImageUrl(
+                                  candidate.profileImageUrl
+                                )}
+                                alt={candidate.name}
+                                onError={(event) => {
+                                  event.currentTarget.style.display =
+                                    "none";
+                                }}
+                              />
+                            )}
+                            <span>👤</span>
+                          </div>
 
-                          <span>👤</span>
+                          <div className="match-card-identity">
+                            <h3>{candidate.name}</h3>
+                            <span>{candidate.slogan}</span>
+                          </div>
                         </div>
 
-                        <div className="match-card-identity">
-                          <h3>{result.name}</h3>
-
-                          <span>
-                            {result.slogan}
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* SOURCES */}
-
-                      <div className="match-explanation">
-                        <strong>
-                          ✦ מקורות שנמצאו במערכת
-                        </strong>
-
-                        <p>
-                          המקורות הבאים אותרו
-                          בקורות החיים, בסלוגן
-                          או בפוסטים.
-                        </p>
-
-                        <div
-                          style={{
-                            display: "flex",
-                            flexDirection: "column",
-                            gap: 14,
-                            marginTop: 18,
-                          }}
-                        >
-                          {sources.map((source, index) => (
+                        {/* אחוזי רלוונטיות */}
+                        {score !== null && (
+                          <div
+                            style={{
+                              padding: "18px 20px",
+                              margin: "16px 0",
+                              background: "#f1f8f5",
+                              borderRadius: 16,
+                              border: "1px solid #d9e9e1",
+                            }}
+                          >
                             <div
-                              key={`${result.candidateId}-${source.sourceType}-${source.postId}-${index}`}
                               style={{
-                                background: "#ffffff",
-                                border: "1px solid #dceaea",
-                                borderRadius: 14,
-                                padding: "16px 18px",
-                                lineHeight: 1.8,
-                                overflowWrap: "anywhere",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "space-between",
+                                gap: 12,
+                                marginBottom: 12,
                               }}
                             >
+                              <strong
+                                style={{
+                                  fontSize: 15,
+                                  color: "#244c40",
+                                }}
+                              >
+                                רלוונטיות לחיפוש
+                              </strong>
 
-                              {/* SOURCE HEADER */}
+                              <strong
+                                style={{
+                                  fontSize: 28,
+                                  color: "#176b57",
+                                  fontWeight: 800,
+                                }}
+                              >
+                                {Math.round(score)}%
+                              </strong>
+                            </div>
 
+                            <div
+                              style={{
+                                width: "100%",
+                                height: 11,
+                                borderRadius: 20,
+                                background: "#dce9e2",
+                                overflow: "hidden",
+                              }}
+                            >
                               <div
                                 style={{
-                                  display: "flex",
-                                  alignItems: "center",
-                                  justifyContent:
-                                    "space-between",
-                                  flexWrap: "wrap",
-                                  gap: 10,
-                                  marginBottom: 10,
+                                  width: `${score}%`,
+                                  height: "100%",
+                                  borderRadius: 20,
+                                  background: "#21866c",
+                                }}
+                              />
+                            </div>
+
+                            <p
+                              style={{
+                                fontSize: 12,
+                                marginTop: 10,
+                                marginBottom: 0,
+                                color: "#557367",
+                              }}
+                            >
+                              ציון המבוסס על נושאי החיפוש,
+                              קורות החיים והסלוגן,
+                              בהתאם למקורות שנמצאו.
+                            </p>
+                          </div>
+                        )}
+
+                        <div className="match-explanation">
+                          <strong>
+                            ✦ מקורות שנמצאו במערכת
+                          </strong>
+
+                          <p>
+                            המקורות הבאים אותרו
+                            בקורות החיים, בסלוגן
+                            או בפוסטים.
+                          </p>
+
+                          <div
+                            style={{
+                              display: "flex",
+                              flexDirection: "column",
+                              gap: 14,
+                              marginTop: 18,
+                            }}
+                          >
+                            {sources.map((source, index) => (
+                              <div
+                                key={`${candidate.candidateId}-${source.sourceType}-${source.postId}-${index}`}
+                                style={{
+                                  background: "#ffffff",
+                                  border: "1px solid #dceaea",
+                                  borderRadius: 14,
+                                  padding: "16px 18px",
+                                  lineHeight: 1.8,
+                                  overflowWrap: "anywhere",
                                 }}
                               >
-                                <strong
+                                <div
                                   style={{
-                                    fontSize: 15,
-                                    color: "#183b3b",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent:
+                                      "space-between",
+                                    flexWrap: "wrap",
+                                    gap: 10,
+                                    marginBottom: 10,
                                   }}
                                 >
-                                  {getSourceTitle(source)}
-                                </strong>
+                                  <strong
+                                    style={{
+                                      fontSize: 15,
+                                      color: "#183b3b",
+                                    }}
+                                  >
+                                    {getSourceTitle(source)}
+                                  </strong>
 
-                                <span
-                                  style={{
-                                    ...getMatchStyle(
+                                  <span
+                                    style={{
+                                      ...getMatchStyle(
+                                        source.matchType
+                                      ),
+                                      padding: "4px 11px",
+                                      borderRadius: 20,
+                                      fontSize: 12,
+                                      fontWeight: 600,
+                                    }}
+                                  >
+                                    {getMatchLabel(
                                       source.matchType
-                                    ),
-                                    padding: "4px 11px",
-                                    borderRadius: 20,
-                                    fontSize: 12,
-                                    fontWeight: 600,
+                                    )}
+                                  </span>
+                                </div>
+
+                                <p
+                                  style={{
+                                    margin: 0,
+                                    fontSize: 14,
+                                    color: "#344545",
+                                    whiteSpace: "pre-wrap",
                                   }}
                                 >
-                                  {getMatchLabel(
+                                  "{source.quote}"
+                                </p>
+
+                                <p
+                                  style={{
+                                    marginTop: 12,
+                                    marginBottom: 0,
+                                    paddingTop: 10,
+                                    borderTop:
+                                      "1px solid #edf2f2",
+                                    fontSize: 12,
+                                    color: "#647777",
+                                  }}
+                                >
+                                  {getMatchDescription(
                                     source.matchType
                                   )}
-                                </span>
+                                </p>
                               </div>
+                            ))}
+                          </div>
 
-                              {/* QUOTE */}
-
-                              <p
-                                style={{
-                                  margin: 0,
-                                  fontSize: 14,
-                                  color: "#344545",
-                                  whiteSpace: "pre-wrap",
-                                }}
-                              >
-                                "{source.quote}"
-                              </p>
-
-                              {/* MATCH EXPLANATION */}
-
-                              <p
-                                style={{
-                                  marginTop: 12,
-                                  marginBottom: 0,
-                                  paddingTop: 10,
-                                  borderTop:
-                                    "1px solid #edf2f2",
-                                  fontSize: 12,
-                                  color: "#647777",
-                                }}
-                              >
-                                {getMatchDescription(
-                                  source.matchType
-                                )}
-                              </p>
-                            </div>
-                          ))}
+                          {sources.length === 0 && (
+                            <p>לא התקבל פירוט מקורות.</p>
+                          )}
                         </div>
 
-                        {sources.length === 0 && (
-                          <p>
-                            לא התקבל פירוט מקורות.
-                          </p>
-                        )}
-                      </div>
-
-                      {/* CARD FOOTER */}
-
-                      <div className="match-card-footer">
-                        <span>תוצאת חיפוש</span>
-
-                        <span>
-                          {sources.length} מקורות מוצגים
-                        </span>
-                      </div>
-                    </article>
-                  );
-                })}
+                        <div className="match-card-footer">
+                          <span>תוצאת חיפוש</span>
+                          <span>
+                            {sources.length} מקורות מוצגים
+                          </span>
+                        </div>
+                      </article>
+                    );
+                  })}
               </div>
             )}
 
-            {/* DISCLAIMER */}
-
             <div className="match-disclaimer">
-              המערכת מאתרת אזכורים מתוך
-              המידע הקיים על המועמדים.
-              התאמות סמנטיות הן הערכות
-              של מערכת AI ולא קביעה ודאית.
-              התאמה למילת מפתח אינה מעידה
-              בהכרח שכל משפט החיפוש תואם.
+              המערכת מאתרת אזכורים מתוך המידע הקיים
+              על המועמדים. ציון הרלוונטיות הוא מדד
+              חישובי המבוסס על מקורות שנמצאו, ולא
+              הערכה ודאית או המלצה על מועמד.
               מומלץ לקרוא את המקורות המלאים
               כדי להבין את ההקשר.
             </div>
