@@ -1,32 +1,119 @@
-# React + TypeScript + Vite
+# Primerize | צד לקוח – React
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+## אודות הפרויקט
 
-Currently, two official plugins are available:
+**Primerize** היא מערכת Full Stack לניהול בחירות מקדימות, המשלבת פלטפורמה שיתופית, הצבעה מדורגת ובינה מלאכותית.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+צד הלקוח פותח באמצעות **React ו־TypeScript**, ומספק ממשק משתמש נוח לניהול הבחירות ולהשתתפות בפעילות המערכת.
 
-## React Compiler
+## קישורים למערכת
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+🌐 **האתר הפעיל ב־MonsterASP:**  
+http://primerize.runasp.net/
 
-## Expanding the Oxlint configuration
+⚙️ **שרת API:**  
+http://primerizeserver.runasp.net/
 
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
+**GitHub:**
+- [Frontend – React](https://github.com/navadobrovitser/PrimerizeReact)
+- [Backend – C#](https://github.com/navadobrovitser/Primarize)
 
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+## טכנולוגיות
+
+- **React** – בניית ממשק המשתמש.
+- **TypeScript** – פיתוח עם בדיקת טיפוסים.
+- **Redux Toolkit** – ניהול State משותף.
+- **Vite** – סביבת פיתוח ובניית הפרויקט.
+- **CSS** – עיצוב רספונסיבי.
+- **Fetch API** – תקשורת עם שרת C#.
+- **JWT** – אימות בקשות מול השרת.
+
+## יכולות מרכזיות
+
+- **התחברות והרשאות:** התחברות משתמשים ואימות באמצעות קוד במייל.
+- **מועמדים:** צפייה בפרופילים, קורות חיים, תמונות וסרטונים.
+- **פלטפורמה שיתופית:** פיד פוסטים, תגובות ולייקים.
+- **אזור אישי למועמד:** יצירה, עריכה וניהול פוסטים.
+- **הצבעות:** דירוג מועמדים, שליחת הצבעה וצפייה בתוצאות.
+- **התאמה חכמה:** חיפוש מועמדים לפי דרישות המשתמש באמצעות Gemini.
+- **צ'אט תקנון:** שאלות ותשובות המבוססות על RAG.
+- **ממשק מנהל:** ניהול משתמשים, אישורים ופתיחה וסגירה של בחירות.
+
+## התקנה והפעלה מקומית
+
+**דרישות:** Node.js ו־npm, וכן שרת ה־API של Primerize.
+
+### 1. הורדת הפרויקט
+
+```bash
+git clone https://github.com/navadobrovitser/PrimerizeReact.git
+cd PrimerizeReact
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+### 2. התקנת תלויות
+
+```bash
+npm install
+```
+
+### 3. הפעלת הפרויקט
+
+```bash
+npm run dev
+```
+
+האתר ייפתח בדרך כלל בכתובת:
+
+`http://localhost:5173`
+
+יש להפעיל במקביל את שרת ה־C# בכתובת:
+
+`https://localhost:7227`
+
+## חיבור לשרת
+
+כתובת שרת ה־API מוגדרת בקובץ:
+
+`src/config/api.ts`
+
+הקובץ מבחין בין סביבת פיתוח מקומית לסביבת Production.
+
+בגרסה הנוכחית כתובת השרת מוגדרת ישירות בקובץ, ולכן שינוי שלה מחייב בנייה מחדש של צד הלקוח.
+
+מפתחות API, סיסמאות ומחרוזות חיבור למסד הנתונים נשמרים בצד השרת בלבד.
+
+## בניית גרסת Production
+
+```bash
+npm run build
+```
+
+הפקודה מבצעת בדיקת TypeScript ויוצרת קובצי אתר מוכנים לפריסה בתיקיית `dist`.
+
+לבדיקת גרסת הייצור מקומית:
+
+```bash
+npm run preview
+```
+
+## ארכיטקטורת צד הלקוח
+
+המערכת מבוססת על React Components ומשתמשת ב־Redux Toolkit לניהול מידע משותף.
+
+- **Components** – הצגת ממשק המשתמש.
+- **Slices** – ניהול State לפי תחומים.
+- **Thunks** – ביצוע פעולות אסינכרוניות מול השרת.
+- **Store** – ריכוז המידע המשותף.
+- **React Hooks** – ניהול מצב, טעינת נתונים וטיפול באירועים.
+
+## פריסה לשרת
+
+צד הלקוח נפרס ל־**MonsterASP.NET**.
+
+לאחר ביצוע Build, קובצי ה־Production מועלים לשרת האירוח.
+
+יש לוודא שכתובת ה־API, הגדרות CORS וניתוב העמודים מוגדרים בהתאם לסביבת הייצור.
+
+---
+
+**Primerize – פרויקט גמר Full Stack | React, TypeScript, Redux & AI**
