@@ -12,16 +12,6 @@ import {
 import { API_ORIGIN } from "../config/api";
 import "./CandidateMatchPage.css";
 
-type MatchType = "exact" | "keyword" | "semantic";
-type SourceType = "resume" | "slogan" | "post";
-
-type MatchSource = {
-  sourceType: SourceType;
-  postId: number | null;
-  matchType: MatchType;
-  quote: string;
-};
-
 type CandidateResult = {
   candidateId: number;
   name: string;
@@ -29,7 +19,7 @@ type CandidateResult = {
   profileImageUrl?: string | null;
   score?: number;
   explanation?: string | null;
-  sources?: MatchSource[];
+  matchedTopics?: string[];
 };
 
 function getImageUrl(
@@ -42,115 +32,6 @@ function getImageUrl(
   }
 
   return `${API_ORIGIN}${url.startsWith("/") ? "" : "/"}${url}`;
-}
-
-function getSourceTitle(source: MatchSource): string {
-  switch (source.sourceType) {
-    case "resume":
-      return "קורות החיים";
-    case "slogan":
-      return "סלוגן";
-    case "post":
-      return `פוסט #${source.postId ?? ""}`;
-    default:
-      return "מקור";
-  }
-}
-
-function getMatchLabel(type: MatchType): string {
-  switch (type) {
-    case "exact":
-      return "התאמה מדויקת";
-    case "keyword":
-      return "התאמה למילת מפתח";
-    case "semantic":
-      return "התאמה סמנטית";
-    default:
-      return "התאמה";
-  }
-}
-
-function getMatchDescription(type: MatchType): string {
-  switch (type) {
-    case "exact":
-      return "ביטוי החיפוש נמצא במקור.";
-    case "keyword":
-      return "נמצאה מילה משמעותית מתוך החיפוש.";
-    case "semantic":
-      return "נמצא קשר במשמעות בעזרת AI.";
-    default:
-      return "";
-  }
-}
-
-function getMatchStyle(type: MatchType) {
-  switch (type) {
-    case "exact":
-      return {
-        background: "#e8f5ee",
-        color: "#216747",
-        border: "1px solid #b9dfc8",
-      };
-    case "keyword":
-      return {
-        background: "#fff4df",
-        color: "#966014",
-        border: "1px solid #f0d8a5",
-      };
-    case "semantic":
-      return {
-        background: "#eaf0ff",
-        color: "#3655a4",
-        border: "1px solid #c9d7fa",
-      };
-  }
-}
-
-function getSources(result: CandidateResult): MatchSource[] {
-  if (Array.isArray(result.sources)) {
-    const unique = new Set<string>();
-
-    return result.sources.filter((source) => {
-      if (!source || !source.quote?.trim()) return false;
-
-      const key = [
-        source.sourceType,
-        source.postId ?? "",
-        source.matchType,
-        source.quote.trim(),
-      ].join("|");
-
-      if (unique.has(key)) return false;
-      unique.add(key);
-      return true;
-    });
-  }
-
-  if (!result.explanation) return [];
-
-  return result.explanation
-    .split(" | ")
-    .map((part) => part.trim())
-    .filter(Boolean)
-    .map((part) => ({
-      sourceType: "post" as const,
-      postId: null,
-      matchType: "exact" as const,
-      quote: part,
-    }));
-}
-
-function getPriority(type: MatchType): number {
-  switch (type) {
-    case "exact":
-      return 0;
-    case "keyword":
-      return 1;
-    case "semantic":
-      return 2;
-    default:
-      return 3;
-  }
 }
 
 export default function CandidateMatchPage() {
@@ -221,8 +102,9 @@ export default function CandidateMatchPage() {
 
             <p className="match-subtitle">
               חפשו נושאים שמעניינים אתכם.
-              המערכת תאתר מידע מתוך קורות החיים,
-              הסלוגנים והפוסטים של המועמדים.
+              המערכת מנתחת באמצעות בינה מלאכותית
+              את קורות החיים של המועמדים,
+              ומדרגת אותם לפי התאמה רעיונית לחיפוש.
             </p>
 
             <form
@@ -254,8 +136,8 @@ export default function CandidateMatchPage() {
                   disabled={!query.trim() || loading}
                 >
                   {loading
-                    ? "מחפש..."
-                    : "✦ חיפוש במידע המועמדים"}
+                    ? "מנתח התאמות..."
+                    : "✦ חיפוש חכם במידע המועמדים"}
                 </button>
               </div>
             </form>
@@ -301,12 +183,13 @@ export default function CandidateMatchPage() {
           >
             <div className="match-intro-icon">✦</div>
 
-            <h2>מחפשים במידע הקיים...</h2>
+            <h2>הבינה המלאכותית מנתחת התאמות...</h2>
 
             <p>
-              המערכת בודקת קורות חיים,
-              סלוגנים ופוסטים ומאתרת
-              התאמות מדויקות וקשרים סמנטיים.
+              המערכת בוחנת את קורות החיים של
+              המועמדים, משווה את המשמעות וההקשר
+              לבקשתכם ומחשבת ציוני התאמה.
+              התהליך עשוי להימשך מעט זמן.
             </p>
           </section>
         )}
@@ -315,17 +198,18 @@ export default function CandidateMatchPage() {
           <section className="match-intro">
             <div className="match-intro-icon">✦</div>
 
-            <h2>מידע שאפשר לבדוק</h2>
+            <h2>התאמה חכמה למועמדים</h2>
 
             <p>
-              הזינו נושא לחיפוש וקבלו תוצאות
-              המבוססות על תוכן שנמצא במערכת.
+              הזינו נושא, רעיון או העדפה בשפה חופשית,
+              וקבלו דירוג מועמדים המבוסס על ניתוח
+              סמנטי של קורות החיים באמצעות AI.
             </p>
 
             <div className="match-features">
-              <div>◈ חיפוש מדויק</div>
-              <div>◎ חיפוש לפי מילות מפתח</div>
-              <div>▤ חיפוש סמנטי</div>
+              <div>◈ הבנת משמעות והקשר</div>
+              <div>◎ דירוג התאמה אישי</div>
+              <div>▤ ניתוח באמצעות AI</div>
             </div>
           </section>
         )}
@@ -336,15 +220,16 @@ export default function CandidateMatchPage() {
             <div className="match-results-header">
               <div>
                 <span className="match-section-label">
-                  תוצאות החיפוש
+                  תוצאות ההתאמה החכמה
                 </span>
 
-                <h2>מקורות שנמצאו</h2>
+                <h2>המועמדים המתאימים לחיפוש שלך</h2>
 
                 <p>
-                  נמצאו אזכורים במידע של{" "}
+                  נותחו{" "}
                   <strong>{results.length}</strong>{" "}
-                  מועמדים.
+                  מועמדים באמצעות בינה מלאכותית,
+                  והם דורגו לפי מידת ההתאמה.
                 </p>
               </div>
 
@@ -359,7 +244,7 @@ export default function CandidateMatchPage() {
 
             {detectedTopics.length > 0 && (
               <div className="match-detected-topics">
-                <strong>מונח החיפוש:</strong>
+                <strong>נושאים שזוהו בחיפוש:</strong>
 
                 {detectedTopics.map((topic) => (
                   <span key={topic}>{topic}</span>
@@ -367,37 +252,10 @@ export default function CandidateMatchPage() {
               </div>
             )}
 
-            <div
-              style={{
-                display: "flex",
-                flexWrap: "wrap",
-                gap: 10,
-                margin: "22px 0",
-              }}
-            >
-              {(
-                ["exact", "keyword", "semantic"] as MatchType[]
-              ).map((type) => (
-                <span
-                  key={type}
-                  title={getMatchDescription(type)}
-                  style={{
-                    ...getMatchStyle(type),
-                    borderRadius: 20,
-                    padding: "6px 13px",
-                    fontSize: 12,
-                    fontWeight: 600,
-                  }}
-                >
-                  {getMatchLabel(type)}
-                </span>
-              ))}
-            </div>
-
             {results.length === 0 ? (
               <div className="match-no-results">
                 <div>⌕</div>
-                <h3>לא נמצאו מקורות</h3>
+                <h3>לא נמצאו תוצאות</h3>
                 <p>
                   נסו לנסח את החיפוש מחדש
                   או להשתמש במונחים אחרים.
@@ -407,18 +265,12 @@ export default function CandidateMatchPage() {
               <div className="match-results-grid">
                 {results
                   .slice()
-                  .sort((a, b) =>
-                    (b.score ?? 0) - (a.score ?? 0)
+                  .sort(
+                    (a, b) =>
+                      (b.score ?? 0) - (a.score ?? 0)
                   )
                   .map((result) => {
                     const candidate = result as CandidateResult;
-
-                    const sources = getSources(candidate)
-                      .sort(
-                        (a, b) =>
-                          getPriority(a.matchType) -
-                          getPriority(b.matchType)
-                      );
 
                     const score =
                       typeof candidate.score === "number"
@@ -456,12 +308,11 @@ export default function CandidateMatchPage() {
                           </div>
                         </div>
 
-                        {/* אחוזי רלוונטיות */}
                         {score !== null && (
                           <div
                             style={{
-                              padding: "18px 20px",
-                              margin: "16px 0",
+                              padding: "20px",
+                              margin: "18px 0",
                               background: "#f1f8f5",
                               borderRadius: 16,
                               border: "1px solid #d9e9e1",
@@ -471,14 +322,15 @@ export default function CandidateMatchPage() {
                               style={{
                                 display: "flex",
                                 alignItems: "center",
-                                justifyContent: "space-between",
+                                justifyContent:
+                                  "space-between",
                                 gap: 12,
-                                marginBottom: 12,
+                                marginBottom: 14,
                               }}
                             >
                               <strong
                                 style={{
-                                  fontSize: 15,
+                                  fontSize: 16,
                                   color: "#244c40",
                                 }}
                               >
@@ -487,7 +339,7 @@ export default function CandidateMatchPage() {
 
                               <strong
                                 style={{
-                                  fontSize: 28,
+                                  fontSize: 32,
                                   color: "#176b57",
                                   fontWeight: 800,
                                 }}
@@ -497,9 +349,14 @@ export default function CandidateMatchPage() {
                             </div>
 
                             <div
+                              role="progressbar"
+                              aria-label={`התאמה של ${candidate.name}`}
+                              aria-valuenow={score}
+                              aria-valuemin={0}
+                              aria-valuemax={100}
                               style={{
                                 width: "100%",
-                                height: 11,
+                                height: 12,
                                 borderRadius: 20,
                                 background: "#dce9e2",
                                 overflow: "hidden",
@@ -518,126 +375,42 @@ export default function CandidateMatchPage() {
                             <p
                               style={{
                                 fontSize: 12,
-                                marginTop: 10,
+                                marginTop: 12,
                                 marginBottom: 0,
                                 color: "#557367",
+                                lineHeight: 1.8,
                               }}
                             >
-                              ציון המבוסס על נושאי החיפוש,
-                              קורות החיים והסלוגן,
-                              בהתאם למקורות שנמצאו.
+                              ציון התאמה רעיונית שנקבע
+                              באמצעות בינה מלאכותית,
+                              על בסיס קורות החיים.
                             </p>
                           </div>
                         )}
 
-                        <div className="match-explanation">
-                          <strong>
-                            ✦ מקורות שנמצאו במערכת
-                          </strong>
+                        {candidate.explanation?.trim() && (
+                          <div className="match-explanation">
+                            <strong>
+                              ✦ ניתוח ההתאמה של AI
+                            </strong>
 
-                          <p>
-                            המקורות הבאים אותרו
-                            בקורות החיים, בסלוגן
-                            או בפוסטים.
-                          </p>
-
-                          <div
-                            style={{
-                              display: "flex",
-                              flexDirection: "column",
-                              gap: 14,
-                              marginTop: 18,
-                            }}
-                          >
-                            {sources.map((source, index) => (
-                              <div
-                                key={`${candidate.candidateId}-${source.sourceType}-${source.postId}-${index}`}
-                                style={{
-                                  background: "#ffffff",
-                                  border: "1px solid #dceaea",
-                                  borderRadius: 14,
-                                  padding: "16px 18px",
-                                  lineHeight: 1.8,
-                                  overflowWrap: "anywhere",
-                                }}
-                              >
-                                <div
-                                  style={{
-                                    display: "flex",
-                                    alignItems: "center",
-                                    justifyContent:
-                                      "space-between",
-                                    flexWrap: "wrap",
-                                    gap: 10,
-                                    marginBottom: 10,
-                                  }}
-                                >
-                                  <strong
-                                    style={{
-                                      fontSize: 15,
-                                      color: "#183b3b",
-                                    }}
-                                  >
-                                    {getSourceTitle(source)}
-                                  </strong>
-
-                                  <span
-                                    style={{
-                                      ...getMatchStyle(
-                                        source.matchType
-                                      ),
-                                      padding: "4px 11px",
-                                      borderRadius: 20,
-                                      fontSize: 12,
-                                      fontWeight: 600,
-                                    }}
-                                  >
-                                    {getMatchLabel(
-                                      source.matchType
-                                    )}
-                                  </span>
-                                </div>
-
-                                <p
-                                  style={{
-                                    margin: 0,
-                                    fontSize: 14,
-                                    color: "#344545",
-                                    whiteSpace: "pre-wrap",
-                                  }}
-                                >
-                                  "{source.quote}"
-                                </p>
-
-                                <p
-                                  style={{
-                                    marginTop: 12,
-                                    marginBottom: 0,
-                                    paddingTop: 10,
-                                    borderTop:
-                                      "1px solid #edf2f2",
-                                    fontSize: 12,
-                                    color: "#647777",
-                                  }}
-                                >
-                                  {getMatchDescription(
-                                    source.matchType
-                                  )}
-                                </p>
-                              </div>
-                            ))}
+                            <p
+                              style={{
+                                marginTop: 14,
+                                marginBottom: 0,
+                                lineHeight: 1.9,
+                                whiteSpace: "pre-wrap",
+                                overflowWrap: "anywhere",
+                              }}
+                            >
+                              {candidate.explanation}
+                            </p>
                           </div>
-
-                          {sources.length === 0 && (
-                            <p>לא התקבל פירוט מקורות.</p>
-                          )}
-                        </div>
+                        )}
 
                         <div className="match-card-footer">
-                          <span>תוצאת חיפוש</span>
-                          <span>
-                            {sources.length} מקורות מוצגים
-                          </span>
+                          <span>התאמה חכמה</span>
+                          <span>מבוסס AI</span>
                         </div>
                       </article>
                     );
@@ -646,12 +419,11 @@ export default function CandidateMatchPage() {
             )}
 
             <div className="match-disclaimer">
-              המערכת מאתרת אזכורים מתוך המידע הקיים
-              על המועמדים. ציון הרלוונטיות הוא מדד
-              חישובי המבוסס על מקורות שנמצאו, ולא
-              הערכה ודאית או המלצה על מועמד.
-              מומלץ לקרוא את המקורות המלאים
-              כדי להבין את ההקשר.
+              ציוני ההתאמה הם הערכות שמופקות באמצעות
+              בינה מלאכותית על בסיס קורות החיים של
+              המועמדים. האחוזים משקפים מידת התאמה
+              רעיונית משוערת, אינם הסתברות סטטיסטית
+              ואינם מהווים קביעה ודאית לגבי המועמדים.
             </div>
           </section>
         )}
